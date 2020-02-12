@@ -6,16 +6,1391 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>600</height>
+    <width>1003</width>
+    <height>820</height>
    </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1003</width>
+    <height>770</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1003</width>
+    <height>820</height>
+   </size>
   </property>
   <property name="windowTitle">
    <string>MainWindow</string>
   </property>
-  <widget class="QWidget" name="centralwidget"/>
-  <widget class="QMenuBar" name="menubar"/>
+  <widget class="QWidget" name="centralwidget">
+   <widget class="QStackedWidget" name="stackedWidget">
+    <property name="geometry">
+     <rect>
+      <x>0</x>
+      <y>-10</y>
+      <width>1001</width>
+      <height>771</height>
+     </rect>
+    </property>
+    <property name="palette">
+     <palette>
+      <active>
+       <colorrole role="WindowText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Button">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>220</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Light">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>255</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Midlight">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>237</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Dark">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>127</red>
+          <green>127</green>
+          <blue>110</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Mid">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>170</red>
+          <green>170</green>
+          <blue>147</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Text">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="BrightText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>255</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="ButtonText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Base">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>255</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Window">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>220</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Shadow">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="AlternateBase">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>237</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="ToolTipBase">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>220</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="ToolTipText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="PlaceholderText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="128">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+      </active>
+      <inactive>
+       <colorrole role="WindowText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Button">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>220</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Light">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>255</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Midlight">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>237</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Dark">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>127</red>
+          <green>127</green>
+          <blue>110</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Mid">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>170</red>
+          <green>170</green>
+          <blue>147</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Text">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="BrightText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>255</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="ButtonText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Base">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>255</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Window">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>220</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Shadow">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="AlternateBase">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>237</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="ToolTipBase">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>220</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="ToolTipText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="PlaceholderText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="128">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+      </inactive>
+      <disabled>
+       <colorrole role="WindowText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>127</red>
+          <green>127</green>
+          <blue>110</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Button">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>220</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Light">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>255</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Midlight">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>237</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Dark">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>127</red>
+          <green>127</green>
+          <blue>110</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Mid">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>170</red>
+          <green>170</green>
+          <blue>147</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Text">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>127</red>
+          <green>127</green>
+          <blue>110</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="BrightText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>255</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="ButtonText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>127</red>
+          <green>127</green>
+          <blue>110</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Base">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>220</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Window">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>220</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="Shadow">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="AlternateBase">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>220</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="ToolTipBase">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>255</red>
+          <green>255</green>
+          <blue>220</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="ToolTipText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="255">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+       <colorrole role="PlaceholderText">
+        <brush brushstyle="SolidPattern">
+         <color alpha="128">
+          <red>0</red>
+          <green>0</green>
+          <blue>0</blue>
+         </color>
+        </brush>
+       </colorrole>
+      </disabled>
+     </palette>
+    </property>
+    <property name="currentIndex">
+     <number>2</number>
+    </property>
+    <widget class="QWidget" name="page_0_Main_Window"/>
+    <widget class="QWidget" name="page_1_Find_Strings">
+     <widget class="QLabel" name="stringCountLabel">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>740</y>
+        <width>101</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="mouseTracking">
+       <bool>false</bool>
+      </property>
+      <property name="text">
+       <string>String Count:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="stringCountValue">
+      <property name="geometry">
+       <rect>
+        <x>140</x>
+        <y>740</y>
+        <width>101</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+     <widget class="QScrollBar" name="stringsScrollBar">
+      <property name="geometry">
+       <rect>
+        <x>960</x>
+        <y>20</y>
+        <width>21</width>
+        <height>671</height>
+       </rect>
+      </property>
+      <property name="maximum">
+       <number>0</number>
+      </property>
+      <property name="pageStep">
+       <number>16</number>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
+     <widget class="QListWidget" name="stringList">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>20</y>
+        <width>941</width>
+        <height>681</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="searchString">
+      <property name="geometry">
+       <rect>
+        <x>530</x>
+        <y>720</y>
+        <width>331</width>
+        <height>25</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="stringSearchButton">
+      <property name="geometry">
+       <rect>
+        <x>890</x>
+        <y>720</y>
+        <width>71</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>search</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="stringsPageNumberLabel">
+      <property name="geometry">
+       <rect>
+        <x>290</x>
+        <y>740</y>
+        <width>69</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Page:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="stringsPageNumberValue">
+      <property name="geometry">
+       <rect>
+        <x>370</x>
+        <y>740</y>
+        <width>69</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="page_2_Saved_Strings">
+     <widget class="QListWidget" name="savedStringList">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>20</y>
+        <width>971</width>
+        <height>681</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="focusPolicy">
+       <enum>Qt::NoFocus</enum>
+      </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAsNeeded</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAsNeeded</enum>
+      </property>
+      <property name="autoScroll">
+       <bool>true</bool>
+      </property>
+      <property name="autoScrollMargin">
+       <number>16</number>
+      </property>
+      <property name="editTriggers">
+       <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+      </property>
+      <property name="defaultDropAction">
+       <enum>Qt::CopyAction</enum>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::SingleSelection</enum>
+      </property>
+     </widget>
+     <widget class="QLabel" name="savedStringCountLabel">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>720</y>
+        <width>101</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>String Count:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="savedStringCountValue">
+      <property name="geometry">
+       <rect>
+        <x>140</x>
+        <y>720</y>
+        <width>101</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="page_3_DLLs">
+     <widget class="QListWidget" name="DLL_List">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>20</y>
+        <width>980</width>
+        <height>690</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="focusPolicy">
+       <enum>Qt::NoFocus</enum>
+      </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="autoScroll">
+       <bool>true</bool>
+      </property>
+      <property name="autoScrollMargin">
+       <number>16</number>
+      </property>
+      <property name="editTriggers">
+       <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+      </property>
+      <property name="defaultDropAction">
+       <enum>Qt::CopyAction</enum>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::SingleSelection</enum>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="page_4_Hex_Mode">
+     <widget class="QTableWidget" name="hexTable">
+      <property name="enabled">
+       <bool>true</bool>
+      </property>
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>20</y>
+        <width>928</width>
+        <height>680</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>928</width>
+        <height>680</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>928</width>
+        <height>680</height>
+       </size>
+      </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="sizeAdjustPolicy">
+       <enum>QAbstractScrollArea::AdjustIgnored</enum>
+      </property>
+      <property name="autoScroll">
+       <bool>true</bool>
+      </property>
+      <property name="editTriggers">
+       <set>QAbstractItemView::NoEditTriggers</set>
+      </property>
+      <property name="showGrid">
+       <bool>true</bool>
+      </property>
+      <property name="gridStyle">
+       <enum>Qt::DashLine</enum>
+      </property>
+      <attribute name="horizontalHeaderMinimumSectionSize">
+       <number>10</number>
+      </attribute>
+      <attribute name="horizontalHeaderDefaultSectionSize">
+       <number>40</number>
+      </attribute>
+      <attribute name="verticalHeaderMinimumSectionSize">
+       <number>40</number>
+      </attribute>
+      <attribute name="verticalHeaderDefaultSectionSize">
+       <number>40</number>
+      </attribute>
+      <row>
+       <property name="text">
+        <string>00000000</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>00000010</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>00000020</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>00000030</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>00000040</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>00000050</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>00000060</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>00000070</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>00000080</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>00000090</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>000000A0</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>000000B0</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>000000C0</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>000000D0</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>000000E0</string>
+       </property>
+      </row>
+      <row>
+       <property name="text">
+        <string>000000F0</string>
+       </property>
+      </row>
+      <column>
+       <property name="text">
+        <string>00</string>
+       </property>
+       <property name="font">
+        <font>
+         <pointsize>8</pointsize>
+        </font>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>01</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>02</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>03</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>04</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>05</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>06</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>07</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>08</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>09</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>0A</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>0B</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>0C</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>0D</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>0E</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>0F</string>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string/>
+       </property>
+      </column>
+      <column>
+       <property name="text">
+        <string>Decoded Text</string>
+       </property>
+       <property name="textAlignment">
+        <set>AlignCenter</set>
+       </property>
+      </column>
+     </widget>
+     <widget class="QScrollBar" name="hexScrollBar">
+      <property name="geometry">
+       <rect>
+        <x>960</x>
+        <y>20</y>
+        <width>21</width>
+        <height>671</height>
+       </rect>
+      </property>
+      <property name="maximum">
+       <number>0</number>
+      </property>
+      <property name="pageStep">
+       <number>16</number>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
+     <widget class="QLabel" name="hexCurrentRow">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>720</y>
+        <width>101</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Current Row:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="hexMaxRowLabel">
+      <property name="geometry">
+       <rect>
+        <x>260</x>
+        <y>720</y>
+        <width>81</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Max Row:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="hexCurrentRowValue">
+      <property name="geometry">
+       <rect>
+        <x>130</x>
+        <y>720</y>
+        <width>101</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+     <widget class="QLabel" name="hexMaxRowValue">
+      <property name="geometry">
+       <rect>
+        <x>350</x>
+        <y>720</y>
+        <width>81</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="page_5_Disassembly"/>
+    <widget class="QWidget" name="page_6_Checklist">
+     <widget class="QLabel" name="checklistFileNameLabel">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>30</y>
+        <width>81</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>File Name:</string>
+      </property>
+     </widget>
+     <widget class="QProgressBar" name="checklistProgressBar">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>710</y>
+        <width>961</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="value">
+       <number>0</number>
+      </property>
+     </widget>
+     <widget class="QLabel" name="checklistFileNameValue">
+      <property name="geometry">
+       <rect>
+        <x>130</x>
+        <y>30</y>
+        <width>311</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+     <widget class="QLabel" name="checklistFileHashLabel">
+      <property name="geometry">
+       <rect>
+        <x>470</x>
+        <y>30</y>
+        <width>111</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Hash (SHA-1):</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="checklistFileHashValue">
+      <property name="geometry">
+       <rect>
+        <x>600</x>
+        <y>30</y>
+        <width>371</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
+     <widget class="QLabel" name="label">
+      <property name="geometry">
+       <rect>
+        <x>30</x>
+        <y>80</y>
+        <width>271</width>
+        <height>21</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>Main Steps (Click on a step for help)</string>
+      </property>
+     </widget>
+     <widget class="QListWidget" name="checklistMainStepsList">
+      <property name="geometry">
+       <rect>
+        <x>20</x>
+        <y>120</y>
+        <width>961</width>
+        <height>251</height>
+       </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
+      <property name="focusPolicy">
+       <enum>Qt::NoFocus</enum>
+      </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="autoScroll">
+       <bool>true</bool>
+      </property>
+      <property name="autoScrollMargin">
+       <number>16</number>
+      </property>
+      <property name="editTriggers">
+       <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
+      </property>
+      <property name="defaultDropAction">
+       <enum>Qt::CopyAction</enum>
+      </property>
+      <property name="selectionMode">
+       <enum>QAbstractItemView::SingleSelection</enum>
+      </property>
+      <item>
+       <property name="text">
+        <string>1) Select a File</string>
+       </property>
+       <property name="checkState">
+        <enum>Unchecked</enum>
+       </property>
+       <property name="flags">
+        <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsEnabled</set>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>2) Generate a Hash</string>
+       </property>
+       <property name="checkState">
+        <enum>Unchecked</enum>
+       </property>
+       <property name="flags">
+        <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsEnabled</set>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>3) Backup the File</string>
+       </property>
+       <property name="checkState">
+        <enum>Unchecked</enum>
+       </property>
+       <property name="flags">
+        <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsEnabled</set>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>4) Check if Packed</string>
+       </property>
+       <property name="checkState">
+        <enum>Unchecked</enum>
+       </property>
+       <property name="flags">
+        <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsEnabled</set>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>4a) If Packed, Unpack</string>
+       </property>
+       <property name="checkState">
+        <enum>Unchecked</enum>
+       </property>
+       <property name="flags">
+        <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsEnabled</set>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>5) Find Strings</string>
+       </property>
+       <property name="checkState">
+        <enum>Unchecked</enum>
+       </property>
+       <property name="flags">
+        <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsEnabled</set>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>6) Select then View Noteworthy Strings</string>
+       </property>
+       <property name="checkState">
+        <enum>Unchecked</enum>
+       </property>
+       <property name="flags">
+        <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsEnabled</set>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>7) Find DLL's</string>
+       </property>
+       <property name="checkState">
+        <enum>Unchecked</enum>
+       </property>
+       <property name="flags">
+        <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsEnabled</set>
+       </property>
+      </item>
+      <item>
+       <property name="text">
+        <string>8) View File in Hex</string>
+       </property>
+       <property name="checkState">
+        <enum>Unchecked</enum>
+       </property>
+       <property name="flags">
+        <set>ItemIsSelectable|ItemIsDragEnabled|ItemIsEnabled</set>
+       </property>
+      </item>
+     </widget>
+    </widget>
+    <widget class="QWidget" name="page"/>
+   </widget>
+  </widget>
   <widget class="QStatusBar" name="statusbar"/>
+  <widget class="QMenuBar" name="menubar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1003</width>
+     <height>30</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFile">
+    <property name="title">
+     <string>File</string>
+    </property>
+    <addaction name="actionOpen"/>
+    <addaction name="actionOpen_From_Backups"/>
+    <addaction name="separator"/>
+    <addaction name="actionGenerate_Hash"/>
+    <addaction name="actionCreate_Backup"/>
+    <addaction name="separator"/>
+    <addaction name="actionExit"/>
+   </widget>
+   <widget class="QMenu" name="menuPackers">
+    <property name="title">
+     <string>Packers</string>
+    </property>
+    <addaction name="actionCheck_if_Packed"/>
+    <addaction name="actionPack"/>
+    <addaction name="actionUnpack"/>
+   </widget>
+   <widget class="QMenu" name="menuStrings">
+    <property name="title">
+     <string>Strings</string>
+    </property>
+    <addaction name="actionFind_Strings"/>
+    <addaction name="actionSaved_Strings"/>
+   </widget>
+   <widget class="QMenu" name="menuVirusTotal">
+    <property name="title">
+     <string>VirusTotal</string>
+    </property>
+    <addaction name="actionWebsite"/>
+    <addaction name="actionUpload_File"/>
+   </widget>
+   <widget class="QMenu" name="menuChecklist">
+    <property name="title">
+     <string>Checklist</string>
+    </property>
+    <addaction name="actionChecklistMain"/>
+    <addaction name="actionSeperate_Window"/>
+   </widget>
+   <widget class="QMenu" name="menuAdvanced">
+    <property name="title">
+     <string>Advanced</string>
+    </property>
+    <addaction name="actionDLL_s"/>
+    <addaction name="actionHex"/>
+    <addaction name="actionDisassembly"/>
+   </widget>
+   <addaction name="menuFile"/>
+   <addaction name="menuPackers"/>
+   <addaction name="menuStrings"/>
+   <addaction name="menuAdvanced"/>
+   <addaction name="menuVirusTotal"/>
+   <addaction name="menuChecklist"/>
+  </widget>
+  <action name="actionOpen">
+   <property name="text">
+    <string>Open</string>
+   </property>
+  </action>
+  <action name="actionOpen_From_Backups">
+   <property name="text">
+    <string>Open From Backups</string>
+   </property>
+  </action>
+  <action name="actionGenerate_Hash">
+   <property name="text">
+    <string>Generate Hash</string>
+   </property>
+  </action>
+  <action name="actionCreate_Backup">
+   <property name="text">
+    <string>Create Backup</string>
+   </property>
+  </action>
+  <action name="actionExit">
+   <property name="text">
+    <string>Exit</string>
+   </property>
+  </action>
+  <action name="actionCheck_if_Packed">
+   <property name="text">
+    <string>Check if Packed</string>
+   </property>
+  </action>
+  <action name="actionPack">
+   <property name="text">
+    <string>Pack</string>
+   </property>
+  </action>
+  <action name="actionUnpack">
+   <property name="text">
+    <string>Unpack</string>
+   </property>
+  </action>
+  <action name="actionFind_Strings">
+   <property name="text">
+    <string>Find Strings</string>
+   </property>
+  </action>
+  <action name="action4_or_more_characters">
+   <property name="text">
+    <string>4 or more characters</string>
+   </property>
+  </action>
+  <action name="actionSaved_Strings">
+   <property name="text">
+    <string>Saved Strings</string>
+   </property>
+   <property name="iconVisibleInMenu">
+    <bool>true</bool>
+   </property>
+  </action>
+  <action name="actionDLL_s">
+   <property name="text">
+    <string>DLL's</string>
+   </property>
+  </action>
+  <action name="actionHex">
+   <property name="text">
+    <string>Hex</string>
+   </property>
+  </action>
+  <action name="actionDisassembly">
+   <property name="text">
+    <string>Disassembly</string>
+   </property>
+  </action>
+  <action name="actionWebsite">
+   <property name="text">
+    <string>Visit Website</string>
+   </property>
+  </action>
+  <action name="actionUpload_File">
+   <property name="text">
+    <string>Upload File</string>
+   </property>
+  </action>
+  <action name="actionChecklistMain">
+   <property name="text">
+    <string>Main Window</string>
+   </property>
+  </action>
+  <action name="actionSeperate_Window">
+   <property name="text">
+    <string>Seperate Window</string>
+   </property>
+  </action>
  </widget>
  <resources/>
  <connections/>

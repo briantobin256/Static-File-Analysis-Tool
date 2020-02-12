@@ -12,3 +12,8 @@ DialogBox::~DialogBox()
 {
     delete ui;
 }
+
+void DialogBox::on_pushButton_clicked()
+{
+    this->close();
+}
