@@ -26,6 +26,7 @@ MainWindow::MainWindow(QWidget *parent)
     checklistBuilt = false;
 
     fileHash = "40bd001563085fc35165329ea1ff5c5ecbdbbeef";
+    // test
 
     refreshWindow();
 }
