@@ -11,6 +11,7 @@
 #include <QWheelEvent>
 #include <QVBoxLayout>
 #include <QCheckBox>
+#include <QCryptographicHash>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -29,7 +30,8 @@ public:
     QString basicWindowName;
     QString extendedWindowName;
     QString fileName;
-    QString fileHash;
+    //QString fileHash;
+    QByteArray fileHash;
     QStringList strings;
 
     QMap<int, bool> savedStringMap;

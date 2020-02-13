@@ -25,7 +25,7 @@ MainWindow::MainWindow(QWidget *parent)
     hexBuilt = false;
     checklistBuilt = false;
 
-    fileHash = "40bd001563085fc35165329ea1ff5c5ecbdbbeef";
+    fileHash = "";//40bd001563085fc35165329ea1ff5c5ecbdbbeef";
     // test
 
     refreshWindow();
@@ -40,18 +40,16 @@ void MainWindow::on_actionGenerate_Hash_triggered()
 {
     DialogBox dialogBox;
     dialogBox.setWindowTitle("Hash");
-    //dialogBox.setModal(true);
     QLabel *label = new QLabel(&dialogBox);
 
     if (fileOpened) {
-
         // generate hash
-        if (fileHash != "") {
-
+        if (!hashBuilt) {
+            QCryptographicHash hash(QCryptographicHash::Sha1);
+            hash.addData(rawData, fileSize);
+            fileHash = hash.result();
         }
-
-        label->setText("The SHA-1 hash of the current file is:\n" + fileHash);
-
+        label->setText("The SHA-1 hash of the current file is:\n" + fileHash.toHex());
     }
     else {
         label->setText("No file is selected.");
