@@ -301,7 +301,7 @@ void MainWindow::refreshHex()
                 uc = static_cast<unsigned char>(c);
 
                 // append char to decoded text
-                if (uc < 127 && uc > 0) {
+                if (uc >= 32 && uc < 127) {
                     rowText += c;
                 }
                 else {
