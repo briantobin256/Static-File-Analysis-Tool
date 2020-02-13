@@ -26,13 +26,14 @@ public:
     ~MainWindow();
 
     char *rawData;
+    char *data;
 
     QString basicWindowName;
     QString extendedWindowName;
     QString fileName;
-    //QString fileHash;
-    QByteArray fileHash;
+    QString fileHash;
     QStringList strings;
+    QString backupLoc;
 
     QMap<int, bool> savedStringMap;
 
@@ -92,6 +93,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    QString generateHash(char *data, int size);
     bool isPacked();
     void refreshHex();
     void findStrings();

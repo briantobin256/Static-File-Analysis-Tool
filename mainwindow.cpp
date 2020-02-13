@@ -25,8 +25,8 @@ MainWindow::MainWindow(QWidget *parent)
     hexBuilt = false;
     checklistBuilt = false;
 
-    fileHash = "";//40bd001563085fc35165329ea1ff5c5ecbdbbeef";
-    // test
+    fileHash = "";
+    backupLoc = "";
 
     refreshWindow();
 }
@@ -43,13 +43,10 @@ void MainWindow::on_actionGenerate_Hash_triggered()
     QLabel *label = new QLabel(&dialogBox);
 
     if (fileOpened) {
-        // generate hash
         if (!hashBuilt) {
-            QCryptographicHash hash(QCryptographicHash::Sha1);
-            hash.addData(rawData, fileSize);
-            fileHash = hash.result();
+            fileHash = generateHash(rawData, fileSize);
+            label->setText("The SHA-1 hash of the current file is:\n" + fileHash);
         }
-        label->setText("The SHA-1 hash of the current file is:\n" + fileHash.toHex());
     }
     else {
         label->setText("No file is selected.");
@@ -61,13 +58,100 @@ void MainWindow::on_actionGenerate_Hash_triggered()
     refreshWindow();
 }
 
+QString MainWindow::generateHash(char *data , int size)
+{
+    QCryptographicHash hash(QCryptographicHash::Sha1);
+    hash.addData(data, size);
+    QByteArray hashArray = hash.result();
+    QString hashString = hashArray.toHex();
+    hashString = hashString.toUpper();
+    return hashString;
+}
+
 void MainWindow::on_actionCreate_Backup_triggered()
 {
     DialogBox dialogBox;
     dialogBox.setWindowTitle("Backup");
-    dialogBox.exec();
+    QLabel *label = new QLabel(&dialogBox);
 
-    backupBuilt = true;
+    if (fileOpened) {
+        QDir dir;
+
+        if (backupLoc == "") {
+            label->setText("Please select a location to store backups.");
+            dialogBox.exec();
+            QFile file(QFileDialog::getExistingDirectory(this, "Select a location to store backups."));
+            backupLoc = file.fileName();
+            dir.setPath(backupLoc);
+        }
+
+        if (backupLoc != "") {
+            if (!hashBuilt) {
+                fileHash = generateHash(rawData, fileSize);
+            }
+
+            // check if file exists with current backup name
+            QString backupName = fileHash + ".bak";
+            bool backupConflict = false;
+            int i = 0;
+            QFileInfoList list = dir.entryInfoList();
+            while (!backupConflict && i < list.size()) {
+                QFileInfo fileInfo = list.at(i);
+                if (backupName == fileInfo.fileName()) {
+                    backupConflict = true;
+                }
+                i++;
+            }
+
+            if (backupConflict) {
+                label->setText("A backup of this file already exists.");
+            }
+            else {
+                // create backup
+                QString fullName = backupLoc + 92 + backupName;
+                QFile file(fullName);
+                QString verificationHash;
+
+                if (file.open(QIODevice::ReadWrite))
+                {
+                    QDataStream ds(&file);
+                    ds.writeRawData(rawData, fileSize);
+
+
+                    // temp
+                    verificationHash = fileHash;
+                    /*
+                    // verify data
+                    int size = file.size();
+                    data = new char[size];
+
+                    QDataStream rs(&file);
+                    rs.readRawData(data, size);
+
+                    verificationHash = generateHash(data, size);
+                    */
+                    file.close();
+                }
+
+                if (verificationHash == fileHash) {
+                    label->setText("Backup Succesful.\n" + fileName + "\nhas been saved as\n" + fileHash + ".bak");
+                }
+                else {
+                    label->setText("Backup Failed Succesfully.\n" + fileName + "\nhas been saved as\n" + fileHash + ".bak\nhowever the backup is does not match the original file.");
+                }
+            }
+            backupBuilt = true;
+        }
+        else {
+            label->setText("No location selected.");
+        }
+        dialogBox.exec();
+    }
+    else {
+        label->setText("You must first select a file to analyse before anything can be backed up.");
+        dialogBox.exec();
+    }
+
     refreshWindow();
 }
 
@@ -231,26 +315,24 @@ void MainWindow::refreshHex()
         int maxCols = 16;
         int dataStartPoint = ui->hexScrollBar->value();
 
-        if (!hexBuilt) {
-            // if file is big enough to have a scroll bar
-            if (fileSize / (displayRows * displayCols) > 0) {
+        // if file is big enough to have a scroll bar
+        if (fileSize / (displayRows * displayCols) > 0) {
 
-                // if last row is full with data
-                if (fileSize % displayCols == 0) {
-                    ui->hexScrollBar->setMaximum(fileSize / displayCols - 16);
-                }
-                else {
-                    ui->hexScrollBar->setMaximum(fileSize / displayCols - 15);
-                }
+            // if last row is full with data
+            if (fileSize % displayCols == 0) {
+                ui->hexScrollBar->setMaximum(fileSize / displayCols - 16);
             }
             else {
-                ui->hexScrollBar->setMaximum(0);
-                if (fileSize > 0) {
-                    displayRows = fileSize / displayRows + 1;
-                }
-                else {
-                    displayRows = 0;
-                }
+                ui->hexScrollBar->setMaximum(fileSize / displayCols - 15);
+            }
+        }
+        else {
+            ui->hexScrollBar->setMaximum(0);
+            if (fileSize > 0) {
+                displayRows = fileSize / displayRows + 1;
+            }
+            else {
+                displayRows = 0;
             }
         }
 
