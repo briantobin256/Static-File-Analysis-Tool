@@ -110,7 +110,6 @@ bool MainWindow::isPacked()
 
 
 
-
     return true;
 }
 
@@ -351,6 +350,8 @@ void MainWindow::findStrings()
 
         QString item;
         stringCount = 0;
+        bool nullSpaced = false;
+        int stringLength = 3;
 
         // for each char in file
         for (int i = 0; i < fileSize; i++) {
@@ -361,26 +362,53 @@ void MainWindow::findStrings()
 
             // check if (unsigned) char is printable
             // if char is between 'space' and '~' on the ascii table or char is horizontal tab
-            if ((uc >= 32 && uc <= 126) || uc == 9) {
-
+            if ((uc >= 32 && uc <= 126)) {
                 item += c;
-
             }
-            // if char is null, carriage return or new line AND current string is greater than or equal to 3 (end of string)
-            else if ((uc == 0 || uc == 13 || uc == 10) && item.size() >= 3) {
-
-                strings.insert(stringCount,item);
-                stringCount++;
-                item = "";
-
-            }
-            // if char is bad
             else {
-
-                item = "";
-
+                // if item has value and current char is null and last value is not null
+                if (uc == 0) {
+                    // check if this may be a null spaced string
+                    if (item.size() == 1 && i + 1 < fileSize) {
+                        char tmpc = rawData[i + 1];
+                        unsigned char tmpuc = static_cast<unsigned char>(tmpc);
+                        if (tmpuc >= 32 && tmpuc <= 126) {
+                            nullSpaced = true;
+                        }
+                    }
+                    // if nullspaced, check if next char is null and if next two chars are printable
+                    else if (nullSpaced) {
+                        if (i + 2 < fileSize) {
+                            char tmpc1 = rawData[i + 1], tmpc2 = rawData[i + 2];
+                            unsigned char tmpuc1 = static_cast<unsigned char>(tmpc1), tmpuc2 = static_cast<unsigned char>(tmpc2);
+                            if (tmpuc1 == 0 || ((tmpuc1 >= 32 && tmpuc1 <= 126) && (tmpuc2 >= 32 && tmpuc2 <= 126))) {
+                                nullSpaced = false;
+                                if (item.size() >= stringLength) {
+                                    strings.insert(stringCount,item);
+                                    stringCount++;
+                                    item = "";
+                                }
+                            }
+                        }
+                    }
+                    else if (item.size() >= stringLength) {
+                        strings.insert(stringCount,item);
+                        stringCount++;
+                        item = "";
+                    }
+                    else {
+                        item = "";
+                    }
+                }
+                else if (item.size() >= stringLength) {
+                    strings.insert(stringCount,item);
+                    stringCount++;
+                    item = "";
+                }
+                else {
+                    item = "";
+                }
             }
-
         }
 
         // display things
@@ -688,27 +716,14 @@ void MainWindow::on_stringSearchButton_clicked()
                 int k;
                 // for the length of the search string
                 for (k = 0; k < searchLength; k++) {
-                    // testing with non case sensitive
-
-                    // if searching is capital letter
-                    if (search[k] >= 65 && search[k] <= 90) {
-
-                        qDebug() << "capital letter";
-                    }
-
-
                     // if chars dont match
                     if (searching[j + k] != search[k]) {
                         // if case sensitive match
-                        if ((searching[j + k].unicode() + 32) == search[k] || (searching[j + k].unicode() - 32) == search[k]) {
-
-                        }
-                        else {
+                        if ((searching[j + k].unicode() + 32) != search[k] && (searching[j + k].unicode() - 32) != search[k]) {
                             break;
                         }
                     }
                 }
-
                 if (k == searchLength) {
                     found = true;
                 }
