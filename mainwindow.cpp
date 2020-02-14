@@ -76,14 +76,11 @@ void MainWindow::on_actionCreate_Backup_triggered()
 
     if (fileOpened) {
         QDir dir;
-
-        if (backupLoc == "") {
-            label->setText("Please select a location to store backups.");
-            dialogBox.exec();
-            QFile file(QFileDialog::getExistingDirectory(this, "Select a location to store backups."));
-            backupLoc = file.fileName();
-            dir.setPath(backupLoc);
-        }
+        label->setText("Please select a location to store backups.");
+        dialogBox.exec();
+        QFile file(QFileDialog::getExistingDirectory(this, "Select a location to store backups."));
+        backupLoc = file.fileName();
+        dir.setPath(backupLoc);
 
         if (backupLoc != "") {
             if (!hashBuilt) {
@@ -104,33 +101,37 @@ void MainWindow::on_actionCreate_Backup_triggered()
             }
 
             if (backupConflict) {
-                label->setText("A backup of this file already exists.");
+                if (backupName == fileName) {
+                    label->setText("The current file is the backup file. Rename it to back it up again.");
+                }
+                else {
+                    label->setText("A backup of this file already exists.");
+                }
             }
             else {
                 // create backup
                 QString fullName = backupLoc + 92 + backupName;
                 QFile file(fullName);
-                QString verificationHash;
 
                 if (file.open(QIODevice::ReadWrite))
                 {
                     QDataStream ds(&file);
                     ds.writeRawData(rawData, fileSize);
+                    file.close();
+                }
 
+                // create verficication hash
+                QFile backup(fullName);
+                QString verificationHash;
 
-                    // temp
-                    verificationHash = fileHash;
-                    /*
-                    // verify data
+                if (backup.open(QIODevice::ReadOnly))
+                {
                     int size = file.size();
                     data = new char[size];
-
-                    QDataStream rs(&file);
-                    rs.readRawData(data, size);
-
+                    QDataStream ds(&backup);
+                    ds.readRawData(data, size);
+                    backup.close();
                     verificationHash = generateHash(data, size);
-                    */
-                    file.close();
                 }
 
                 if (verificationHash == fileHash) {
@@ -236,7 +237,6 @@ void MainWindow::on_actionSaved_Strings_triggered()
 
 void MainWindow::on_actionHex_triggered()
 {
-    // CAN FIT MAX 4GB FILE (row name combinations)
     ui->stackedWidget->setCurrentIndex(4);
     ui->hexTable->horizontalHeader()->resizeSection(17, 150);
     refreshWindow();
@@ -245,55 +245,75 @@ void MainWindow::on_actionHex_triggered()
 
 void MainWindow::on_actionOpen_triggered()
 {
-    // cancelling this throws exception
     QFile file(QFileDialog::getOpenFileName(this, "Select a file to analyse", "D:/Downloads"));
 
-    if (file.open(QIODevice::ReadOnly)) {
+    if (file.fileName() != "") {
 
-        QDataStream ds(&file);
+        // max size of 4GB 4294967294, 2GB 2147483647, 512MB 536870912
+        if (file.size() < 4294967296) {
 
-        // if file too big eg. over 4GB, kill here, display too big
-        fileSize = file.size();
-        rawData = new char[fileSize];
-        ds.readRawData(rawData, fileSize);
-        file.close();
+            if (file.size() > 10485760) {
 
-        // MAKE OWN FUNCTION
-        // reset checks
-        backupBuilt = false;
-        hashBuilt = false;
-        packChecked = false;
-        packPacked = false;
-        packUnpacked = false;
-        fileOpened = true;
-        stringsBuilt = false;
-        stringsSaved = false;
-        dllsBuilt = false;
-        hexBuilt = false;
-        checklistBuilt = false;
-        ui->hexScrollBar->setValue(0);
-        strings.clear();
+                DialogBox dialogBox;
+                dialogBox.setWindowTitle("Wait");
+                QLabel *label = new QLabel(&dialogBox);
+                label->setText("The file you choose is over 10MB.\nEven though this tool supports files up to 4GB,\nIt will be noticiably slower for most of the functions and things may not work as intended.");
+                dialogBox.exec();
 
-        // get file name
-        QString fullFileName = file.fileName();
-        bool slashFound = false;
-        int i = fullFileName.size() - 1;
+                if (file.open(QIODevice::ReadOnly)) {
 
-        while (!slashFound && i >= 0) {
-            if (fullFileName[i] == 47 || fullFileName[i] == 92) {
-                slashFound = true;
-            }
-            else {
-                i--;
+                    QDataStream ds(&file);
+                    fileSize = file.size();
+                    rawData = new char[fileSize];
+                    ds.readRawData(rawData, fileSize);
+                    file.close();
+
+                    // MAKE OWN FUNCTION
+                    // reset checks
+                    backupBuilt = false;
+                    hashBuilt = false;
+                    packChecked = false;
+                    packPacked = false;
+                    packUnpacked = false;
+                    fileOpened = true;
+                    stringsBuilt = false;
+                    stringsSaved = false;
+                    dllsBuilt = false;
+                    hexBuilt = false;
+                    checklistBuilt = false;
+                    ui->hexScrollBar->setValue(0);
+                    strings.clear();
+
+                    // get file name
+                    QString fullFileName = file.fileName();
+                    bool slashFound = false;
+                    int i = fullFileName.size() - 1;
+
+                    while (!slashFound && i >= 0) {
+                        if (fullFileName[i] == 47 || fullFileName[i] == 92) {
+                            slashFound = true;
+                        }
+                        else {
+                            i--;
+                        }
+                    }
+
+                    if (slashFound) {
+                        fileName = fullFileName.mid(i + 1, fullFileName.size() - i);
+                    }
+
+                    basicWindowName = "Static File Analysis Tool - " + fileName;
+                    refreshWindow();
+                }
             }
         }
-
-        if (slashFound) {
-            fileName = fullFileName.mid(i + 1, fullFileName.size() - i);
+        else {
+            DialogBox dialogBox;
+            dialogBox.setWindowTitle("Error");
+            QLabel *label = new QLabel(&dialogBox);
+            label->setText("The file you choose is too big.\nIt must be smaller than 4GB.");
+            dialogBox.exec();
         }
-
-        basicWindowName = "Static File Analysis Tool - " + fileName;
-        refreshWindow();
     }
 }
 
