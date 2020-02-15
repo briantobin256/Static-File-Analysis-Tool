@@ -24,6 +24,7 @@ MainWindow::MainWindow(QWidget *parent)
     dllsBuilt = false;
     hexBuilt = false;
     checklistBuilt = false;
+    firstStringsRefresh = true;
 
     fileHash = "";
     backupLoc = "";
@@ -127,7 +128,7 @@ void MainWindow::on_actionCreate_Backup_triggered()
                 if (backup.open(QIODevice::ReadOnly))
                 {
                     int size = file.size();
-                    data = new char[size];
+                    char *data = new char[size];
                     QDataStream ds(&backup);
                     ds.readRawData(data, size);
                     backup.close();
@@ -163,13 +164,10 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
     QLabel *label = new QLabel(&dialogBox);
 
     if (fileOpened) {
-
         if (!packChecked) {
-
             if (isPacked()) {
                 label->setText("The current file IS packed using UPX.");
             }
-
         }
         else {
             label->setText("The current file is NOT packed using UPX.");
@@ -179,21 +177,14 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
         label->setText("No file is selected.");
     }
 
-
     dialogBox.exec();
-
     packChecked = true;
     refreshWindow();
 }
 
 bool MainWindow::isPacked()
 {
-
-
-
-
-
-    return true;
+    return false;
 }
 
 void MainWindow::on_actionPack_triggered()
@@ -253,58 +244,59 @@ void MainWindow::on_actionOpen_triggered()
         if (file.size() < 4294967296) {
 
             if (file.size() > 10485760) {
-
                 DialogBox dialogBox;
                 dialogBox.setWindowTitle("Wait");
                 QLabel *label = new QLabel(&dialogBox);
                 label->setText("The file you choose is over 10MB.\nEven though this tool supports files up to 4GB,\nIt will be noticiably slower for most of the functions and things may not work as intended.");
                 dialogBox.exec();
+            }
 
-                if (file.open(QIODevice::ReadOnly)) {
+            if (file.open(QIODevice::ReadOnly)) {
 
-                    QDataStream ds(&file);
-                    fileSize = file.size();
-                    rawData = new char[fileSize];
-                    ds.readRawData(rawData, fileSize);
-                    file.close();
+                QDataStream ds(&file);
+                fileSize = file.size();
+                rawData = new char[fileSize];
+                ds.readRawData(rawData, fileSize);
+                file.close();
 
-                    // MAKE OWN FUNCTION
-                    // reset checks
-                    backupBuilt = false;
-                    hashBuilt = false;
-                    packChecked = false;
-                    packPacked = false;
-                    packUnpacked = false;
-                    fileOpened = true;
-                    stringsBuilt = false;
-                    stringsSaved = false;
-                    dllsBuilt = false;
-                    hexBuilt = false;
-                    checklistBuilt = false;
-                    ui->hexScrollBar->setValue(0);
-                    strings.clear();
+                // MAKE OWN FUNCTION
+                // reset checks
+                backupBuilt = false;
+                hashBuilt = false;
+                packChecked = false;
+                packPacked = false;
+                packUnpacked = false;
+                fileOpened = true;
+                stringsBuilt = false;
+                stringsSaved = false;
+                dllsBuilt = false;
+                hexBuilt = false;
+                checklistBuilt = false;
+                firstStringsRefresh = true;
+                savedStringMap.clear();
+                ui->stringsScrollBar->setValue(0);
+                ui->hexScrollBar->setValue(0);
 
-                    // get file name
-                    QString fullFileName = file.fileName();
-                    bool slashFound = false;
-                    int i = fullFileName.size() - 1;
+                // get file name
+                QString fullFileName = file.fileName();
+                bool slashFound = false;
+                int i = fullFileName.size() - 1;
 
-                    while (!slashFound && i >= 0) {
-                        if (fullFileName[i] == 47 || fullFileName[i] == 92) {
-                            slashFound = true;
-                        }
-                        else {
-                            i--;
-                        }
+                while (!slashFound && i >= 0) {
+                    if (fullFileName[i] == 47 || fullFileName[i] == 92) {
+                        slashFound = true;
                     }
-
-                    if (slashFound) {
-                        fileName = fullFileName.mid(i + 1, fullFileName.size() - i);
+                    else {
+                        i--;
                     }
-
-                    basicWindowName = "Static File Analysis Tool - " + fileName;
-                    refreshWindow();
                 }
+
+                if (slashFound) {
+                    fileName = fullFileName.mid(i + 1, fullFileName.size() - i);
+                }
+
+                basicWindowName = "Static File Analysis Tool - " + fileName;
+                refreshWindow();
             }
         }
         else {
@@ -314,6 +306,13 @@ void MainWindow::on_actionOpen_triggered()
             label->setText("The file you choose is too big.\nIt must be smaller than 4GB.");
             dialogBox.exec();
         }
+    }
+    else {
+        DialogBox dialogBox;
+        dialogBox.setWindowTitle("Error");
+        QLabel *label = new QLabel(&dialogBox);
+        label->setText("No file selected.");
+        dialogBox.exec();
     }
 }
 
@@ -523,14 +522,24 @@ void MainWindow::refreshStrings()
 {
     if (fileOpened) {
 
-        saveDisplayedStrings();
+        if (!firstStringsRefresh) {
+            saveDisplayedStrings();
+        }
+        else {
+            firstStringsRefresh = false;
+        }
+        ui->stringList->clear();
 
-        maxDisplayStrings = 24;
+        maxDisplayStrings = 24; // eventually based on ui things
         int displayStringCount = maxDisplayStrings;
         stringOffset = ui->stringsScrollBar->value() * maxDisplayStrings;
 
-        ui->stringsScrollBar->setMaximum(stringCount / maxDisplayStrings);
-        ui->stringList->clear();
+        if (stringCount % maxDisplayStrings > 0) {
+            ui->stringsScrollBar->setMaximum(stringCount / maxDisplayStrings);
+        }
+        else {
+            ui->stringsScrollBar->setMaximum(stringCount / maxDisplayStrings - 1);
+        }
 
         if (ui->stringsScrollBar->value() == ui->stringsScrollBar->maximum()) {
             if (stringCount % maxDisplayStrings > 0) {
@@ -687,7 +696,6 @@ void MainWindow::refreshChecklist()
 
         if (!checklistBuilt) {
             ui->checklistFileNameValue->setText(fileName);
-            ui->checklistFileHashValue->setText(fileHash);
 
             // uncheck all steps
             for (int i = 0; i < ui->checklistMainStepsList->count(); i++) {
@@ -697,6 +705,8 @@ void MainWindow::refreshChecklist()
             ui->checklistMainStepsList->item(0)->setCheckState(Qt::Checked);
             checklistBuilt = true;
         }
+
+        ui->checklistFileHashValue->setText(fileHash);
 
         // progress bar stuff
         int progress = 1;

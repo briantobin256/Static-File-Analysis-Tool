@@ -26,7 +26,6 @@ public:
     ~MainWindow();
 
     char *rawData;
-    char *data;
 
     QString basicWindowName;
     QString extendedWindowName;
@@ -47,6 +46,7 @@ public:
     int fileSize;
 
     bool backupBuilt;
+    bool firstStringsRefresh;
     bool hashBuilt;
     bool packChecked;
     bool packPacked;
