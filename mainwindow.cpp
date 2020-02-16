@@ -468,11 +468,13 @@ void MainWindow::findStrings()
                 // if item has value and current char is null and last value is not null
                 if (uc == 0) {
                     // check if this may be a null spaced string
-                    if (item.size() == 1 && i + 1 < fileSize) {
-                        char tmpc = rawData[i + 1];
-                        unsigned char tmpuc = static_cast<unsigned char>(tmpc);
-                        if (tmpuc >= 32 && tmpuc <= 126) {
-                            nullSpaced = true;
+                    if (item.size() == 1 && i + 3 < fileSize) {
+                        char tmpc1 = rawData[i + 1], tmpc2 = rawData[i + 2], tmpc3 = rawData[i + 3];
+                        unsigned char tmpuc1 = static_cast<unsigned char>(tmpc1);
+                        unsigned char tmpuc2 = static_cast<unsigned char>(tmpc2);
+                        unsigned char tmpuc3 = static_cast<unsigned char>(tmpc3);
+                        if ((tmpuc1 >= 32 && tmpuc1 <= 126) && (tmpuc2 == 0) && (tmpuc3 >= 32 && tmpuc3 <= 126)) {
+                                nullSpaced = true;
                         }
                     }
                     // if nullspaced, check if next char is null and if next two chars are printable
@@ -673,14 +675,62 @@ void MainWindow::findDLLs()
         ui->DLL_List->clear();
         QStringList dlls;
 
+        //
+        // change to search for dll using search function
+        // if last dll append remaining function calls to kernel32
+        //
+
         // for each string found
         for (int i = 0; i < stringCount; i++) {
 
+            // any strings ending in ".dll" or ".DLL"
             QString string = strings[i];
             QStringRef subString(&string, string.length() - 4, 4);
 
-            if (subString == ".dll" || subString == ".DLL") {
-                dlls += string;
+            // valid imported dll (will be all caps except .dll part)
+            if (subString == ".dll") {
+                string = string.mid(0, string.length() - 4);
+                QString tmpString = string;
+                tmpString = tmpString.toUpper();
+
+                if (string == tmpString || string == "kernel32") {
+                    dlls += strings[i];
+
+                    // find this dlls functions
+                    bool goodFunction = true;
+                    int j = i - 1;
+                    if (string == "kernel32") {
+                        j = i + 1;
+                    }
+
+                    while (goodFunction) {
+                        QString tmp = strings[j];
+                        if (tmp[0] >= 65 && tmp[0] <= 90 && strings[j].size() >= 5) {
+                            for (int k = 1; k < tmp.size(); k++) {
+                                if ((tmp[k] >= 65 && tmp[k] <= 90) || (tmp[k] >= 97 && tmp[k] <= 122)) {
+
+                                }
+                                else {
+                                    goodFunction = false;
+                                }
+                            }
+                            if (goodFunction) {
+                                QString function = "    ";
+                                function.append(tmp);
+                                dlls += function;
+                            }
+                        }
+                        else {
+                            goodFunction = false;
+                        }
+                        if (string == "kernel32") {
+                            j++;
+                        }
+                        else {
+                            j--;
+                        }
+                    }
+                }
             }
         }
 
@@ -800,12 +850,12 @@ void MainWindow::on_stringSearchButton_clicked()
 
         QString search = ui->searchString->text();
         if (stringsAdvancedSearchString != search) {
-            stringsAdvancedSearchIterator = 0;
+            stringsAdvancedSearchIndex = 0;
         }
         stringsAdvancedSearchString = search;
 
         bool found = false;
-        while (!found && stringsAdvancedSearchIterator < stringCount) {
+        while (!found && stringsAdvancedSearchIndex < stringCount) {
 
             //
             // starting search icon
@@ -817,9 +867,9 @@ void MainWindow::on_stringSearchButton_clicked()
 
             //
 
-            QString searching = strings[stringsAdvancedSearchIterator];
+            QString searching = strings[stringsAdvancedSearchIndex];
             int searchLength = search.length();
-            int searchedLength = strings[stringsAdvancedSearchIterator].length();
+            int searchedLength = strings[stringsAdvancedSearchIndex].length();
 
             // for each starting position the search string could fit into the searched string
             for (int j = 0; j <= searchedLength - searchLength; j++) {
@@ -838,7 +888,7 @@ void MainWindow::on_stringSearchButton_clicked()
                     found = true;
                 }
             }
-            stringsAdvancedSearchIterator++;
+            stringsAdvancedSearchIndex++;
         }
 
         //
@@ -851,22 +901,22 @@ void MainWindow::on_stringSearchButton_clicked()
         //
 
         if (found) {
-            if (stringsAdvancedSearchIterator % maxDisplayStrings == 0) {
-                ui->stringsScrollBar->setValue((stringsAdvancedSearchIterator / maxDisplayStrings) - 1);
+            if (stringsAdvancedSearchIndex % maxDisplayStrings == 0) {
+                ui->stringsScrollBar->setValue((stringsAdvancedSearchIndex / maxDisplayStrings) - 1);
             }
             else {
-                ui->stringsScrollBar->setValue(stringsAdvancedSearchIterator / maxDisplayStrings);
+                ui->stringsScrollBar->setValue(stringsAdvancedSearchIndex / maxDisplayStrings);
             }
             // highlight string
             //qDebug() << "search string: " << stringsAdvancedSearchIterator;
             //qDebug() << "search string: " << strings[stringsAdvancedSearchIterator - 1];
             //ui->stringList->item((stringsAdvancedSearchIterator % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setSelected(true);
-            ui->stringList->item((stringsAdvancedSearchIterator % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setCheckState(Qt::Checked);
+            ui->stringList->item((stringsAdvancedSearchIndex % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setCheckState(Qt::Checked);
             //ui->stringList->setFocus();
             refreshStrings();
         }
-        else if (stringsAdvancedSearchIterator == stringCount) {
-            stringsAdvancedSearchIterator = 0;
+        else if (stringsAdvancedSearchIndex == stringCount) {
+            stringsAdvancedSearchIndex = 0;
         }
     }
 }

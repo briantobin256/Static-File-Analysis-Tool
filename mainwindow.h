@@ -39,7 +39,8 @@ public:
     int stringCount;
     int stringOffset;
     int maxDisplayStrings;
-    int stringsAdvancedSearchIterator;
+    int stringsAdvancedSearchIndex;
+    int dllSearchIndex;
     QString stringsAdvancedSearchString;
 
     bool fileOpened;
@@ -103,6 +104,10 @@ private:
     void findDLLs();
     void refreshChecklist();
     void refreshWindow();
+
+    //void searchStringList;
+
+
     virtual void wheelEvent(QWheelEvent *event);
 };
 #endif // MAINWINDOW_H
