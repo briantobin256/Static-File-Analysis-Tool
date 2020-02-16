@@ -476,6 +476,9 @@ void MainWindow::findStrings()
                         if ((tmpuc1 >= 32 && tmpuc1 <= 126) && (tmpuc2 == 0) && (tmpuc3 >= 32 && tmpuc3 <= 126)) {
                                 nullSpaced = true;
                         }
+                        else {
+                            item = "";
+                        }
                     }
                     // if nullspaced, check if next char is null and if next two chars are printable
                     else if (nullSpaced) {
@@ -486,6 +489,7 @@ void MainWindow::findStrings()
                                 nullSpaced = false;
                                 if (item.size() >= stringLength) {
                                     strings.insert(stringCount,item);
+                                    stringsMap[item] = true;
                                     stringCount++;
                                     item = "";
                                 }
@@ -494,6 +498,7 @@ void MainWindow::findStrings()
                     }
                     else if (item.size() >= stringLength) {
                         strings.insert(stringCount,item);
+                        stringsMap[item] = true;
                         stringCount++;
                         item = "";
                     }
@@ -503,6 +508,7 @@ void MainWindow::findStrings()
                 }
                 else if (item.size() >= stringLength) {
                     strings.insert(stringCount,item);
+                    stringsMap[item] = true;
                     stringCount++;
                     item = "";
                 }
@@ -674,6 +680,53 @@ void MainWindow::findDLLs()
     if (!dllsBuilt) {
         ui->DLL_List->clear();
         QStringList dlls;
+        QStringList dllsFunctions;
+
+        // for each string found
+        for (int i = 0; i < stringCount; i++) {
+
+            // any strings ending in ".dll" or ".DLL"
+            QString string = strings[i];
+            QStringRef subString(&string, string.length() - 4, 4);
+
+            if (subString == ".dll" || subString == ".DLL") {
+                string = string.toUpper();
+                dlls.append(string);
+            }
+        }
+
+        dlls.removeDuplicates();
+
+        for (int i = 0; i < dlls.size(); i++) {
+
+            QString dllFunctionsFileName = "DLL Functions/";
+            QString dllName = dlls[i], dllFunctionsFile = dllName;
+            dllFunctionsFile = dllName.mid(0, dllName.length() - 4);
+            dllFunctionsFile.append(".txt");
+            dllFunctionsFileName.append(dllFunctionsFile);
+
+            int dllSize = dllsFunctions.size() + 1;
+            QFile file(dllFunctionsFileName);
+            if (file.open(QIODevice::ReadOnly)) {
+
+                dllsFunctions.append(dllName);
+
+                QTextStream in(&file);
+                while (!in.atEnd()) {
+                    QString functionName = in.readLine();
+                    if (stringsMap[functionName]) {
+                        dllsFunctions.append("      " + functionName);
+                    }
+                }
+                file.close();
+            }
+
+            if (dllSize == dllsFunctions.size()) {
+                dllsFunctions.removeLast();
+            }
+        }
+
+        /*
 
         //
         // change to search for dll using search function
@@ -699,21 +752,31 @@ void MainWindow::findDLLs()
                     // find this dlls functions
                     bool goodFunction = true;
                     int j = i - 1;
-                    if (string == "kernel32") {
+                    if (string == "kernel32" || string == "MSVCRT") {
                         j = i + 1;
                     }
 
                     while (goodFunction) {
                         QString tmp = strings[j];
-                        if (tmp[0] >= 65 && tmp[0] <= 90 && strings[j].size() >= 5) {
+                        bool hasUpper = false, hasLower = false;
+                        if (((tmp[0] >= 65 && tmp[0] <= 90) || tmp[0] == 95) && strings[j].size() >= 5) {
                             for (int k = 1; k < tmp.size(); k++) {
-                                if ((tmp[k] >= 65 && tmp[k] <= 90) || (tmp[k] >= 97 && tmp[k] <= 122)) {
-
+                                // have at least on cap and one lower to get rid of some false postitives
+                                if (tmp[k] >= 65 && tmp[k] <= 90) {
+                                    hasUpper = true;
                                 }
-                                else {
+                                else if (tmp[k] >= 97 && tmp[k] <= 122) {
+                                    hasLower = true;
+                                }
+                                else if (tmp[k] != 95 && (tmp[k] < 48 || tmp[k] > 57)) {
                                     goodFunction = false;
                                 }
                             }
+
+                            if (!hasUpper || !hasLower) {
+                                goodFunction = false;
+                            }
+
                             if (goodFunction) {
                                 QString function = "    ";
                                 function.append(tmp);
@@ -723,7 +786,7 @@ void MainWindow::findDLLs()
                         else {
                             goodFunction = false;
                         }
-                        if (string == "kernel32") {
+                        if (string == "kernel32" || string == "MSVCRT") {
                             j++;
                         }
                         else {
@@ -733,9 +796,10 @@ void MainWindow::findDLLs()
                 }
             }
         }
+        */
 
-        dlls.removeDuplicates();
-        ui->DLL_List->addItems(dlls);
+        //dlls.removeDuplicates();
+        ui->DLL_List->addItems(dllsFunctions);
         dllsBuilt = true;
     }
 }

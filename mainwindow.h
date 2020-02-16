@@ -35,6 +35,7 @@ public:
     QString backupLoc;
 
     QMap<int, bool> savedStringMap;
+    QMap<QString, bool> stringsMap;
 
     int stringCount;
     int stringOffset;
