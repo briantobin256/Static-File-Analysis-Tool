@@ -44,10 +44,8 @@ void MainWindow::on_actionGenerate_Hash_triggered()
     QLabel *label = new QLabel(&dialogBox);
 
     if (fileOpened) {
-        if (!hashBuilt) {
-            fileHash = generateHash(rawData, fileSize);
-            label->setText("The SHA-1 hash of the current file is:\n" + fileHash);
-        }
+        fileHash = generateHash(rawData, fileSize);
+        label->setText("The SHA-1 hash of the current file is:\n" + fileHash);
     }
     else {
         label->setText("No file is selected.");
@@ -84,9 +82,8 @@ void MainWindow::on_actionCreate_Backup_triggered()
         dir.setPath(backupLoc);
 
         if (backupLoc != "") {
-            if (!hashBuilt) {
-                fileHash = generateHash(rawData, fileSize);
-            }
+
+            fileHash = generateHash(rawData, fileSize);
 
             // check if file exists with current backup name
             QString backupName = fileHash + ".bak";
@@ -826,6 +823,19 @@ void MainWindow::refreshChecklist()
         int progress = 1;
 
         if (hashBuilt) {
+            QString oldHash = fileHash;
+            fileHash = generateHash(rawData, fileSize);
+            ui->checklistFileHashValue->setText(fileHash);
+
+            if (oldHash != fileHash) {
+                DialogBox dialogBox;
+                dialogBox.setWindowTitle("Warning!");
+                QLabel *label = new QLabel(&dialogBox);
+                QString text = "Filehash has been changed from: " + oldHash + " to: " + fileHash;
+                label->setText(text);
+                dialogBox.exec();
+            }
+
             ui->checklistMainStepsList->item(1)->setCheckState(Qt::Checked);
             progress++;
         }
