@@ -16,6 +16,7 @@
 #include <QListWidgetItem>
 #include <QClipboard>
 #include <QMessageBox>
+#include <QCoreApplication>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }

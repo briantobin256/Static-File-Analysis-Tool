@@ -178,23 +178,13 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
 bool MainWindow::isPacked()
 {
     if (!packChecked) {
-        if (!hashBuilt) {
-            fileHash = generateHash(rawData, fileSize);
-        }
 
-        QFile upx(fileHash + ".exe");
-        if (upx.open(QIODevice::ReadWrite)) {
-            QDataStream ds(&upx);
-            ds.writeRawData(rawData, fileSize);
-            upx.close();
-        }
-
-        QString command = "upx -l -oFILE " + fileHash + ".exe > upx.txt";
-
+        QString fullFileName = directory + fileName;
+        QString command = "upx -l " + fullFileName + " > upx.tmp";
         system(qPrintable(command));
 
         // check output
-        QFile upxCheck("upx.txt");
+        QFile upxCheck("upx.tmp");
         if (upxCheck.open(QIODevice::ReadOnly)) {
             QTextStream in(&upxCheck);
             int i = 0;
@@ -210,6 +200,10 @@ bool MainWindow::isPacked()
                 packed = false;
             }
         }
+        // remove tmp file
+        QDir path;
+        path.setPath(path.currentPath());
+        path.remove("upx.tmp");
         packChecked = true;
     }
     return packed;
