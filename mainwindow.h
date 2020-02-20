@@ -122,6 +122,8 @@ private:
     Ui::MainWindow *ui;
     QString generateHash(char *data, int size);
     bool isPacked();
+    bool pack();
+    bool unpack();
     void refreshHex();
     void findStrings();
     void refreshStrings();

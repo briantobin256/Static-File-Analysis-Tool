@@ -171,7 +171,7 @@ bool MainWindow::isPacked()
 {
     if (!packChecked) {
 
-        QString fullFileName = directory + fileName;
+        QString fullFileName = 34 + directory + fileName + 34;
         QString command = "upx -l " + fullFileName + " > upx.tmp";
         system(qPrintable(command));
 
@@ -206,10 +206,55 @@ void MainWindow::on_actionPack_triggered()
     saveChanges();
     DialogBox dialogBox;
     dialogBox.setWindowTitle("Pack");
-    dialogBox.exec();
+    QLabel *label = new QLabel(&dialogBox);
 
-    packPacked = true;
+    if (fileOpened) {
+        if (isPacked()) {
+            label->setText("The current file is already packed using UPX.");
+        }
+        else {
+            // pack the current file
+            if (pack()) {
+                label->setText("The current file is now packed using UPX.");
+                packChecked = false;
+                packPacked = true;
+                packUnpacked = false;
+
+                QFile file(directory + fileName);
+                if (file.open(QIODevice::ReadOnly)) {
+                    QDataStream ds(&file);
+                    fileSize = file.size();
+                    rawData = new char[fileSize];
+                    ds.readRawData(rawData, fileSize);
+                    file.close();
+                    resetChecks();
+                }
+            }
+            else {
+                label->setText("The current file was not packed using UPX.");
+            }
+        }
+    }
+    else {
+        label->setText("No file is selected.");
+    }
+
+    dialogBox.exec();
     refreshWindow();
+}
+
+bool MainWindow::pack()
+{
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Warning!", "Make sure to backup the file before packing!/nAre you sure you want to pack the current file?", QMessageBox::Yes|QMessageBox::No);
+    if (reply == QMessageBox::Yes) {
+        QString fullFileName = 34 + directory + fileName + 34;
+        QString command = "upx -5 " + fullFileName;
+        qDebug() << command;
+        system(qPrintable(command));
+        return true;
+    }
+    return false;
 }
 
 void MainWindow::on_actionUnpack_triggered()
@@ -217,10 +262,55 @@ void MainWindow::on_actionUnpack_triggered()
     saveChanges();
     DialogBox dialogBox;
     dialogBox.setWindowTitle("Unpack");
-    dialogBox.exec();
+    QLabel *label = new QLabel(&dialogBox);
 
-    packUnpacked = true;
+    if (fileOpened) {
+        if (isPacked()) {
+            // unpack the current file
+            if (unpack()) {
+                label->setText("The current file has been unpacked using UPX.");
+                packChecked = false;
+                packUnpacked = true;
+                packPacked = false;
+
+                QFile file(directory + fileName);
+                if (file.open(QIODevice::ReadOnly)) {
+                    QDataStream ds(&file);
+                    fileSize = file.size();
+                    rawData = new char[fileSize];
+                    ds.readRawData(rawData, fileSize);
+                    file.close();
+                    resetChecks();
+                }
+            }
+            else {
+                label->setText("The current file was not unpacked.");
+            }
+        }
+        else {
+            label->setText("The current file is not packed using UPX.");
+        }
+    }
+    else {
+        label->setText("No file is selected.");
+    }
+
+    dialogBox.exec();
     refreshWindow();
+}
+
+bool MainWindow::unpack()
+{
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Warning!", "Make sure to backup the file before unpacking!/nAre you sure you want to unpack the current file?", QMessageBox::Yes|QMessageBox::No);
+    if (reply == QMessageBox::Yes) {
+        QString fullFileName = 34 + directory + fileName + 34;
+        QString command = "upx -d " + fullFileName;
+        qDebug() << command;
+        system(qPrintable(command));
+        return true;
+    }
+    return false;
 }
 
 void MainWindow::on_actionChecklistMain_triggered()
