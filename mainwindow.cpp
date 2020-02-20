@@ -215,9 +215,9 @@ void MainWindow::on_actionPack_triggered()
         else {
             // pack the current file
             if (pack()) {
+                packChecked = false;
                 if (isPacked()) {
                     label->setText("The current file is now packed using UPX.");
-                    packChecked = false;
                     packPacked = true;
                     packUnpacked = false;
 
@@ -231,7 +231,9 @@ void MainWindow::on_actionPack_triggered()
                         resetChecks();
                     }
                 }
-                label->setText("The current file was not packed using UPX.");
+                else {
+                    label->setText("The current file was not packed using UPX.");
+                }
             }
             else {
                 label->setText("The current file was not packed using UPX.");
