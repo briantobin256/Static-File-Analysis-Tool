@@ -215,20 +215,23 @@ void MainWindow::on_actionPack_triggered()
         else {
             // pack the current file
             if (pack()) {
-                label->setText("The current file is now packed using UPX.");
-                packChecked = false;
-                packPacked = true;
-                packUnpacked = false;
+                if (isPacked()) {
+                    label->setText("The current file is now packed using UPX.");
+                    packChecked = false;
+                    packPacked = true;
+                    packUnpacked = false;
 
-                QFile file(directory + fileName);
-                if (file.open(QIODevice::ReadOnly)) {
-                    QDataStream ds(&file);
-                    fileSize = file.size();
-                    rawData = new char[fileSize];
-                    ds.readRawData(rawData, fileSize);
-                    file.close();
-                    resetChecks();
+                    QFile file(directory + fileName);
+                    if (file.open(QIODevice::ReadOnly)) {
+                        QDataStream ds(&file);
+                        fileSize = file.size();
+                        rawData = new char[fileSize];
+                        ds.readRawData(rawData, fileSize);
+                        file.close();
+                        resetChecks();
+                    }
                 }
+                label->setText("The current file was not packed using UPX.");
             }
             else {
                 label->setText("The current file was not packed using UPX.");
@@ -250,7 +253,6 @@ bool MainWindow::pack()
     if (reply == QMessageBox::Yes) {
         QString fullFileName = 34 + directory + fileName + 34;
         QString command = "upx -5 " + fullFileName;
-        qDebug() << command;
         system(qPrintable(command));
         return true;
     }
@@ -306,7 +308,6 @@ bool MainWindow::unpack()
     if (reply == QMessageBox::Yes) {
         QString fullFileName = 34 + directory + fileName + 34;
         QString command = "upx -d " + fullFileName;
-        qDebug() << command;
         system(qPrintable(command));
         return true;
     }
@@ -779,135 +780,136 @@ void MainWindow::on_actionDLL_s_triggered()
 
 void MainWindow::findDLLs()
 {
-
-    if (!stringsBuilt) {
-        findStrings();
-    }
-
-    if (!dllsBuilt) {
-        ui->DLL_List->clear();
-        QStringList dlls;
-        QStringList dllsFunctions;
-
-        // for each string found
-        for (int i = 0; i < stringCount; i++) {
-
-            // any strings ending in ".dll" or ".DLL"
-            QString string = strings[i];
-            QStringRef subString(&string, string.length() - 4, 4);
-
-            if (subString == ".dll" || subString == ".DLL") {
-                string = string.toUpper();
-                dlls.append(string);
-            }
+    if (fileOpened) {
+        if (!stringsBuilt) {
+            findStrings();
         }
 
-        dlls.removeDuplicates();
+        if (!dllsBuilt) {
+            ui->DLL_List->clear();
+            QStringList dlls;
+            QStringList dllsFunctions;
 
-        for (int i = 0; i < dlls.size(); i++) {
+            // for each string found
+            for (int i = 0; i < stringCount; i++) {
 
-            QString dllFunctionsFileName = "DLL Functions/";
-            QString dllName = dlls[i], dllFunctionsFile = dllName;
-            dllFunctionsFile = dllName.mid(0, dllName.length() - 4);
-            dllFunctionsFile.append(".txt");
-            dllFunctionsFileName.append(dllFunctionsFile);
+                // any strings ending in ".dll" or ".DLL"
+                QString string = strings[i];
+                QStringRef subString(&string, string.length() - 4, 4);
 
-            int dllSize = dllsFunctions.size() + 1;
-            QFile file(dllFunctionsFileName);
-            if (file.open(QIODevice::ReadOnly)) {
-
-                dllsFunctions.append(dllName);
-
-                QTextStream in(&file);
-                while (!in.atEnd()) {
-                    QString functionName = in.readLine();
-                    if (stringsMap[functionName]) {
-                        dllsFunctions.append("      " + functionName);
-                    }
+                if (subString == ".dll" || subString == ".DLL") {
+                    string = string.toUpper();
+                    dlls.append(string);
                 }
-                file.close();
             }
 
-            if (dllSize == dllsFunctions.size()) {
-                dllsFunctions.removeLast();
-            }
-        }
+            dlls.removeDuplicates();
 
-        /*
+            for (int i = 0; i < dlls.size(); i++) {
 
-        //
-        // change to search for dll using search function
-        // if last dll append remaining function calls to kernel32
-        //
+                QString dllFunctionsFileName = "DLL Functions/";
+                QString dllName = dlls[i], dllFunctionsFile = dllName;
+                dllFunctionsFile = dllName.mid(0, dllName.length() - 4);
+                dllFunctionsFile.append(".txt");
+                dllFunctionsFileName.append(dllFunctionsFile);
 
-        // for each string found
-        for (int i = 0; i < stringCount; i++) {
+                int dllSize = dllsFunctions.size() + 1;
+                QFile file(dllFunctionsFileName);
+                if (file.open(QIODevice::ReadOnly)) {
 
-            // any strings ending in ".dll" or ".DLL"
-            QString string = strings[i];
-            QStringRef subString(&string, string.length() - 4, 4);
+                    dllsFunctions.append(dllName);
 
-            // valid imported dll (will be all caps except .dll part)
-            if (subString == ".dll") {
-                string = string.mid(0, string.length() - 4);
-                QString tmpString = string;
-                tmpString = tmpString.toUpper();
-
-                if (string == tmpString || string == "kernel32") {
-                    dlls += strings[i];
-
-                    // find this dlls functions
-                    bool goodFunction = true;
-                    int j = i - 1;
-                    if (string == "kernel32" || string == "MSVCRT") {
-                        j = i + 1;
+                    QTextStream in(&file);
+                    while (!in.atEnd()) {
+                        QString functionName = in.readLine();
+                        if (stringsMap[functionName]) {
+                            dllsFunctions.append("      " + functionName);
+                        }
                     }
+                    file.close();
+                }
 
-                    while (goodFunction) {
-                        QString tmp = strings[j];
-                        bool hasUpper = false, hasLower = false;
-                        if (((tmp[0] >= 65 && tmp[0] <= 90) || tmp[0] == 95) && strings[j].size() >= 5) {
-                            for (int k = 1; k < tmp.size(); k++) {
-                                // have at least on cap and one lower to get rid of some false postitives
-                                if (tmp[k] >= 65 && tmp[k] <= 90) {
-                                    hasUpper = true;
+                if (dllSize == dllsFunctions.size()) {
+                    dllsFunctions.removeLast();
+                }
+            }
+
+            /*
+
+            //
+            // change to search for dll using search function
+            // if last dll append remaining function calls to kernel32
+            //
+
+            // for each string found
+            for (int i = 0; i < stringCount; i++) {
+
+                // any strings ending in ".dll" or ".DLL"
+                QString string = strings[i];
+                QStringRef subString(&string, string.length() - 4, 4);
+
+                // valid imported dll (will be all caps except .dll part)
+                if (subString == ".dll") {
+                    string = string.mid(0, string.length() - 4);
+                    QString tmpString = string;
+                    tmpString = tmpString.toUpper();
+
+                    if (string == tmpString || string == "kernel32") {
+                        dlls += strings[i];
+
+                        // find this dlls functions
+                        bool goodFunction = true;
+                        int j = i - 1;
+                        if (string == "kernel32" || string == "MSVCRT") {
+                            j = i + 1;
+                        }
+
+                        while (goodFunction) {
+                            QString tmp = strings[j];
+                            bool hasUpper = false, hasLower = false;
+                            if (((tmp[0] >= 65 && tmp[0] <= 90) || tmp[0] == 95) && strings[j].size() >= 5) {
+                                for (int k = 1; k < tmp.size(); k++) {
+                                    // have at least on cap and one lower to get rid of some false postitives
+                                    if (tmp[k] >= 65 && tmp[k] <= 90) {
+                                        hasUpper = true;
+                                    }
+                                    else if (tmp[k] >= 97 && tmp[k] <= 122) {
+                                        hasLower = true;
+                                    }
+                                    else if (tmp[k] != 95 && (tmp[k] < 48 || tmp[k] > 57)) {
+                                        goodFunction = false;
+                                    }
                                 }
-                                else if (tmp[k] >= 97 && tmp[k] <= 122) {
-                                    hasLower = true;
-                                }
-                                else if (tmp[k] != 95 && (tmp[k] < 48 || tmp[k] > 57)) {
+
+                                if (!hasUpper || !hasLower) {
                                     goodFunction = false;
                                 }
-                            }
 
-                            if (!hasUpper || !hasLower) {
+                                if (goodFunction) {
+                                    QString function = "    ";
+                                    function.append(tmp);
+                                    dlls += function;
+                                }
+                            }
+                            else {
                                 goodFunction = false;
                             }
-
-                            if (goodFunction) {
-                                QString function = "    ";
-                                function.append(tmp);
-                                dlls += function;
+                            if (string == "kernel32" || string == "MSVCRT") {
+                                j++;
                             }
-                        }
-                        else {
-                            goodFunction = false;
-                        }
-                        if (string == "kernel32" || string == "MSVCRT") {
-                            j++;
-                        }
-                        else {
-                            j--;
+                            else {
+                                j--;
+                            }
                         }
                     }
                 }
             }
-        }
-        */
+            */
 
-        //dlls.removeDuplicates();
-        ui->DLL_List->addItems(dllsFunctions);
-        dllsBuilt = true;
+            //dlls.removeDuplicates();
+            ui->DLL_List->addItems(dllsFunctions);
+            dllsBuilt = true;
+        }
     }
 }
 
