@@ -11,22 +11,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     basicWindowName = "Static File Analysis Tool";
 
-    backupBuilt = false;
-    hashBuilt = false;
-    packChecked = false;
-    packed = false;
-    packPacked = false;
-    packUnpacked = false;
+    resetChecks();
     fileOpened = false;
-    stringsBuilt = false;
-    stringsDisplayed = false;
-    stringsSaved = false;
-    dllsBuilt = false;
-    hexBuilt = false;
-    checklistBuilt = false;
-    firstStringsRefresh = true;
-    dataChanged = false;
 
+    hashBuilt = false;
     fileHash = "";
     backupLoc = "";
 
@@ -40,6 +28,7 @@ MainWindow::~MainWindow()
 
 void MainWindow::on_actionGenerate_Hash_triggered()
 {
+    saveChanges();
     DialogBox dialogBox;
     dialogBox.setWindowTitle("Hash");
     QLabel *label = new QLabel(&dialogBox);
@@ -52,6 +41,7 @@ void MainWindow::on_actionGenerate_Hash_triggered()
         label->setText("No file is selected.");
     }
 
+    hashBuilt = true;
     dialogBox.exec();
     refreshWindow();
 }
@@ -68,6 +58,7 @@ QString MainWindow::generateHash(char *data , int size)
 
 void MainWindow::on_actionCreate_Backup_triggered()
 {
+    saveChanges();
     DialogBox dialogBox;
     dialogBox.setWindowTitle("Backup");
     QLabel *label = new QLabel(&dialogBox);
@@ -154,6 +145,7 @@ void MainWindow::on_actionCreate_Backup_triggered()
 
 void MainWindow::on_actionCheck_if_Packed_triggered()
 {
+    saveChanges();
     DialogBox dialogBox;
     dialogBox.setWindowTitle("Check if File is Packed");
     QLabel *label = new QLabel(&dialogBox);
@@ -211,6 +203,7 @@ bool MainWindow::isPacked()
 
 void MainWindow::on_actionPack_triggered()
 {
+    saveChanges();
     DialogBox dialogBox;
     dialogBox.setWindowTitle("Pack");
     dialogBox.exec();
@@ -221,6 +214,7 @@ void MainWindow::on_actionPack_triggered()
 
 void MainWindow::on_actionUnpack_triggered()
 {
+    saveChanges();
     DialogBox dialogBox;
     dialogBox.setWindowTitle("Unpack");
     dialogBox.exec();
@@ -258,6 +252,7 @@ void MainWindow::on_actionHex_triggered()
 
 void MainWindow::on_actionOpen_triggered()
 {
+    saveChanges();
     QFile file(QFileDialog::getOpenFileName(this, "Select a file to analyse", "D:/Downloads"));
 
     if (file.fileName() != "") {
@@ -457,7 +452,7 @@ void MainWindow::findStrings()
 
         QString item;
         stringCount = 0;
-        bool nullSpaced = false;
+        bool nullSpaced = false, validString = false;
         int stringLength = 3;
 
         // for each char in file
@@ -496,34 +491,40 @@ void MainWindow::findStrings()
                             if (tmpuc1 == 0 || ((tmpuc1 >= 32 && tmpuc1 <= 126) && (tmpuc2 >= 32 && tmpuc2 <= 126))) {
                                 nullSpaced = false;
                                 if (item.size() >= stringLength) {
-                                    strings.insert(stringCount,item);
-                                    stringsMap[item] = true;
-                                    stringCount++;
-                                    item = "";
+                                    validString = true;
                                 }
                             }
                         }
                     }
                     else if (item.size() >= stringLength) {
-                        strings.insert(stringCount,item);
-                        stringsMap[item] = true;
-                        stringCount++;
-                        item = "";
+                        validString = true;
                     }
                     else {
                         item = "";
                     }
                 }
                 else if (item.size() >= stringLength) {
-                    strings.insert(stringCount,item);
-                    stringsMap[item] = true;
-                    stringCount++;
-                    item = "";
+                    validString = true;
                 }
                 else {
                     item = "";
                 }
             }
+
+            // if current item should be added to string list
+            if (validString) {
+                strings.insert(stringCount,item);
+                stringsMap[item] = true;
+                stringCount++;
+                item = "";
+                validString = false;
+            }
+        }
+
+        if (item != "" && item.size() >= stringLength) {
+            strings.insert(stringCount,item);
+            stringsMap[item] = true;
+            stringCount++;
         }
 
         // display things
@@ -554,12 +555,20 @@ void MainWindow::refreshStrings()
             ui->stringsScrollBar->setMaximum(stringCount / maxDisplayStrings);
         }
         else {
-            ui->stringsScrollBar->setMaximum(stringCount / maxDisplayStrings - 1);
+            if (stringCount == 0) {
+                ui->stringsScrollBar->setMaximum(0);
+            }
+            else {
+                ui->stringsScrollBar->setMaximum(stringCount / maxDisplayStrings - 1);
+            }
         }
 
         if (ui->stringsScrollBar->value() == ui->stringsScrollBar->maximum()) {
             if (stringCount % maxDisplayStrings > 0) {
                 displayStringCount = stringCount % maxDisplayStrings;
+            }
+            else {
+                displayStringCount = 0;
             }
         }
 
@@ -1099,24 +1108,28 @@ void MainWindow::on_hexTable_itemChanged(QTableWidgetItem *item)
 
 void MainWindow::on_actionUndo_All_Changes_triggered()
 {
-    if (fileOpened) {
-        for (int i = 0; i < fileSize; i++) {
-            editedData[i] = rawData[i];
+    if (dataChanged) {
+        if (fileOpened) {
+            for (int i = 0; i < fileSize; i++) {
+                editedData[i] = rawData[i];
+            }
         }
+        dataChanged = false;
     }
     refreshWindow();
 }
 
 void MainWindow::on_actionExit_triggered()
 {
+    saveChanges();
     QApplication::quit();
 }
 
 void MainWindow::resetChecks()
 {
     backupBuilt = false;
-    hashBuilt = false;
     packChecked = false;
+    packed = false;
     packPacked = false;
     packUnpacked = false;
     fileOpened = true;
@@ -1203,4 +1216,10 @@ void MainWindow::saveChanges()
 void MainWindow::on_actionSave_triggered()
 {
     saveChanges();
+}
+
+void MainWindow::closeEvent (QCloseEvent *event)
+{
+    saveChanges();
+    QApplication::quit();
 }

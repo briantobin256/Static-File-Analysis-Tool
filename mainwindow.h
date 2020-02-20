@@ -17,6 +17,7 @@
 #include <QClipboard>
 #include <QMessageBox>
 #include <QCoreApplication>
+#include <QCloseEvent>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -131,6 +132,7 @@ private:
     void refreshWindow();
     void resetChecks();
     void saveChanges();
+    void MainWindow::closeEvent (QCloseEvent *event);
 
     //void searchStringList;
 
