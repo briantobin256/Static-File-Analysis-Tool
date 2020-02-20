@@ -12,6 +12,10 @@
 #include <QVBoxLayout>
 #include <QCheckBox>
 #include <QCryptographicHash>
+#include <QTableWidgetItem>
+#include <QListWidgetItem>
+#include <QClipboard>
+#include <QMessageBox>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -26,10 +30,12 @@ public:
     ~MainWindow();
 
     char *rawData;
+    char *editedData;
 
     QString basicWindowName;
     QString extendedWindowName;
     QString fileName;
+    QString directory;
     QString fileHash;
     QStringList strings;
     QString backupLoc;
@@ -47,10 +53,17 @@ public:
     bool fileOpened;
     int fileSize;
 
+    //hex things
+    int dataStartPoint;
+    int maxRows;
+    int maxCols;
+    bool dataChanged;
+
     bool backupBuilt;
     bool firstStringsRefresh;
     bool hashBuilt;
     bool packChecked;
+    bool packed;
     bool packPacked;
     bool packUnpacked;
     bool stringsBuilt;
@@ -93,6 +106,16 @@ private slots:
 
     void on_stringSearchButton_clicked();
 
+    void on_savedStringList_itemDoubleClicked(QListWidgetItem *item);
+
+    void on_hexTable_itemChanged(QTableWidgetItem *item);
+
+    void on_actionUndo_All_Changes_triggered();
+
+    void on_actionExit_triggered();
+
+    void on_actionSave_triggered();
+
 private:
     Ui::MainWindow *ui;
     QString generateHash(char *data, int size);
@@ -105,6 +128,8 @@ private:
     void findDLLs();
     void refreshChecklist();
     void refreshWindow();
+    void resetChecks();
+    void saveChanges();
 
     //void searchStringList;
 

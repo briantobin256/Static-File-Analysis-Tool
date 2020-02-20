@@ -478,7 +478,7 @@
      </palette>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>4</number>
     </property>
     <widget class="QWidget" name="page_0_Main_Window"/>
     <widget class="QWidget" name="page_1_Find_Strings">
@@ -628,7 +628,7 @@
        <enum>Qt::CopyAction</enum>
       </property>
       <property name="selectionMode">
-       <enum>QAbstractItemView::SingleSelection</enum>
+       <enum>QAbstractItemView::ExtendedSelection</enum>
       </property>
      </widget>
      <widget class="QLabel" name="savedStringCountLabel">
@@ -738,7 +738,7 @@
        <bool>true</bool>
       </property>
       <property name="editTriggers">
-       <set>QAbstractItemView::NoEditTriggers</set>
+       <set>QAbstractItemView::DoubleClicked</set>
       </property>
       <property name="showGrid">
        <bool>true</bool>
@@ -1247,6 +1247,8 @@
      <string>File</string>
     </property>
     <addaction name="actionOpen"/>
+    <addaction name="actionSave"/>
+    <addaction name="actionUndo_All_Changes"/>
     <addaction name="separator"/>
     <addaction name="actionGenerate_Hash"/>
     <addaction name="actionCreate_Backup"/>
@@ -1388,6 +1390,16 @@
   <action name="actionSeperate_Window">
    <property name="text">
     <string>Seperate Window</string>
+   </property>
+  </action>
+  <action name="actionSave">
+   <property name="text">
+    <string>Save</string>
+   </property>
+  </action>
+  <action name="actionUndo_All_Changes">
+   <property name="text">
+    <string>Undo All Changes</string>
    </property>
   </action>
  </widget>

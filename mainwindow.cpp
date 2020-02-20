@@ -14,9 +14,9 @@ MainWindow::MainWindow(QWidget *parent)
     backupBuilt = false;
     hashBuilt = false;
     packChecked = false;
+    packed = false;
     packPacked = false;
     packUnpacked = false;
-
     fileOpened = false;
     stringsBuilt = false;
     stringsDisplayed = false;
@@ -25,6 +25,7 @@ MainWindow::MainWindow(QWidget *parent)
     hexBuilt = false;
     checklistBuilt = false;
     firstStringsRefresh = true;
+    dataChanged = false;
 
     fileHash = "";
     backupLoc = "";
@@ -52,8 +53,6 @@ void MainWindow::on_actionGenerate_Hash_triggered()
     }
 
     dialogBox.exec();
-
-    hashBuilt = true;
     refreshWindow();
 }
 
@@ -80,6 +79,7 @@ void MainWindow::on_actionCreate_Backup_triggered()
         QFile file(QFileDialog::getExistingDirectory(this, "Select a location to store backups."));
         backupLoc = file.fileName();
         dir.setPath(backupLoc);
+        file.close();
 
         if (backupLoc != "") {
 
@@ -109,26 +109,24 @@ void MainWindow::on_actionCreate_Backup_triggered()
             else {
                 // create backup
                 QString fullName = backupLoc + 92 + backupName;
-                QFile file(fullName);
+                QFile createBackup(fullName);
 
-                if (file.open(QIODevice::ReadWrite))
-                {
-                    QDataStream ds(&file);
+                if (createBackup.open(QIODevice::ReadWrite)) {
+                    QDataStream ds(&createBackup);
                     ds.writeRawData(rawData, fileSize);
-                    file.close();
+                    createBackup.close();
                 }
 
                 // create verficication hash
-                QFile backup(fullName);
+                QFile verifyBackup(fullName);
                 QString verificationHash;
 
-                if (backup.open(QIODevice::ReadOnly))
-                {
-                    int size = file.size();
+                if (verifyBackup.open(QIODevice::ReadOnly)) {
+                    int size = createBackup.size();
                     char *data = new char[size];
-                    QDataStream ds(&backup);
+                    QDataStream ds(&verifyBackup);
                     ds.readRawData(data, size);
-                    backup.close();
+                    verifyBackup.close();
                     verificationHash = generateHash(data, size);
                 }
 
@@ -161,10 +159,8 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
     QLabel *label = new QLabel(&dialogBox);
 
     if (fileOpened) {
-        if (!packChecked) {
-            if (isPacked()) {
-                label->setText("The current file IS packed using UPX.");
-            }
+        if (isPacked()) {
+            label->setText("The current file IS packed using UPX.");
         }
         else {
             label->setText("The current file is NOT packed using UPX.");
@@ -181,7 +177,42 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
 
 bool MainWindow::isPacked()
 {
-    return false;
+    if (!packChecked) {
+        if (!hashBuilt) {
+            fileHash = generateHash(rawData, fileSize);
+        }
+
+        QFile upx(fileHash + ".exe");
+        if (upx.open(QIODevice::ReadWrite)) {
+            QDataStream ds(&upx);
+            ds.writeRawData(rawData, fileSize);
+            upx.close();
+        }
+
+        QString command = "upx -l -oFILE " + fileHash + ".exe > upx.txt";
+
+        system(qPrintable(command));
+
+        // check output
+        QFile upxCheck("upx.txt");
+        if (upxCheck.open(QIODevice::ReadOnly)) {
+            QTextStream in(&upxCheck);
+            int i = 0;
+            while (!in.atEnd()) {
+                in.readLine();
+                i++;
+            }
+            upxCheck.close();
+            if (i == 7) {
+                packed = true;
+            }
+            else {
+                packed = false;
+            }
+        }
+        packChecked = true;
+    }
+    return packed;
 }
 
 void MainWindow::on_actionPack_triggered()
@@ -256,25 +287,9 @@ void MainWindow::on_actionOpen_triggered()
                 ds.readRawData(rawData, fileSize);
                 file.close();
 
-                // MAKE OWN FUNCTION
-                // reset checks
-                backupBuilt = false;
-                hashBuilt = false;
-                packChecked = false;
-                packPacked = false;
-                packUnpacked = false;
-                fileOpened = true;
-                stringsBuilt = false;
-                stringsSaved = false;
-                dllsBuilt = false;
-                hexBuilt = false;
-                checklistBuilt = false;
-                firstStringsRefresh = true;
-                savedStringMap.clear();
-                ui->stringsScrollBar->setValue(0);
-                ui->hexScrollBar->setValue(0);
+                resetChecks();
 
-                // get file name
+                // get file name and directory
                 QString fullFileName = file.fileName();
                 bool slashFound = false;
                 int i = fullFileName.size() - 1;
@@ -290,6 +305,7 @@ void MainWindow::on_actionOpen_triggered()
 
                 if (slashFound) {
                     fileName = fullFileName.mid(i + 1, fullFileName.size() - i);
+                    directory = fullFileName.mid(0, i + 1);
                 }
 
                 basicWindowName = "Static File Analysis Tool - " + fileName;
@@ -304,13 +320,6 @@ void MainWindow::on_actionOpen_triggered()
             dialogBox.exec();
         }
     }
-    else {
-        DialogBox dialogBox;
-        dialogBox.setWindowTitle("Error");
-        QLabel *label = new QLabel(&dialogBox);
-        label->setText("No file selected.");
-        dialogBox.exec();
-    }
 }
 
 void MainWindow::on_actionDisassembly_triggered()
@@ -322,14 +331,22 @@ void MainWindow::on_actionDisassembly_triggered()
 void MainWindow::refreshHex()
 {
     if (fileOpened) {
-
+        ui->hexTable->blockSignals(true);
         ui->hexTable->clearContents();
+
+        if (!hexBuilt) {
+            editedData = new char[fileSize];
+            for (int i = 0; i < fileSize; i++) {
+                editedData[i] = rawData[i];
+            }
+            hexBuilt = true;
+        }
 
         int rowNameLength = 8;
         int displayCols = 16;
         int displayRows = 16;
-        int maxCols = 16;
-        int dataStartPoint = ui->hexScrollBar->value();
+        maxCols = 16;
+        dataStartPoint = ui->hexScrollBar->value();
 
         // if file is big enough to have a scroll bar
         if (fileSize / (displayRows * displayCols) > 0) {
@@ -395,7 +412,7 @@ void MainWindow::refreshHex()
             // for each column in current row
             for (int col = 0; col < displayCols; col++) {
 
-                c = rawData[(dataStartPoint * maxCols) + col + (displayRow * maxCols)];
+                c = editedData[(dataStartPoint * maxCols) + col + (displayRow * maxCols)];
                 uc = static_cast<unsigned char>(c);
 
                 // append char to decoded text
@@ -436,7 +453,7 @@ void MainWindow::refreshHex()
             hex = new QTableWidgetItem(rowText);
             ui->hexTable->setItem(displayRow, 17, hex);
         }
-        hexBuilt = true;
+        ui->hexTable->blockSignals(false);
     }
 }
 
@@ -877,6 +894,8 @@ void MainWindow::refreshChecklist()
 
 void MainWindow::refreshWindow()
 {
+    saveChanges();
+
     // refresh window based on current page
     switch (ui->stackedWidget->currentIndex()) {
 
@@ -993,4 +1012,201 @@ void MainWindow::on_stringSearchButton_clicked()
             stringsAdvancedSearchIndex = 0;
         }
     }
+}
+
+void MainWindow::on_savedStringList_itemDoubleClicked(QListWidgetItem *item)
+{
+    QApplication::clipboard()->setText(item->text());
+}
+
+void MainWindow::on_hexTable_itemChanged(QTableWidgetItem *item)
+{
+    ui->hexTable->blockSignals(true);
+
+    int row =  item->row(), col =  item->column();
+    QTableWidgetItem *hex;
+    QString hexText = "00";
+    QString text = item->text();
+
+    // check if entered value is valid
+    bool good = true;
+    if (text.size() == 1 || text.size() == 2) {
+        for (int i = 0; i < text.size(); i++) {
+            // if number or upper case char
+            if ((text[i].unicode() >= 48 && text[i].unicode() <= 57) || (text[i].unicode() >= 65 && text[i].unicode() <= 70)) {
+                if (text.size() == 1) {
+                    hexText[1] = text[i];
+                }
+                else {
+                    hexText[i] = text[i];
+                }
+            }
+            // if lower case char
+            else if (text[i].unicode() >= 97 && text[i].unicode() <= 102) {
+                if (text.size() == 1) {
+                    hexText[1] = text[0].unicode() - 32;
+                }
+                else {
+                    hexText[i] = text[i].unicode() - 32;
+                }
+            }
+            else {
+                good = false;
+            }
+        }
+    }
+
+    if (!good || text.size() == 0 || text.size() > 2) {
+        char c = editedData[(dataStartPoint * maxCols) + col + (row * maxCols)];
+        unsigned char uc = static_cast<unsigned char>(c);
+        // convert char to hex
+        int temp, i = 1;
+        while(uc != 0) {
+            temp = uc % 16;
+            // to convert integer into character
+            if(temp < 10)
+            {
+                temp += 48;
+            }
+            else
+            {
+                temp += 55;
+            }
+            hexText[i] = temp;
+            i--;
+            uc = uc / 16;
+        }
+    }
+
+    hex = new QTableWidgetItem(hexText);
+    hex->setTextAlignment(Qt::AlignCenter);
+    ui->hexTable->setItem(row, col, hex);
+
+    // hex to dec
+    int charDec1 = hexText[0].unicode(), charDec2 = hexText[1].unicode();
+    if (charDec1 > 57) {
+        charDec1 = charDec1 - 55;
+    }
+    else {
+        charDec1 = charDec1 - 48;
+    }
+    if (charDec2 > 57) {
+        charDec2 = charDec2 - 55;
+    }
+    else {
+        charDec2 = charDec2 - 48;
+    }
+    int fullDec = charDec1 * 16 + charDec2;
+    editedData[(dataStartPoint * maxCols) + col + (row * maxCols)] = fullDec;
+    ui->hexTable->blockSignals(false);
+    dataChanged = true;
+    refreshHex();
+}
+
+void MainWindow::on_actionUndo_All_Changes_triggered()
+{
+    if (fileOpened) {
+        for (int i = 0; i < fileSize; i++) {
+            editedData[i] = rawData[i];
+        }
+    }
+    refreshWindow();
+}
+
+void MainWindow::on_actionExit_triggered()
+{
+    QApplication::quit();
+}
+
+void MainWindow::resetChecks()
+{
+    backupBuilt = false;
+    hashBuilt = false;
+    packChecked = false;
+    packPacked = false;
+    packUnpacked = false;
+    fileOpened = true;
+    stringsBuilt = false;
+    stringsDisplayed = false;
+    stringsSaved = false;
+    dllsBuilt = false;
+    hexBuilt = false;
+    dataChanged = false;
+    checklistBuilt = false;
+    firstStringsRefresh = true;
+    savedStringMap.clear();
+    ui->stringsScrollBar->setValue(0);
+    ui->hexScrollBar->setValue(0);
+}
+
+void MainWindow::saveChanges()
+{
+    if (dataChanged) {
+        QMessageBox::StandardButton reply;
+        reply = QMessageBox::question(this, "Warning!", "Do you want to save the changes made in the hex editor?", QMessageBox::Yes|QMessageBox::No);
+        if (reply == QMessageBox::Yes) {
+
+            // change actual file data
+            QString tmpHash = generateHash(editedData, fileSize);
+            QString tmpName = tmpHash + ".tmp";
+            QString fullTmpName = directory + tmpName;
+            QFile newFile(fullTmpName);
+            if (newFile.open(QIODevice::ReadWrite)) {
+                QDataStream ds(&newFile);
+                ds.writeRawData(editedData, fileSize);
+                newFile.close();
+            }
+
+            // create verficication hash
+            QFile verifyNewFile(fullTmpName);
+            QString verificationHash;
+            if (verifyNewFile.open(QIODevice::ReadOnly)) {
+                int size = newFile.size();
+                char *data = new char[size];
+                QDataStream ds(&verifyNewFile);
+                ds.readRawData(data, size);
+                verifyNewFile.close();
+                verificationHash = generateHash(data, size);
+            }
+
+            // verify save
+            QDir path(directory);
+            if (verificationHash == tmpHash) {
+                // delete original file and rename tmp file
+                path.remove(fileName);
+                path.rename(tmpName, fileName);
+
+                // change memory data
+                for (int i = 0; i < fileSize; i++) {
+                  rawData[i] = editedData[i];
+                }
+
+                // reset checks
+                resetChecks();
+            }
+            else {
+                DialogBox dialogBox;
+                dialogBox.setWindowTitle("Error");
+                QLabel *label = new QLabel(&dialogBox);
+                label->setText("An error has occured. No changes have been saved.");
+                dialogBox.exec();
+
+                path.remove(tmpName);
+
+                for (int i = 0; i < fileSize; i++) {
+                  editedData[i] = rawData[i];
+                }
+            }
+        } else {
+            for (int i = 0; i < fileSize; i++) {
+              editedData[i] = rawData[i];
+            }
+        }
+        dataChanged = false;
+    }
+}
+
+void MainWindow::on_actionSave_triggered()
+{
+    saveChanges();
 }
