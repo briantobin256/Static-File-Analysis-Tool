@@ -478,7 +478,7 @@
      </palette>
     </property>
     <property name="currentIndex">
-     <number>4</number>
+     <number>6</number>
     </property>
     <widget class="QWidget" name="page_0_Main_Window"/>
     <widget class="QWidget" name="page_1_Find_Strings">
@@ -1228,6 +1228,32 @@
        </property>
       </item>
      </widget>
+     <widget class="QLabel" name="checklistFileEntropyLabel">
+      <property name="geometry">
+       <rect>
+        <x>470</x>
+        <y>70</y>
+        <width>111</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>File Entropy:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="checklistFileEntropyValue">
+      <property name="geometry">
+       <rect>
+        <x>580</x>
+        <y>70</y>
+        <width>371</width>
+        <height>31</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="page"/>
    </widget>
@@ -1369,7 +1395,7 @@
   </action>
   <action name="actionDisassembly">
    <property name="text">
-    <string>Disassembly</string>
+    <string>Entropy</string>
    </property>
   </action>
   <action name="actionWebsite">

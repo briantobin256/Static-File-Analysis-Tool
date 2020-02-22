@@ -18,6 +18,8 @@
 #include <QMessageBox>
 #include <QCoreApplication>
 #include <QCloseEvent>
+#include <math.h>
+#include <QtCharts>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -55,6 +57,8 @@ public:
     bool fileOpened;
     int fileSize;
 
+    double entropy;
+
     //hex things
     int dataStartPoint;
     int maxRows;
@@ -74,6 +78,7 @@ public:
     bool hexBuilt;
     bool dllsBuilt;
     bool checklistBuilt;
+    bool entropyChecked;
 
 private slots:
     void on_actionCheck_if_Packed_triggered();
@@ -135,6 +140,8 @@ private:
     void resetChecks();
     void saveChanges();
     void MainWindow::closeEvent (QCloseEvent *event);
+    void getEntropy();
+    double chunkEntropy(int offset, int chunkSize);
 
     //void searchStringList;
 

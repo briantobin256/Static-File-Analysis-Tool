@@ -151,11 +151,22 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
     QLabel *label = new QLabel(&dialogBox);
 
     if (fileOpened) {
+        getEntropy();
         if (isPacked()) {
             label->setText("The current file IS packed using UPX.");
         }
         else {
-            label->setText("The current file is NOT packed using UPX.");
+
+            QString basicText = "The current file is NOT packed using UPX!";
+            QString entropyVar;
+            if (entropy < 7) {
+                entropyVar = "The files entropy is \n" + QString::number(entropy) + "\nwhich would suggest that the file is NOT packed/compressed/encrypted.";
+            }
+            else {
+                entropyVar = "The files entropy is \n" + QString::number(entropy) + "\nwhich would suggest that the file IS packed/compressed/encrypted.";
+            }
+
+            label->setText(basicText + entropyVar);
         }
     }
     else {
@@ -981,6 +992,12 @@ void MainWindow::refreshChecklist()
             ui->checklistMainStepsList->item(8)->setCheckState(Qt::Checked);
             progress++;
         }
+        if (entropyChecked) {
+            ui->checklistFileEntropyValue->setText(QString::number(entropy));
+            //ui->checklistMainStepsList->item(8)->setCheckState(Qt::Checked);
+            //progress++;
+        }
+
 
         // update progress bar
         int steps = 9;
@@ -1017,7 +1034,8 @@ void MainWindow::refreshWindow()
         refreshHex();
         break;
 
-        case 5: extendedWindowName = " - Disassembly";
+        case 5: extendedWindowName = " - Entropy";
+        getEntropy();
         break;
 
         case 6: extendedWindowName = " - Checklist";
@@ -1118,86 +1136,91 @@ void MainWindow::on_savedStringList_itemDoubleClicked(QListWidgetItem *item)
 
 void MainWindow::on_hexTable_itemChanged(QTableWidgetItem *item)
 {
-    ui->hexTable->blockSignals(true);
+    if (fileOpened) {
+        ui->hexTable->blockSignals(true);
 
-    int row =  item->row(), col =  item->column();
-    QTableWidgetItem *hex;
-    QString hexText = "00";
-    QString text = item->text();
+        int row =  item->row(), col =  item->column();
+        QTableWidgetItem *hex;
+        QString hexText = "00";
+        QString text = item->text();
 
-    // check if entered value is valid
-    bool good = true;
-    if (text.size() == 1 || text.size() == 2) {
-        for (int i = 0; i < text.size(); i++) {
-            // if number or upper case char
-            if ((text[i].unicode() >= 48 && text[i].unicode() <= 57) || (text[i].unicode() >= 65 && text[i].unicode() <= 70)) {
-                if (text.size() == 1) {
-                    hexText[1] = text[i];
+        // check if entered value is valid
+        bool good = true;
+        if (text.size() == 1 || text.size() == 2) {
+            for (int i = 0; i < text.size(); i++) {
+                // if number or upper case char
+                if ((text[i].unicode() >= 48 && text[i].unicode() <= 57) || (text[i].unicode() >= 65 && text[i].unicode() <= 70)) {
+                    if (text.size() == 1) {
+                        hexText[1] = text[i];
+                    }
+                    else {
+                        hexText[i] = text[i];
+                    }
+                }
+                // if lower case char
+                else if (text[i].unicode() >= 97 && text[i].unicode() <= 102) {
+                    if (text.size() == 1) {
+                        hexText[1] = text[0].unicode() - 32;
+                    }
+                    else {
+                        hexText[i] = text[i].unicode() - 32;
+                    }
                 }
                 else {
-                    hexText[i] = text[i];
+                    good = false;
                 }
-            }
-            // if lower case char
-            else if (text[i].unicode() >= 97 && text[i].unicode() <= 102) {
-                if (text.size() == 1) {
-                    hexText[1] = text[0].unicode() - 32;
-                }
-                else {
-                    hexText[i] = text[i].unicode() - 32;
-                }
-            }
-            else {
-                good = false;
             }
         }
-    }
 
-    if (!good || text.size() == 0 || text.size() > 2) {
-        char c = editedData[(dataStartPoint * maxCols) + col + (row * maxCols)];
-        unsigned char uc = static_cast<unsigned char>(c);
-        // convert char to hex
-        int temp, i = 1;
-        while(uc != 0) {
-            temp = uc % 16;
-            // to convert integer into character
-            if(temp < 10)
-            {
-                temp += 48;
+        if (!good || text.size() == 0 || text.size() > 2) {
+            char c = editedData[(dataStartPoint * maxCols) + col + (row * maxCols)];
+            unsigned char uc = static_cast<unsigned char>(c);
+            // convert char to hex
+            int temp, i = 1;
+            while(uc != 0) {
+                temp = uc % 16;
+                // to convert integer into character
+                if(temp < 10)
+                {
+                    temp += 48;
+                }
+                else
+                {
+                    temp += 55;
+                }
+                hexText[i] = temp;
+                i--;
+                uc = uc / 16;
             }
-            else
-            {
-                temp += 55;
-            }
-            hexText[i] = temp;
-            i--;
-            uc = uc / 16;
         }
-    }
 
-    hex = new QTableWidgetItem(hexText);
-    hex->setTextAlignment(Qt::AlignCenter);
-    ui->hexTable->setItem(row, col, hex);
+        hex = new QTableWidgetItem(hexText);
+        hex->setTextAlignment(Qt::AlignCenter);
+        ui->hexTable->setItem(row, col, hex);
 
-    // hex to dec
-    int charDec1 = hexText[0].unicode(), charDec2 = hexText[1].unicode();
-    if (charDec1 > 57) {
-        charDec1 = charDec1 - 55;
+        // hex to dec
+        int charDec1 = hexText[0].unicode(), charDec2 = hexText[1].unicode();
+        if (charDec1 > 57) {
+            charDec1 = charDec1 - 55;
+        }
+        else {
+            charDec1 = charDec1 - 48;
+        }
+        if (charDec2 > 57) {
+            charDec2 = charDec2 - 55;
+        }
+        else {
+            charDec2 = charDec2 - 48;
+        }
+        int fullDec = charDec1 * 16 + charDec2;
+        editedData[(dataStartPoint * maxCols) + col + (row * maxCols)] = fullDec;
+        ui->hexTable->blockSignals(false);
+        dataChanged = true;
+        refreshHex();
     }
     else {
-        charDec1 = charDec1 - 48;
+        ui->hexTable->clearContents();
     }
-    if (charDec2 > 57) {
-        charDec2 = charDec2 - 55;
-    }
-    else {
-        charDec2 = charDec2 - 48;
-    }
-    int fullDec = charDec1 * 16 + charDec2;
-    editedData[(dataStartPoint * maxCols) + col + (row * maxCols)] = fullDec;
-    ui->hexTable->blockSignals(false);
-    dataChanged = true;
-    refreshHex();
 }
 
 void MainWindow::on_actionUndo_All_Changes_triggered()
@@ -1235,9 +1258,11 @@ void MainWindow::resetChecks()
     dataChanged = false;
     checklistBuilt = false;
     firstStringsRefresh = true;
+    entropyChecked = false;
     savedStringMap.clear();
     ui->stringsScrollBar->setValue(0);
     ui->hexScrollBar->setValue(0);
+    entropy = 0;
 }
 
 void MainWindow::saveChanges()
@@ -1316,4 +1341,69 @@ void MainWindow::closeEvent (QCloseEvent *event)
 {
     saveChanges();
     QApplication::quit();
+}
+
+void MainWindow::getEntropy()
+{
+    if (fileOpened) {
+        if (!packChecked) {
+            QMap<unsigned char, double> freqMap;
+            entropy = 0;
+
+            // set all to 0
+            for (int i = 0; i < 256; i++) {
+                unsigned char c = i;
+                freqMap[c] = 0;
+            }
+
+            // get char freq
+            for (int i = 0; i < fileSize; i++) {
+                char c = rawData[i];
+                unsigned char uc = static_cast<unsigned char>(c);
+                freqMap[uc]++;
+            }
+
+            // get probabilty of each char and append to entropy
+            for (int i = 0; i < 256; i++) {
+                unsigned char c = i;
+                double prob = freqMap[c] / fileSize;
+                entropy += (-1 * (prob * (log2 (prob))));
+            }
+
+            entropyChecked = true;
+        }
+    }
+}
+
+double MainWindow::chunkEntropy(int offset, int chunkSize)
+{
+    double chunkEntropy = 0;
+    if (offset + chunkSize > fileSize) {
+        chunkSize = ((fileSize - (offset + chunkSize)) + chunkSize) % chunkSize;
+    }
+    // for each full chunk
+    for (int i = 0; i < chunkSize; i++) {
+        QMap<unsigned char, double> freqMap;
+
+        // set all to 0
+        for (int i = 0; i < 256; i++) {
+            unsigned char c = i;
+            freqMap[c] = 0;
+        }
+
+        // get char freq
+        for (int i = 0; i < chunkSize; i++) {
+            char c = rawData[i + offset];
+            unsigned char uc = static_cast<unsigned char>(c);
+            freqMap[uc]++;
+        }
+
+        // get probabilty of each char and append to entropy
+        for (int i = 0; i < 256; i++) {
+            unsigned char c = i;
+            double prob = freqMap[c] / chunkSize;
+            chunkEntropy += (-1 * (prob * (log2 (prob))));
+        }
+    }
+    return chunkEntropy;
 }
