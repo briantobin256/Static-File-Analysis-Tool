@@ -329,26 +329,31 @@ bool MainWindow::unpack()
 
 void MainWindow::on_actionChecklistMain_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(6);
+    ui->stackedWidget->setCurrentIndex(7);
     refreshWindow();
 }
 
 void MainWindow::on_actionFind_Strings_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(1);
+    if (!stringsBuilt) {
+        ui->stackedWidget->setCurrentIndex(1);
+    }
+    else {
+        ui->stackedWidget->setCurrentIndex(2);
+    }
     refreshWindow();
 }
 
 void MainWindow::on_actionSaved_Strings_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(2);
+    ui->stackedWidget->setCurrentIndex(3);
     refreshWindow();
 
 }
 
 void MainWindow::on_actionHex_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(4);
+    ui->stackedWidget->setCurrentIndex(5);
     ui->hexTable->horizontalHeader()->resizeSection(17, 150);
     refreshWindow();
 
@@ -417,7 +422,7 @@ void MainWindow::on_actionOpen_triggered()
 
 void MainWindow::on_actionDisassembly_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(5);
+    ui->stackedWidget->setCurrentIndex(6);
     refreshWindow();
 }
 
@@ -555,9 +560,7 @@ void MainWindow::findStrings()
     if (!stringsBuilt && fileOpened) {
 
         QString item;
-        stringCount = 0;
         bool nullSpaced = false, validString = false;
-        int stringLength = 3;
 
         // for each char in file
         for (int i = 0; i < fileSize; i++) {
@@ -619,7 +622,6 @@ void MainWindow::findStrings()
             if (validString) {
                 strings.insert(stringCount,item);
                 stringsMap[item] = true;
-                stringCount++;
                 item = "";
                 validString = false;
             }
@@ -628,10 +630,18 @@ void MainWindow::findStrings()
         if (item != "" && item.size() >= stringLength) {
             strings.insert(stringCount,item);
             stringsMap[item] = true;
-            stringCount++;
+        }
+
+        if (sortStrings) {
+            strings.sort();
+        }
+
+        if (removeDuplicates) {
+            strings.removeDuplicates();
         }
 
         // display things
+        stringCount = strings.size();
         QString count = QString::number(stringCount);
         ui->stringCountValue->setText(count);
 
@@ -703,6 +713,7 @@ void MainWindow::refreshStrings()
         display.append(" / ");
         display.append(maxPage);
         ui->stringsPageNumberValue->setText(display);
+        ui->stringCountValue->setText(QString::number(stringCount));
     }
 }
 
@@ -787,7 +798,7 @@ void MainWindow::wheelEvent(QWheelEvent *event)
 
 void MainWindow::on_actionDLL_s_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(3);
+    ui->stackedWidget->setCurrentIndex(4);
     refreshWindow();
 }
 
@@ -1016,29 +1027,29 @@ void MainWindow::refreshWindow()
         case 0: extendedWindowName = "";
         break;
 
-        case 1: extendedWindowName = " - Strings";
+        case 2: extendedWindowName = " - Strings";
         findStrings();
         refreshStrings();
         break;
 
-        case 2: extendedWindowName = " - Saved Strings";
+        case 3: extendedWindowName = " - Saved Strings";
         saveDisplayedStrings();
         refreshSavedStrings();
         break;
 
-        case 3: extendedWindowName = " - DLLs";
+        case 4: extendedWindowName = " - DLLs";
         findDLLs();
         break;
 
-        case 4: extendedWindowName = " - Hex";
+        case 5: extendedWindowName = " - Hex";
         refreshHex();
         break;
 
-        case 5: extendedWindowName = " - Entropy";
+        case 6: extendedWindowName = " - Entropy";
         getEntropy();
         break;
 
-        case 6: extendedWindowName = " - Checklist";
+        case 7: extendedWindowName = " - Checklist";
         refreshChecklist();
         break;
     }
@@ -1049,7 +1060,7 @@ void MainWindow::refreshWindow()
 
 void MainWindow::on_actionSeperate_Window_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(7);
+    ui->stackedWidget->setCurrentIndex(8);
 }
 
 void MainWindow::on_stringSearchButton_clicked()
@@ -1057,6 +1068,7 @@ void MainWindow::on_stringSearchButton_clicked()
     if (stringsBuilt) {
 
         QString search = ui->searchString->text();
+
         if (stringsAdvancedSearchString != search) {
             stringsAdvancedSearchIndex = 0;
         }
@@ -1067,12 +1079,6 @@ void MainWindow::on_stringSearchButton_clicked()
 
             //
             // starting search icon
-
-
-
-
-
-
             //
 
             QString searching = strings[stringsAdvancedSearchIndex];
@@ -1101,11 +1107,6 @@ void MainWindow::on_stringSearchButton_clicked()
 
         //
         // finished search icon
-
-
-
-
-
         //
 
         if (found) {
@@ -1259,10 +1260,12 @@ void MainWindow::resetChecks()
     checklistBuilt = false;
     firstStringsRefresh = true;
     entropyChecked = false;
+    stringsSorted = false;
     savedStringMap.clear();
     ui->stringsScrollBar->setValue(0);
     ui->hexScrollBar->setValue(0);
     entropy = 0;
+    stringLength = 3;
 }
 
 void MainWindow::saveChanges()
@@ -1406,4 +1409,43 @@ double MainWindow::chunkEntropy(int offset, int chunkSize)
         }
     }
     return chunkEntropy;
+}
+
+void MainWindow::on_findStringsButton_clicked()
+{
+    stringsBuilt = false;
+    strings.clear();
+    savedStringMap.clear();
+
+    if (ui->sortStringsCheckBox->checkState() == Qt::Checked) {
+        sortStrings = true;
+    }
+    else {
+        sortStrings = false;
+    }
+    if (ui->removeDuplicatesCheckBox->checkState() == Qt::Checked) {
+        removeDuplicates = true;
+    }
+    else {
+        removeDuplicates = false;
+    }
+    if (ui->radioButton3Char->isChecked()) {
+        stringLength = 3;
+    }
+    else if (ui->radioButton4Char->isChecked()) {
+        stringLength = 4;
+    }
+    ui->stackedWidget->setCurrentIndex(2);
+    refreshWindow();
+}
+
+void MainWindow::on_stringSearchAgain_clicked()
+{
+    ui->stringsScrollBar->setValue(0);
+    ui->stackedWidget->setCurrentIndex(1);
+}
+
+void MainWindow::on_cancelSearchButton_clicked()
+{
+    ui->stackedWidget->setCurrentIndex(2);
 }

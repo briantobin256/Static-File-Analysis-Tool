@@ -19,7 +19,6 @@
 #include <QCoreApplication>
 #include <QCloseEvent>
 #include <math.h>
-#include <QtCharts>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -42,17 +41,22 @@ public:
     QString directory;
     QString fileHash;
     QStringList strings;
+    QStringList unsortedStrings;
     QString backupLoc;
 
-    QMap<int, bool> savedStringMap;
+    // string things
     QMap<QString, bool> stringsMap;
-
+    QMap<int, bool> savedStringMap;
     int stringCount;
     int stringOffset;
     int maxDisplayStrings;
     int stringsAdvancedSearchIndex;
     int dllSearchIndex;
     QString stringsAdvancedSearchString;
+    bool sortStrings;
+    bool removeDuplicates;
+    int stringLength;
+
 
     bool fileOpened;
     int fileSize;
@@ -65,6 +69,7 @@ public:
     int maxCols;
     bool dataChanged;
 
+    bool stringsSorted;
     bool backupBuilt;
     bool firstStringsRefresh;
     bool hashBuilt;
@@ -122,6 +127,12 @@ private slots:
     void on_actionExit_triggered();
 
     void on_actionSave_triggered();
+
+    void on_findStringsButton_clicked();
+
+    void on_stringSearchAgain_clicked();
+
+    void on_cancelSearchButton_clicked();
 
 private:
     Ui::MainWindow *ui;
