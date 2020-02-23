@@ -329,34 +329,27 @@ bool MainWindow::unpack()
 
 void MainWindow::on_actionChecklistMain_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(7);
+    ui->stackedWidget->setCurrentIndex(6);
     refreshWindow();
 }
 
 void MainWindow::on_actionFind_Strings_triggered()
 {
-    if (!stringsBuilt) {
-        ui->stackedWidget->setCurrentIndex(1);
-    }
-    else {
-        ui->stackedWidget->setCurrentIndex(2);
-    }
+    ui->stackedWidget->setCurrentIndex(1);
     refreshWindow();
 }
 
 void MainWindow::on_actionSaved_Strings_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(3);
+    ui->stackedWidget->setCurrentIndex(2);
     refreshWindow();
 
 }
 
 void MainWindow::on_actionHex_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(5);
-    ui->hexTable->horizontalHeader()->resizeSection(17, 150);
+    ui->stackedWidget->setCurrentIndex(4);
     refreshWindow();
-
 }
 
 void MainWindow::on_actionOpen_triggered()
@@ -420,9 +413,10 @@ void MainWindow::on_actionOpen_triggered()
     }
 }
 
-void MainWindow::on_actionDisassembly_triggered()
+void MainWindow::on_actionEntropy_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(6);
+    ui->stackedWidget->setCurrentIndex(5);
+    buildEntropyGraph();
     refreshWindow();
 }
 
@@ -460,7 +454,12 @@ void MainWindow::refreshHex()
         else {
             ui->hexScrollBar->setMaximum(0);
             if (fileSize > 0) {
-                displayRows = fileSize / displayRows + 1;
+                if (fileSize % displayRows == 0) {
+                    displayRows = fileSize / displayRows;
+                }
+                else {
+                    displayRows = fileSize / displayRows + 1;
+                }
             }
             else {
                 displayRows = 0;
@@ -561,6 +560,7 @@ void MainWindow::findStrings()
 
         QString item;
         bool nullSpaced = false, validString = false;
+        stringCount = 0;
 
         // for each char in file
         for (int i = 0; i < fileSize; i++) {
@@ -622,6 +622,8 @@ void MainWindow::findStrings()
             if (validString) {
                 strings.insert(stringCount,item);
                 stringsMap[item] = true;
+                hexLocationMap[stringCount] = i - item.size();
+                stringCount++;
                 item = "";
                 validString = false;
             }
@@ -630,15 +632,16 @@ void MainWindow::findStrings()
         if (item != "" && item.size() >= stringLength) {
             strings.insert(stringCount,item);
             stringsMap[item] = true;
+            hexLocationMap[stringCount] = fileSize - item.size();
+            stringCount++;
         }
 
-        if (sortStrings) {
-            strings.sort();
+        for (int i = 0; i < stringCount; i++) {
+            swapStringMap[i] = i;
+            //unsortSwapStringMap[i] = strings[i];
         }
 
-        if (removeDuplicates) {
-            strings.removeDuplicates();
-        }
+        unsortedStrings = strings;
 
         // display things
         stringCount = strings.size();
@@ -652,15 +655,8 @@ void MainWindow::findStrings()
 void MainWindow::refreshStrings()
 {
     if (fileOpened) {
-
-        if (!firstStringsRefresh) {
-            saveDisplayedStrings();
-        }
-        else {
-            firstStringsRefresh = false;
-        }
+        saveDisplayedStrings();
         ui->stringList->clear();
-
         maxDisplayStrings = 24; // eventually based on ui things
         int displayStringCount = maxDisplayStrings;
         stringOffset = ui->stringsScrollBar->value() * maxDisplayStrings;
@@ -694,14 +690,13 @@ void MainWindow::refreshStrings()
 
         ui->stringList->addItems(displayStrings);
 
-        for(int i = 0; i < displayStringCount; i++) {
-            ui->stringList->item(i)->setCheckState(Qt::Unchecked);
-        }
-
         // recheck saved strings
         for(int i = 0; i < displayStringCount; i++) {
             if (savedStringMap[i + stringOffset]) {
                 ui->stringList->item(i)->setCheckState(Qt::Checked);
+            }
+            else {
+                ui->stringList->item(i)->setCheckState(Qt::Unchecked);
             }
         }
 
@@ -719,15 +714,26 @@ void MainWindow::refreshStrings()
 
 void MainWindow::saveDisplayedStrings()
 {
-    if (ui->stringList->count() > 0) {
-        for (int i =0; i < ui->stringList->count(); i++) {
-            if (ui->stringList->item(i)->checkState()) {
-                savedStringMap[i + stringOffset] = true;
-            }
-            else {
-                savedStringMap[i + stringOffset] = false;
+    if (!firstStringsRefresh) {
+        if (!sorting) {
+            if (ui->stringList->count() > 0) {
+                for (int i = 0; i < ui->stringList->count(); i++) {
+                    if (ui->stringList->item(i)->checkState()) {
+                        savedStringMap[i + stringOffset] = true;
+                    }
+                    else {
+                        savedStringMap[i + stringOffset] = false;
+                    }
+                }
+                firstStringsRefresh = false;
             }
         }
+        else {
+            sorting = false;
+        }
+    }
+    else {
+        firstStringsRefresh = false;
     }
 }
 
@@ -798,7 +804,7 @@ void MainWindow::wheelEvent(QWheelEvent *event)
 
 void MainWindow::on_actionDLL_s_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(4);
+    ui->stackedWidget->setCurrentIndex(3);
     refreshWindow();
 }
 
@@ -954,6 +960,7 @@ void MainWindow::refreshChecklist()
         }
 
         ui->checklistFileHashValue->setText(fileHash);
+        ui->checklistFileSizeValue->setText(QString::number(fileSize));
 
         // progress bar stuff
         int progress = 1;
@@ -1027,29 +1034,29 @@ void MainWindow::refreshWindow()
         case 0: extendedWindowName = "";
         break;
 
-        case 2: extendedWindowName = " - Strings";
+        case 1: extendedWindowName = " - Strings";
         findStrings();
         refreshStrings();
         break;
 
-        case 3: extendedWindowName = " - Saved Strings";
+        case 2: extendedWindowName = " - Saved Strings";
         saveDisplayedStrings();
         refreshSavedStrings();
         break;
 
-        case 4: extendedWindowName = " - DLLs";
+        case 3: extendedWindowName = " - DLLs";
         findDLLs();
         break;
 
-        case 5: extendedWindowName = " - Hex";
+        case 4: extendedWindowName = " - Hex";
         refreshHex();
         break;
 
-        case 6: extendedWindowName = " - Entropy";
+        case 5: extendedWindowName = " - Entropy";
         getEntropy();
         break;
 
-        case 7: extendedWindowName = " - Checklist";
+        case 6: extendedWindowName = " - Checklist";
         refreshChecklist();
         break;
     }
@@ -1060,7 +1067,7 @@ void MainWindow::refreshWindow()
 
 void MainWindow::on_actionSeperate_Window_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(8);
+    ui->stackedWidget->setCurrentIndex(7);
 }
 
 void MainWindow::on_stringSearchButton_clicked()
@@ -1251,21 +1258,32 @@ void MainWindow::resetChecks()
     packPacked = false;
     packUnpacked = false;
     fileOpened = true;
-    stringsBuilt = false;
-    stringsDisplayed = false;
-    stringsSaved = false;
     dllsBuilt = false;
     hexBuilt = false;
     dataChanged = false;
     checklistBuilt = false;
-    firstStringsRefresh = true;
     entropyChecked = false;
+
+    // strings
+    stringsBuilt = false;
+    stringsDisplayed = false;
+    stringsSaved = false;
     stringsSorted = false;
+    firstStringsRefresh = true;
+    strings.clear();
+    unsortedStrings.clear();
+    stringsMap.clear();
     savedStringMap.clear();
-    ui->stringsScrollBar->setValue(0);
-    ui->hexScrollBar->setValue(0);
-    entropy = 0;
+    swapStringMap.clear();
     stringLength = 3;
+    ui->stringsScrollBar->setValue(0);
+    sorting = false;
+
+    hexLocationMap.clear();
+    ui->hexScrollBar->setValue(0);
+    ui->hexTable->horizontalHeader()->resizeSection(17, 150);
+    entropy = 0;
+    entropyGraphBuilt = false;
 }
 
 void MainWindow::saveChanges()
@@ -1350,30 +1368,10 @@ void MainWindow::getEntropy()
 {
     if (fileOpened) {
         if (!packChecked) {
-            QMap<unsigned char, double> freqMap;
-            entropy = 0;
-
-            // set all to 0
-            for (int i = 0; i < 256; i++) {
-                unsigned char c = i;
-                freqMap[c] = 0;
+            if (entropy <= 0) {
+                entropy = chunkEntropy(0, fileSize);
+                entropyChecked = true;
             }
-
-            // get char freq
-            for (int i = 0; i < fileSize; i++) {
-                char c = rawData[i];
-                unsigned char uc = static_cast<unsigned char>(c);
-                freqMap[uc]++;
-            }
-
-            // get probabilty of each char and append to entropy
-            for (int i = 0; i < 256; i++) {
-                unsigned char c = i;
-                double prob = freqMap[c] / fileSize;
-                entropy += (-1 * (prob * (log2 (prob))));
-            }
-
-            entropyChecked = true;
         }
     }
 }
@@ -1381,11 +1379,11 @@ void MainWindow::getEntropy()
 double MainWindow::chunkEntropy(int offset, int chunkSize)
 {
     double chunkEntropy = 0;
-    if (offset + chunkSize > fileSize) {
-        chunkSize = ((fileSize - (offset + chunkSize)) + chunkSize) % chunkSize;
-    }
-    // for each full chunk
-    for (int i = 0; i < chunkSize; i++) {
+    if (fileOpened) {
+        if (offset + chunkSize > fileSize) {
+            chunkSize = ((fileSize - (offset + chunkSize)) + chunkSize) % chunkSize;
+        }
+
         QMap<unsigned char, double> freqMap;
 
         // set all to 0
@@ -1405,47 +1403,85 @@ double MainWindow::chunkEntropy(int offset, int chunkSize)
         for (int i = 0; i < 256; i++) {
             unsigned char c = i;
             double prob = freqMap[c] / chunkSize;
-            chunkEntropy += (-1 * (prob * (log2 (prob))));
+            if (prob > 0) {
+                chunkEntropy += (-1 * (prob * (log2(prob))));
+            }
         }
     }
     return chunkEntropy;
 }
 
-void MainWindow::on_findStringsButton_clicked()
+void MainWindow::buildEntropyGraph()
 {
-    stringsBuilt = false;
-    strings.clear();
-    savedStringMap.clear();
+    if (fileOpened) {
+        if (!entropyGraphBuilt) {
+            int chunkSize = 256;
+            int chunks = fileSize / chunkSize;
+            // for all full chunks
+            for (int i = 0; i < chunks; i++) {
+                qDebug() << chunkEntropy(i * chunkSize, chunkSize);
+            }
+            // last and incomplete chunk
+            if (fileSize % chunkSize > 0) {
+                qDebug() << chunkEntropy(chunks * chunkSize, (fileSize % chunkSize + chunkSize) % chunkSize);
+            }
+            entropyGraphBuilt = true;
+        }
+    }
+}
 
-    if (ui->sortStringsCheckBox->checkState() == Qt::Checked) {
-        sortStrings = true;
+void MainWindow::on_stringList_itemDoubleClicked(QListWidgetItem *item)
+{
+    // only works if strings arent sorted
+    bool itemIndexFound = false;
+    int i = 0;
+    while (!itemIndexFound) {
+        if (ui->stringList->item(i) == item) {
+            itemIndexFound = true;
+        }
+        else {
+            i++;
+        }
     }
-    else {
-        sortStrings = false;
-    }
-    if (ui->removeDuplicatesCheckBox->checkState() == Qt::Checked) {
-        removeDuplicates = true;
-    }
-    else {
-        removeDuplicates = false;
-    }
-    if (ui->radioButton3Char->isChecked()) {
-        stringLength = 3;
-    }
-    else if (ui->radioButton4Char->isChecked()) {
-        stringLength = 4;
-    }
-    ui->stackedWidget->setCurrentIndex(2);
+    ui->stackedWidget->setCurrentIndex(4);
     refreshWindow();
+    qDebug() << hexLocationMap[swapStringMap[stringOffset + i]];
+    ui->hexScrollBar->setValue(hexLocationMap[swapStringMap[stringOffset + i]] / maxCols);
 }
 
-void MainWindow::on_stringSearchAgain_clicked()
+void MainWindow::on_stringSortUnsort_clicked()
 {
-    ui->stringsScrollBar->setValue(0);
-    ui->stackedWidget->setCurrentIndex(1);
-}
+    saveDisplayedStrings();
+    sorting = true;
+    if (stringsSorted) {
+        QMap<int, int> tmpSavedSwapMap;
+        for (int i = 0; i < stringCount; i++) {
+            tmpSavedSwapMap[swapStringMap[i]] = i;
+        }
+        swapStringMap = tmpSavedSwapMap;
+        strings = unsortedStrings;
+        stringsSorted = false;
+    }
+    else {
+        for (int i = 0; i < stringCount; i++) {
+            strings[i] += "(" + QString::number(i);
+        }
+        strings.sort();
+        for (int i = 0; i < stringCount; i++) {
+            QString string = strings[i];
+            int reservePos = string.lastIndexOf("(", string.size() - 1);
+            int newLoc = string.mid(reservePos + 1, string.size() - 1).toInt();
+            strings[i] = string.mid(0, reservePos);
+            swapStringMap[newLoc] = i;
+        }
+        stringsSorted = true;
+    }
 
-void MainWindow::on_cancelSearchButton_clicked()
-{
-    ui->stackedWidget->setCurrentIndex(2);
+    QMap<int, bool> tmpSavedSwapMap;
+    for (int i = 0; i < stringCount; i++) {
+        tmpSavedSwapMap[swapStringMap[i]] = savedStringMap[i];
+    }
+    savedStringMap = tmpSavedSwapMap;
+
+    refreshWindow();
 }

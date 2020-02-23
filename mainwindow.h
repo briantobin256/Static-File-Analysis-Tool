@@ -47,6 +47,9 @@ public:
     // string things
     QMap<QString, bool> stringsMap;
     QMap<int, bool> savedStringMap;
+    QMap<int, int> hexLocationMap;
+    QMap<int, int> swapStringMap;
+    //QMap<int, QString> unsortSwapStringMap;
     int stringCount;
     int stringOffset;
     int maxDisplayStrings;
@@ -56,6 +59,7 @@ public:
     bool sortStrings;
     bool removeDuplicates;
     int stringLength;
+    bool sorting;
 
 
     bool fileOpened;
@@ -84,6 +88,7 @@ public:
     bool dllsBuilt;
     bool checklistBuilt;
     bool entropyChecked;
+    bool entropyGraphBuilt;
 
 private slots:
     void on_actionCheck_if_Packed_triggered();
@@ -106,7 +111,7 @@ private slots:
 
     void on_actionOpen_triggered();
 
-    void on_actionDisassembly_triggered();
+    void on_actionEntropy_triggered();
 
     void on_hexScrollBar_valueChanged();
 
@@ -128,11 +133,9 @@ private slots:
 
     void on_actionSave_triggered();
 
-    void on_findStringsButton_clicked();
+    void on_stringList_itemDoubleClicked(QListWidgetItem *item);
 
-    void on_stringSearchAgain_clicked();
-
-    void on_cancelSearchButton_clicked();
+    void on_stringSortUnsort_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -153,6 +156,7 @@ private:
     void MainWindow::closeEvent (QCloseEvent *event);
     void getEntropy();
     double chunkEntropy(int offset, int chunkSize);
+    void buildEntropyGraph();
 
     //void searchStringList;
 
