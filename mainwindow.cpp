@@ -11,8 +11,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     basicWindowName = "Static File Analysis Tool";
 
-    resetChecks();
     fileOpened = false;
+    resetChecks();
 
     hashBuilt = false;
     fileHash = "";
@@ -359,25 +359,36 @@ void MainWindow::on_actionOpen_triggered()
 
     if (file.fileName() != "") {
 
-        // max size of 4GB 4294967294, 2GB 2147483647, 512MB 536870912
-        if (file.size() < 4294967296) {
+        if (file.size() > 10485760) {
+            DialogBox dialogBox;
+            dialogBox.setWindowTitle("Wait");
+            QLabel *label = new QLabel(&dialogBox);
+            label->setText("The file you choose is over 10MB.\nEven though this tool supports files up to 4GB,\nIt will be noticiably slower for most of the functions and things may not work as intended.");
+            dialogBox.exec();
+        }
 
-            if (file.size() > 10485760) {
-                DialogBox dialogBox;
-                dialogBox.setWindowTitle("Wait");
-                QLabel *label = new QLabel(&dialogBox);
-                label->setText("The file you choose is over 10MB.\nEven though this tool supports files up to 4GB,\nIt will be noticiably slower for most of the functions and things may not work as intended.");
-                dialogBox.exec();
+        if (file.open(QIODevice::ReadOnly)) {
+
+            if (fileOpened) {
+                free(rawData);
+                if (hexBuilt) {
+                    free(editedData);
+                }
             }
 
-            if (file.open(QIODevice::ReadOnly)) {
+            QDataStream ds(&file);
+            fileSize = file.size();
 
-                QDataStream ds(&file);
-                fileSize = file.size();
+            bool enoughMemory = true;
+            try {
                 rawData = new char[fileSize];
-                ds.readRawData(rawData, fileSize);
-                file.close();
+            } catch (...) {
+                enoughMemory = false;
+            }
 
+            if (enoughMemory) {
+                ds.readRawData(rawData, fileSize);
+                fileOpened = true;
                 resetChecks();
 
                 // get file name and directory
@@ -398,17 +409,19 @@ void MainWindow::on_actionOpen_triggered()
                     fileName = fullFileName.mid(i + 1, fullFileName.size() - i);
                     directory = fullFileName.mid(0, i + 1);
                 }
-
                 basicWindowName = "Static File Analysis Tool - " + fileName;
-                refreshWindow();
             }
-        }
-        else {
-            DialogBox dialogBox;
-            dialogBox.setWindowTitle("Error");
-            QLabel *label = new QLabel(&dialogBox);
-            label->setText("The file you choose is too big.\nIt must be smaller than 4GB.");
-            dialogBox.exec();
+            else {
+                // display not enough memory
+                DialogBox dialogBox;
+                dialogBox.setWindowTitle("Error");
+                QLabel *label = new QLabel(&dialogBox);
+                label->setText("The file you choose is too big.\nThis system does not currently have enough memory to open this file.");
+                dialogBox.exec();
+            }
+
+            file.close();
+            refreshWindow();
         }
     }
 }
@@ -426,12 +439,28 @@ void MainWindow::refreshHex()
         ui->hexTable->blockSignals(true);
         ui->hexTable->clearContents();
 
+        bool enoughMemory = true;
         if (!hexBuilt) {
-            editedData = new char[fileSize];
-            for (int i = 0; i < fileSize; i++) {
-                editedData[i] = rawData[i];
+            try {
+                editedData = new char[fileSize];
+            } catch (...) {
+                enoughMemory = false;
             }
-            hexBuilt = true;
+
+            if (enoughMemory) {
+                for (int i = 0; i < fileSize; i++) {
+                    editedData[i] = rawData[i];
+                }
+                hexBuilt = true;
+            }
+            else {
+                // display not enough memory
+                DialogBox dialogBox;
+                dialogBox.setWindowTitle("Error");
+                QLabel *label = new QLabel(&dialogBox);
+                label->setText("There is not enough system memory to edit this file.");
+                dialogBox.exec();
+            }
         }
 
         int rowNameLength = 8;
@@ -509,7 +538,13 @@ void MainWindow::refreshHex()
             // for each column in current row
             for (int col = 0; col < displayCols; col++) {
 
-                c = editedData[(dataStartPoint * maxCols) + col + (displayRow * maxCols)];
+                if (enoughMemory) {
+                    c = editedData[(dataStartPoint * maxCols) + col + (displayRow * maxCols)];
+                }
+                else {
+                    c = rawData[(dataStartPoint * maxCols) + col + (displayRow * maxCols)];
+                }
+
                 uc = static_cast<unsigned char>(c);
 
                 // append char to decoded text
@@ -1144,7 +1179,7 @@ void MainWindow::on_savedStringList_itemDoubleClicked(QListWidgetItem *item)
 
 void MainWindow::on_hexTable_itemChanged(QTableWidgetItem *item)
 {
-    if (fileOpened) {
+    if (fileOpened && editedData != NULL) {
         ui->hexTable->blockSignals(true);
 
         int row =  item->row(), col =  item->column();
@@ -1233,7 +1268,7 @@ void MainWindow::on_hexTable_itemChanged(QTableWidgetItem *item)
 
 void MainWindow::on_actionUndo_All_Changes_triggered()
 {
-    if (dataChanged) {
+    if (dataChanged && editedData != NULL) {
         if (fileOpened) {
             for (int i = 0; i < fileSize; i++) {
                 editedData[i] = rawData[i];
@@ -1257,7 +1292,6 @@ void MainWindow::resetChecks()
     packed = false;
     packPacked = false;
     packUnpacked = false;
-    fileOpened = true;
     dllsBuilt = false;
     hexBuilt = false;
     dataChanged = false;
