@@ -359,15 +359,19 @@ void MainWindow::on_actionOpen_triggered()
 
     if (file.fileName() != "") {
 
+        bool openFile = true;
         if (file.size() > 10485760) {
-            DialogBox dialogBox;
-            dialogBox.setWindowTitle("Wait");
-            QLabel *label = new QLabel(&dialogBox);
-            label->setText("The file you choose is over 10MB.\nEven though this tool supports files up to 4GB,\nIt will be noticiably slower for most of the functions and things may not work as intended.");
-            dialogBox.exec();
+            QMessageBox::StandardButton reply;
+            reply = QMessageBox::question(this, "Warning!", "The file you choose is over 10MB.\nIt will be noticiably slower for most of the functions and things may not work as intended.\nAre you sure you want to continue?", QMessageBox::Yes|QMessageBox::No);
+            if (reply == QMessageBox::Yes) {
+                openFile = true;
+            }
+            else {
+                openFile = false;
+            }
         }
 
-        if (file.open(QIODevice::ReadOnly)) {
+        if (file.open(QIODevice::ReadOnly) && openFile) {
 
             if (fileOpened) {
                 free(rawData);
@@ -592,7 +596,6 @@ void MainWindow::refreshHex()
 void MainWindow::findStrings()
 {
     if (!stringsBuilt && fileOpened) {
-
         QString item;
         bool nullSpaced = false, validString = false;
         stringCount = 0;
@@ -796,12 +799,16 @@ void MainWindow::refreshSavedStrings()
 
 void MainWindow::on_stringsScrollBar_valueChanged()
 {
-    refreshStrings();
+    if (!reseting) {
+        refreshStrings();
+    }
 }
 
 void MainWindow::on_hexScrollBar_valueChanged()
 {
-    refreshHex();
+    if (!reseting) {
+        refreshHex();
+    }
 }
 
 void MainWindow::wheelEvent(QWheelEvent *event)
@@ -1287,6 +1294,7 @@ void MainWindow::on_actionExit_triggered()
 
 void MainWindow::resetChecks()
 {
+    reseting = true;
     backupBuilt = false;
     packChecked = false;
     packed = false;
@@ -1318,6 +1326,7 @@ void MainWindow::resetChecks()
     ui->hexTable->horizontalHeader()->resizeSection(17, 150);
     entropy = 0;
     entropyGraphBuilt = false;
+    reseting = false;
 }
 
 void MainWindow::saveChanges()

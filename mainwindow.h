@@ -90,6 +90,8 @@ public:
     bool entropyChecked;
     bool entropyGraphBuilt;
 
+    bool reseting;
+
 private slots:
     void on_actionCheck_if_Packed_triggered();
 
