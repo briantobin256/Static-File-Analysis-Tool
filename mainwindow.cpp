@@ -35,7 +35,7 @@ void MainWindow::on_actionGenerate_Hash_triggered()
 
     if (fileOpened) {
         fileHash = generateHash(rawData, fileSize);
-        label->setText("The SHA-1 hash of the current file is:\n" + fileHash);
+        label->setText("The SHA-1 hash of the current data is:\n" + fileHash);
     }
     else {
         label->setText("No file is selected.");
@@ -50,9 +50,19 @@ QString MainWindow::generateHash(char *data , int size)
 {
     QCryptographicHash hash(QCryptographicHash::Sha1);
     hash.addData(data, size);
-    QByteArray hashArray = hash.result();
-    QString hashString = hashArray.toHex();
-    hashString = hashString.toUpper();
+    return hash.result().toHex().toUpper();
+}
+
+QString MainWindow::generateFileHash(QString fullName)
+{
+    QFile file(fullName);
+    QString hashString;
+    if (file.open(QIODevice::ReadOnly)) {
+        QCryptographicHash hash(QCryptographicHash::Sha1);
+        hash.addData(&file);
+        hashString = hash.result().toHex().toUpper();
+        file.close();
+    }
     return hashString;
 }
 
@@ -109,23 +119,13 @@ void MainWindow::on_actionCreate_Backup_triggered()
                 }
 
                 // create verficication hash
-                QFile verifyBackup(fullName);
-                QString verificationHash;
-
-                if (verifyBackup.open(QIODevice::ReadOnly)) {
-                    int size = createBackup.size();
-                    char *data = new char[size];
-                    QDataStream ds(&verifyBackup);
-                    ds.readRawData(data, size);
-                    verifyBackup.close();
-                    verificationHash = generateHash(data, size);
-                }
+                QString verificationHash = generateFileHash(fullName);
 
                 if (verificationHash == fileHash) {
                     label->setText("Backup Succesful.\n" + fileName + "\nhas been saved as\n" + fileHash + ".bak");
                 }
                 else {
-                    label->setText("Backup Failed Succesfully.\n" + fileName + "\nhas been saved as\n" + fileHash + ".bak\nhowever the backup is does not match the original file.");
+                    label->setText("An error has occured, the backup may not exist.");
                 }
             }
             backupBuilt = true;
@@ -232,15 +232,9 @@ void MainWindow::on_actionPack_triggered()
                     packPacked = true;
                     packUnpacked = false;
 
+                    // open newly packed file to analyse
                     QFile file(directory + fileName);
-                    if (file.open(QIODevice::ReadOnly)) {
-                        QDataStream ds(&file);
-                        fileSize = file.size();
-                        rawData = new char[fileSize];
-                        ds.readRawData(rawData, fileSize);
-                        file.close();
-                        resetChecks();
-                    }
+                    open(&file);
                 }
                 else {
                     label->setText("The current file was not packed using UPX.");
@@ -288,15 +282,9 @@ void MainWindow::on_actionUnpack_triggered()
                 packUnpacked = true;
                 packPacked = false;
 
+                // open newly packed file to analyse
                 QFile file(directory + fileName);
-                if (file.open(QIODevice::ReadOnly)) {
-                    QDataStream ds(&file);
-                    fileSize = file.size();
-                    rawData = new char[fileSize];
-                    ds.readRawData(rawData, fileSize);
-                    file.close();
-                    resetChecks();
-                }
+                open(&file);
             }
             else {
                 label->setText("The current file was not unpacked.");
@@ -356,78 +344,90 @@ void MainWindow::on_actionOpen_triggered()
 {
     saveChanges();
     QFile file(QFileDialog::getOpenFileName(this, "Select a file to analyse", "D:/Downloads"));
+    open(&file);
+}
 
-    if (file.fileName() != "") {
+void MainWindow::open(QFile *file)
+{
+    if (file->fileName() != "") {
 
-        bool openFile = true;
-        if (file.size() > 10485760) {
-            QMessageBox::StandardButton reply;
-            reply = QMessageBox::question(this, "Warning!", "The file you choose is over 10MB.\nIt will be noticiably slower for most of the functions and things may not work as intended.\nAre you sure you want to continue?", QMessageBox::Yes|QMessageBox::No);
-            if (reply == QMessageBox::Yes) {
-                openFile = true;
+        if (file->size() <= 2147483647) {
+
+            bool openFile = true;
+            if (file->size() > 1048576) {
+                QMessageBox::StandardButton reply;
+                reply = QMessageBox::question(this, "Warning!", "The file you choose is over 1MB.\nIt will be noticiably slower for most of the functions and things may not work as intended.\nAre you sure you want to continue?", QMessageBox::Yes|QMessageBox::No);
+                if (reply == QMessageBox::Yes) {
+                    openFile = true;
+                }
+                else {
+                    openFile = false;
+                }
             }
-            else {
-                openFile = false;
+
+            if (file->open(QIODevice::ReadOnly) && openFile) {
+
+                if (fileOpened) {
+                    free(rawData);
+                }
+
+                QDataStream ds(file);
+                fileSize = file->size();
+
+                bool enoughMemory = true;
+                try {
+                    rawData = new char[fileSize];
+                } catch (...) {
+                    enoughMemory = false;
+                }
+
+                if (enoughMemory) {
+                    ds.readRawData(rawData, fileSize);
+                    fileOpened = true;
+                    resetChecks();
+
+                    // get file name and directory
+                    QString fullFileName = file->fileName();
+                    bool slashFound = false;
+                    int i = fullFileName.size() - 1;
+
+                    while (!slashFound && i >= 0) {
+                        if (fullFileName[i] == 47 || fullFileName[i] == 92) {
+                            slashFound = true;
+                        }
+                        else {
+                            i--;
+                        }
+                    }
+
+                    if (slashFound) {
+                        fileName = fullFileName.mid(i + 1, fullFileName.size() - i);
+                        directory = fullFileName.mid(0, i + 1);
+                    }
+                    basicWindowName = "Static File Analysis Tool - " + fileName;
+                }
+                else {
+                    // display not enough memory
+                    DialogBox dialogBox;
+                    dialogBox.setWindowTitle("Error");
+                    QLabel *label = new QLabel(&dialogBox);
+                    label->setText("The file you choose is too big.\nThis system does not currently have enough memory to open this file.");
+                    dialogBox.exec();
+                }
             }
         }
-
-        if (file.open(QIODevice::ReadOnly) && openFile) {
-
-            if (fileOpened) {
-                free(rawData);
-                if (hexBuilt) {
-                    free(editedData);
-                }
-            }
-
-            QDataStream ds(&file);
-            fileSize = file.size();
-
-            bool enoughMemory = true;
-            try {
-                rawData = new char[fileSize];
-            } catch (...) {
-                enoughMemory = false;
-            }
-
-            if (enoughMemory) {
-                ds.readRawData(rawData, fileSize);
-                fileOpened = true;
-                resetChecks();
-
-                // get file name and directory
-                QString fullFileName = file.fileName();
-                bool slashFound = false;
-                int i = fullFileName.size() - 1;
-
-                while (!slashFound && i >= 0) {
-                    if (fullFileName[i] == 47 || fullFileName[i] == 92) {
-                        slashFound = true;
-                    }
-                    else {
-                        i--;
-                    }
-                }
-
-                if (slashFound) {
-                    fileName = fullFileName.mid(i + 1, fullFileName.size() - i);
-                    directory = fullFileName.mid(0, i + 1);
-                }
-                basicWindowName = "Static File Analysis Tool - " + fileName;
-            }
-            else {
-                // display not enough memory
-                DialogBox dialogBox;
-                dialogBox.setWindowTitle("Error");
-                QLabel *label = new QLabel(&dialogBox);
-                label->setText("The file you choose is too big.\nThis system does not currently have enough memory to open this file.");
-                dialogBox.exec();
-            }
-
-            file.close();
-            refreshWindow();
+        else {
+            // file too big
+            DialogBox dialogBox;
+            dialogBox.setWindowTitle("Error");
+            QLabel *label = new QLabel(&dialogBox);
+            label->setText("The file you choose is too big.\nMax file size of 2GB.");
+            dialogBox.exec();
         }
     }
+    file->close();
+    resetChecks();
+    refreshWindow();
 }
 
 void MainWindow::on_actionEntropy_triggered()
@@ -443,30 +443,7 @@ void MainWindow::refreshHex()
         ui->hexTable->blockSignals(true);
         ui->hexTable->clearContents();
 
-        bool enoughMemory = true;
-        if (!hexBuilt) {
-            try {
-                editedData = new char[fileSize];
-            } catch (...) {
-                enoughMemory = false;
-            }
-
-            if (enoughMemory) {
-                for (int i = 0; i < fileSize; i++) {
-                    editedData[i] = rawData[i];
-                }
-                hexBuilt = true;
-            }
-            else {
-                // display not enough memory
-                DialogBox dialogBox;
-                dialogBox.setWindowTitle("Error");
-                QLabel *label = new QLabel(&dialogBox);
-                label->setText("There is not enough system memory to edit this file.");
-                dialogBox.exec();
-            }
-        }
-
+        hexBuilt = true;
         int rowNameLength = 8;
         displayCols = 16; // variable
         displayRows = 16; // variable
@@ -542,14 +519,7 @@ void MainWindow::refreshHex()
 
             // for each column in current row
             for (int col = 0; col < displayCols; col++) {
-
-                if (enoughMemory) {
-                    c = editedData[(dataStartPoint * maxCols) + col + (displayRow * maxCols)];
-                }
-                else {
-                    c = rawData[(dataStartPoint * maxCols) + col + (displayRow * maxCols)];
-                }
-
+                c = rawData[(dataStartPoint * maxCols) + col + (displayRow * maxCols)];
                 uc = static_cast<unsigned char>(c);
 
                 // append char to decoded text
@@ -1187,7 +1157,7 @@ void MainWindow::on_savedStringList_itemDoubleClicked(QListWidgetItem *item)
 
 void MainWindow::on_hexTable_itemChanged(QTableWidgetItem *item)
 {
-    if (fileOpened && editedData != NULL) {
+    if (fileOpened) {
         int row =  item->row(), col =  item->column();
 
         // check if cell is within displayrows and displaycols
@@ -1243,7 +1213,7 @@ void MainWindow::on_hexTable_itemChanged(QTableWidgetItem *item)
                 }
 
                 if (!good) {
-                    char c = editedData[(dataStartPoint * maxCols) + col + (row * maxCols)];
+                    char c = rawData[(dataStartPoint * maxCols) + col + (row * maxCols)];
                     unsigned char uc = static_cast<unsigned char>(c);
                     // convert char to hex
                     int temp, i = 1;
@@ -1283,8 +1253,14 @@ void MainWindow::on_hexTable_itemChanged(QTableWidgetItem *item)
                     charDec2 = charDec2 - 48;
                 }
                 int fullDec = charDec1 * 16 + charDec2;
-                editedData[(dataStartPoint * maxCols) + col + (row * maxCols)] = fullDec;
-                ui->hexTable->blockSignals(false);
+
+                int location = (dataStartPoint * maxCols) + col + (row * maxCols);
+                if (!changedDataMap[location]) {
+                    originalDataMap[location] = rawData[location];
+                    changedDataMap[location] = true;
+                }
+
+                rawData[location] = fullDec;
                 dataChanged = true;
             }
             else {
@@ -1303,15 +1279,20 @@ void MainWindow::on_hexTable_itemChanged(QTableWidgetItem *item)
 
 void MainWindow::on_actionUndo_All_Changes_triggered()
 {
-    if (dataChanged && editedData != NULL) {
-        if (fileOpened) {
-            for (int i = 0; i < fileSize; i++) {
-                editedData[i] = rawData[i];
+    undoChanges();
+    refreshWindow();
+}
+
+void MainWindow::undoChanges()
+{
+    if (dataChanged) {
+        for (int i = 0; i < fileSize; i++) {
+            if (changedDataMap[i]) {
+                rawData[i] = originalDataMap[i];
             }
         }
         dataChanged = false;
     }
-    refreshWindow();
 }
 
 void MainWindow::on_actionExit_triggered()
@@ -1365,27 +1346,18 @@ void MainWindow::saveChanges()
         if (reply == QMessageBox::Yes) {
 
             // change actual file data
-            QString tmpHash = generateHash(editedData, fileSize);
+            QString tmpHash = generateHash(rawData, fileSize);
             QString tmpName = tmpHash + ".tmp";
             QString fullTmpName = directory + tmpName;
             QFile newFile(fullTmpName);
             if (newFile.open(QIODevice::ReadWrite)) {
                 QDataStream ds(&newFile);
-                ds.writeRawData(editedData, fileSize);
+                ds.writeRawData(rawData, fileSize);
                 newFile.close();
             }
 
             // create verficication hash
-            QFile verifyNewFile(fullTmpName);
-            QString verificationHash;
-            if (verifyNewFile.open(QIODevice::ReadOnly)) {
-                int size = newFile.size();
-                char *data = new char[size];
-                QDataStream ds(&verifyNewFile);
-                ds.readRawData(data, size);
-                verifyNewFile.close();
-                verificationHash = generateHash(data, size);
-            }
+            QString verificationHash = generateFileHash(fullTmpName);
 
             // verify save
             QDir path(directory);
@@ -1393,11 +1365,6 @@ void MainWindow::saveChanges()
                 // delete original file and rename tmp file
                 path.remove(fileName);
                 path.rename(tmpName, fileName);
-
-                // change memory data
-                for (int i = 0; i < fileSize; i++) {
-                  rawData[i] = editedData[i];
-                }
 
                 // reset checks
                 resetChecks();
@@ -1410,15 +1377,10 @@ void MainWindow::saveChanges()
                 dialogBox.exec();
 
                 path.remove(tmpName);
-
-                for (int i = 0; i < fileSize; i++) {
-                  editedData[i] = rawData[i];
-                }
+                undoChanges();
             }
         } else {
-            for (int i = 0; i < fileSize; i++) {
-              editedData[i] = rawData[i];
-            }
+            undoChanges();
         }
         dataChanged = false;
     }

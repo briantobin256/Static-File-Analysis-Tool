@@ -33,7 +33,6 @@ public:
     ~MainWindow();
 
     char *rawData;
-    char *editedData;
 
     QString basicWindowName;
     QString extendedWindowName;
@@ -49,7 +48,6 @@ public:
     QMap<int, bool> savedStringMap;
     QMap<int, int> hexLocationMap;
     QMap<int, int> swapStringMap;
-    //QMap<int, QString> unsortSwapStringMap;
     int stringCount;
     int stringOffset;
     int maxDisplayStrings;
@@ -74,6 +72,8 @@ public:
     int displayRows;
     int displayCols;
     bool dataChanged;
+    QMap<int, char> originalDataMap;
+    QMap<int, bool> changedDataMap;
 
     bool stringsSorted;
     bool backupBuilt;
@@ -144,6 +144,8 @@ private slots:
 private:
     Ui::MainWindow *ui;
     QString generateHash(char *data, int size);
+    QString generateFileHash(QString fileName);
+    void open(QFile *f);
     bool isPacked();
     bool pack();
     bool unpack();
@@ -157,6 +159,7 @@ private:
     void refreshWindow();
     void resetChecks();
     void saveChanges();
+    void undoChanges();
     void MainWindow::closeEvent (QCloseEvent *event);
     void getEntropy();
     double chunkEntropy(int offset, int chunkSize);
