@@ -71,6 +71,8 @@ public:
     int dataStartPoint;
     int maxRows;
     int maxCols;
+    int displayRows;
+    int displayCols;
     bool dataChanged;
 
     bool stringsSorted;

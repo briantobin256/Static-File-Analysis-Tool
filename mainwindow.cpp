@@ -468,9 +468,10 @@ void MainWindow::refreshHex()
         }
 
         int rowNameLength = 8;
-        int displayCols = 16;
-        int displayRows = 16;
-        maxCols = 16;
+        displayCols = 16; // variable
+        displayRows = 16; // variable
+        maxCols = 16; // static
+        maxRows = 16; // static
         dataStartPoint = ui->hexScrollBar->value();
 
         // if file is big enough to have a scroll bar
@@ -1187,90 +1188,117 @@ void MainWindow::on_savedStringList_itemDoubleClicked(QListWidgetItem *item)
 void MainWindow::on_hexTable_itemChanged(QTableWidgetItem *item)
 {
     if (fileOpened && editedData != NULL) {
-        ui->hexTable->blockSignals(true);
-
         int row =  item->row(), col =  item->column();
-        QTableWidgetItem *hex;
-        QString hexText = "00";
-        QString text = item->text();
 
-        // check if entered value is valid
-        bool good = true;
-        if (text.size() == 1 || text.size() == 2) {
-            for (int i = 0; i < text.size(); i++) {
-                // if number or upper case char
-                if ((text[i].unicode() >= 48 && text[i].unicode() <= 57) || (text[i].unicode() >= 65 && text[i].unicode() <= 70)) {
-                    if (text.size() == 1) {
-                        hexText[1] = text[i];
-                    }
-                    else {
-                        hexText[i] = text[i];
+        // check if cell is within displayrows and displaycols
+        if (row < maxRows && col < maxCols) {
+            bool inScope = true;
+            // if out of current file scope
+            if (ui->hexScrollBar->value() == ui->hexScrollBar->maximum()) {
+                if (row >= displayRows) {
+                    inScope = false;
+                }
+                else if (row == displayRows - 1) {
+                    if (col >= displayCols) {
+                        inScope = false;
                     }
                 }
-                // if lower case char
-                else if (text[i].unicode() >= 97 && text[i].unicode() <= 102) {
-                    if (text.size() == 1) {
-                        hexText[1] = text[0].unicode() - 32;
-                    }
-                    else {
-                        hexText[i] = text[i].unicode() - 32;
+            }
+
+            if(inScope) {
+                ui->hexTable->blockSignals(true);
+                QTableWidgetItem *hex;
+                QString hexText = "00";
+                QString text = item->text();
+
+                // check if entered value is valid
+                bool good = true;
+                if (text.size() == 1 || text.size() == 2) {
+                    for (int i = 0; i < text.size(); i++) {
+                        // if number or upper case char
+                        if ((text[i].unicode() >= 48 && text[i].unicode() <= 57) || (text[i].unicode() >= 65 && text[i].unicode() <= 70)) {
+                            if (text.size() == 1) {
+                                hexText[1] = text[i];
+                            }
+                            else {
+                                hexText[i] = text[i];
+                            }
+                        }
+                        // if lower case char
+                        else if (text[i].unicode() >= 97 && text[i].unicode() <= 102) {
+                            if (text.size() == 1) {
+                                hexText[1] = text[0].unicode() - 32;
+                            }
+                            else {
+                                hexText[i] = text[i].unicode() - 32;
+                            }
+                        }
+                        else {
+                            good = false;
+                        }
                     }
                 }
                 else {
                     good = false;
                 }
+
+                if (!good) {
+                    char c = editedData[(dataStartPoint * maxCols) + col + (row * maxCols)];
+                    unsigned char uc = static_cast<unsigned char>(c);
+                    // convert char to hex
+                    int temp, i = 1;
+                    while(uc != 0) {
+                        temp = uc % 16;
+                        // to convert integer into character
+                        if(temp < 10)
+                        {
+                            temp += 48;
+                        }
+                        else
+                        {
+                            temp += 55;
+                        }
+                        hexText[i] = temp;
+                        i--;
+                        uc = uc / 16;
+                    }
+                }
+
+                hex = new QTableWidgetItem(hexText);
+                hex->setTextAlignment(Qt::AlignCenter);
+                ui->hexTable->setItem(row, col, hex);
+
+                // hex to dec
+                int charDec1 = hexText[0].unicode(), charDec2 = hexText[1].unicode();
+                if (charDec1 > 57) {
+                    charDec1 = charDec1 - 55;
+                }
+                else {
+                    charDec1 = charDec1 - 48;
+                }
+                if (charDec2 > 57) {
+                    charDec2 = charDec2 - 55;
+                }
+                else {
+                    charDec2 = charDec2 - 48;
+                }
+                int fullDec = charDec1 * 16 + charDec2;
+                editedData[(dataStartPoint * maxCols) + col + (row * maxCols)] = fullDec;
+                ui->hexTable->blockSignals(false);
+                dataChanged = true;
+            }
+            else {
+                ui->hexTable->clearContents();
             }
         }
-
-        if (!good || text.size() == 0 || text.size() > 2) {
-            char c = editedData[(dataStartPoint * maxCols) + col + (row * maxCols)];
-            unsigned char uc = static_cast<unsigned char>(c);
-            // convert char to hex
-            int temp, i = 1;
-            while(uc != 0) {
-                temp = uc % 16;
-                // to convert integer into character
-                if(temp < 10)
-                {
-                    temp += 48;
-                }
-                else
-                {
-                    temp += 55;
-                }
-                hexText[i] = temp;
-                i--;
-                uc = uc / 16;
-            }
-        }
-
-        hex = new QTableWidgetItem(hexText);
-        hex->setTextAlignment(Qt::AlignCenter);
-        ui->hexTable->setItem(row, col, hex);
-
-        // hex to dec
-        int charDec1 = hexText[0].unicode(), charDec2 = hexText[1].unicode();
-        if (charDec1 > 57) {
-            charDec1 = charDec1 - 55;
-        }
         else {
-            charDec1 = charDec1 - 48;
+            ui->hexTable->clearContents();
         }
-        if (charDec2 > 57) {
-            charDec2 = charDec2 - 55;
-        }
-        else {
-            charDec2 = charDec2 - 48;
-        }
-        int fullDec = charDec1 * 16 + charDec2;
-        editedData[(dataStartPoint * maxCols) + col + (row * maxCols)] = fullDec;
-        ui->hexTable->blockSignals(false);
-        dataChanged = true;
-        refreshHex();
     }
     else {
         ui->hexTable->clearContents();
     }
+    refreshHex();
 }
 
 void MainWindow::on_actionUndo_All_Changes_triggered()
