@@ -48,6 +48,7 @@ public:
     QMap<int, bool> savedStringMap;
     QMap<int, int> hexLocationMap;
     QMap<int, int> swapStringMap;
+
     int stringCount;
     int stringOffset;
     int maxDisplayStrings;
@@ -164,6 +165,7 @@ private:
     void getEntropy();
     double chunkEntropy(int offset, int chunkSize);
     void buildEntropyGraph();
+    void stringToHexLocation(QListWidgetItem *item);
 
     //void searchStringList;
 

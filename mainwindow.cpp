@@ -26,6 +26,26 @@ MainWindow::~MainWindow()
     delete ui;
 }
 
+// UI ACTIONS
+
+void MainWindow::on_actionOpen_triggered()
+{
+    saveChanges();
+    QFile file(QFileDialog::getOpenFileName(this, "Select a file to analyse", "D:/Downloads"));
+    open(&file);
+}
+
+void MainWindow::on_actionSave_triggered()
+{
+    saveChanges();
+}
+
+void MainWindow::on_actionUndo_All_Changes_triggered()
+{
+    undoChanges();
+    refreshWindow();
+}
+
 void MainWindow::on_actionGenerate_Hash_triggered()
 {
     saveChanges();
@@ -44,26 +64,6 @@ void MainWindow::on_actionGenerate_Hash_triggered()
     hashBuilt = true;
     dialogBox.exec();
     refreshWindow();
-}
-
-QString MainWindow::generateHash(char *data , int size)
-{
-    QCryptographicHash hash(QCryptographicHash::Sha1);
-    hash.addData(data, size);
-    return hash.result().toHex().toUpper();
-}
-
-QString MainWindow::generateFileHash(QString fullName)
-{
-    QFile file(fullName);
-    QString hashString;
-    if (file.open(QIODevice::ReadOnly)) {
-        QCryptographicHash hash(QCryptographicHash::Sha1);
-        hash.addData(&file);
-        hashString = hash.result().toHex().toUpper();
-        file.close();
-    }
-    return hashString;
 }
 
 void MainWindow::on_actionCreate_Backup_triggered()
@@ -143,6 +143,12 @@ void MainWindow::on_actionCreate_Backup_triggered()
     refreshWindow();
 }
 
+void MainWindow::on_actionExit_triggered()
+{
+    saveChanges();
+    QApplication::quit();
+}
+
 void MainWindow::on_actionCheck_if_Packed_triggered()
 {
     saveChanges();
@@ -176,40 +182,6 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
     dialogBox.exec();
     packChecked = true;
     refreshWindow();
-}
-
-bool MainWindow::isPacked()
-{
-    if (!packChecked) {
-
-        QString fullFileName = 34 + directory + fileName + 34;
-        QString command = "upx -l " + fullFileName + " > upx.tmp";
-        system(qPrintable(command));
-
-        // check output
-        QFile upxCheck("upx.tmp");
-        if (upxCheck.open(QIODevice::ReadOnly)) {
-            QTextStream in(&upxCheck);
-            int i = 0;
-            while (!in.atEnd()) {
-                in.readLine();
-                i++;
-            }
-            upxCheck.close();
-            if (i == 7) {
-                packed = true;
-            }
-            else {
-                packed = false;
-            }
-        }
-        // remove tmp file
-        QDir path;
-        path.setPath(path.currentPath());
-        path.remove("upx.tmp");
-        packChecked = true;
-    }
-    return packed;
 }
 
 void MainWindow::on_actionPack_triggered()
@@ -253,19 +225,6 @@ void MainWindow::on_actionPack_triggered()
     refreshWindow();
 }
 
-bool MainWindow::pack()
-{
-    QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(this, "Warning!", "Make sure to backup the file before packing!/nAre you sure you want to pack the current file?", QMessageBox::Yes|QMessageBox::No);
-    if (reply == QMessageBox::Yes) {
-        QString fullFileName = 34 + directory + fileName + 34;
-        QString command = "upx -5 " + fullFileName;
-        system(qPrintable(command));
-        return true;
-    }
-    return false;
-}
-
 void MainWindow::on_actionUnpack_triggered()
 {
     saveChanges();
@@ -302,25 +261,6 @@ void MainWindow::on_actionUnpack_triggered()
     refreshWindow();
 }
 
-bool MainWindow::unpack()
-{
-    QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(this, "Warning!", "Make sure to backup the file before unpacking!/nAre you sure you want to unpack the current file?", QMessageBox::Yes|QMessageBox::No);
-    if (reply == QMessageBox::Yes) {
-        QString fullFileName = 34 + directory + fileName + 34;
-        QString command = "upx -d " + fullFileName;
-        system(qPrintable(command));
-        return true;
-    }
-    return false;
-}
-
-void MainWindow::on_actionChecklistMain_triggered()
-{
-    ui->stackedWidget->setCurrentIndex(6);
-    refreshWindow();
-}
-
 void MainWindow::on_actionFind_Strings_triggered()
 {
     ui->stackedWidget->setCurrentIndex(1);
@@ -334,18 +274,325 @@ void MainWindow::on_actionSaved_Strings_triggered()
 
 }
 
+void MainWindow::on_actionDLL_s_triggered()
+{
+    ui->stackedWidget->setCurrentIndex(3);
+    refreshWindow();
+}
+
 void MainWindow::on_actionHex_triggered()
 {
     ui->stackedWidget->setCurrentIndex(4);
     refreshWindow();
 }
 
-void MainWindow::on_actionOpen_triggered()
+void MainWindow::on_actionEntropy_triggered()
+{
+    ui->stackedWidget->setCurrentIndex(5);
+    buildEntropyGraph();
+    refreshWindow();
+}
+
+void MainWindow::on_actionChecklistMain_triggered()
+{
+    ui->stackedWidget->setCurrentIndex(6);
+    refreshWindow();
+}
+
+void MainWindow::on_actionSeperate_Window_triggered()
+{
+    ui->stackedWidget->setCurrentIndex(7);
+}
+
+void MainWindow::on_stringsScrollBar_valueChanged()
+{
+    if (!reseting) {
+        refreshStrings();
+    }
+}
+
+void MainWindow::on_hexScrollBar_valueChanged()
+{
+    if (!reseting) {
+        refreshHex();
+    }
+}
+
+void MainWindow::on_stringList_itemDoubleClicked(QListWidgetItem *item)
+{
+    stringToHexLocation(item);
+}
+
+void MainWindow::on_savedStringList_itemDoubleClicked(QListWidgetItem *item)
+{
+    //QApplication::clipboard()->setText(item->text());
+    stringToHexLocation(item);
+}
+
+void MainWindow::on_hexTable_itemChanged(QTableWidgetItem *item)
+{
+    if (fileOpened) {
+        int row =  item->row(), col =  item->column();
+
+        // check if cell is within displayrows and displaycols
+        if (row < maxRows && col < maxCols) {
+            bool inScope = true;
+            // if out of current file scope
+            if (ui->hexScrollBar->value() == ui->hexScrollBar->maximum()) {
+                if (row >= displayRows) {
+                    inScope = false;
+                }
+                else if (row == displayRows - 1) {
+                    if (col >= displayCols) {
+                        inScope = false;
+                    }
+                }
+            }
+
+            if(inScope) {
+                ui->hexTable->blockSignals(true);
+                QTableWidgetItem *hex;
+                QString hexText = "00";
+                QString text = item->text();
+
+                // check if entered value is valid
+                bool good = true;
+                if (text.size() == 1 || text.size() == 2) {
+                    for (int i = 0; i < text.size(); i++) {
+                        // if number or upper case char
+                        if ((text[i].unicode() >= 48 && text[i].unicode() <= 57) || (text[i].unicode() >= 65 && text[i].unicode() <= 70)) {
+                            if (text.size() == 1) {
+                                hexText[1] = text[i];
+                            }
+                            else {
+                                hexText[i] = text[i];
+                            }
+                        }
+                        // if lower case char
+                        else if (text[i].unicode() >= 97 && text[i].unicode() <= 102) {
+                            if (text.size() == 1) {
+                                hexText[1] = text[0].unicode() - 32;
+                            }
+                            else {
+                                hexText[i] = text[i].unicode() - 32;
+                            }
+                        }
+                        else {
+                            good = false;
+                        }
+                    }
+                }
+                else {
+                    good = false;
+                }
+
+                if (!good) {
+                    char c = rawData[(dataStartPoint * maxCols) + col + (row * maxCols)];
+                    unsigned char uc = static_cast<unsigned char>(c);
+                    // convert char to hex
+                    int temp, i = 1;
+                    while(uc != 0) {
+                        temp = uc % 16;
+                        // to convert integer into character
+                        if(temp < 10)
+                        {
+                            temp += 48;
+                        }
+                        else
+                        {
+                            temp += 55;
+                        }
+                        hexText[i] = temp;
+                        i--;
+                        uc = uc / 16;
+                    }
+                }
+
+                hex = new QTableWidgetItem(hexText);
+                hex->setTextAlignment(Qt::AlignCenter);
+                ui->hexTable->setItem(row, col, hex);
+
+                // hex to dec
+                int charDec1 = hexText[0].unicode(), charDec2 = hexText[1].unicode();
+                if (charDec1 > 57) {
+                    charDec1 = charDec1 - 55;
+                }
+                else {
+                    charDec1 = charDec1 - 48;
+                }
+                if (charDec2 > 57) {
+                    charDec2 = charDec2 - 55;
+                }
+                else {
+                    charDec2 = charDec2 - 48;
+                }
+                int fullDec = charDec1 * 16 + charDec2;
+
+                int location = (dataStartPoint * maxCols) + col + (row * maxCols);
+                if (!changedDataMap[location]) {
+                    originalDataMap[location] = rawData[location];
+                    changedDataMap[location] = true;
+                }
+
+                rawData[location] = fullDec;
+                dataChanged = true;
+            }
+            else {
+                ui->hexTable->clearContents();
+            }
+        }
+        else {
+            ui->hexTable->clearContents();
+        }
+    }
+    else {
+        ui->hexTable->clearContents();
+    }
+    refreshHex();
+}
+
+void MainWindow::on_stringSearchButton_clicked()
+{
+    if (stringsBuilt) {
+
+        QString search = ui->searchString->text();
+
+        if (stringsAdvancedSearchString != search) {
+            stringsAdvancedSearchIndex = 0;
+        }
+        stringsAdvancedSearchString = search;
+
+        bool found = false;
+        while (!found && stringsAdvancedSearchIndex < stringCount) {
+
+            //
+            // starting search icon
+            //
+
+            QString searching = strings[stringsAdvancedSearchIndex];
+            int searchLength = search.length();
+            int searchedLength = strings[stringsAdvancedSearchIndex].length();
+
+            // for each starting position the search string could fit into the searched string
+            for (int j = 0; j <= searchedLength - searchLength; j++) {
+                int k;
+                // for the length of the search string
+                for (k = 0; k < searchLength; k++) {
+                    // if chars dont match
+                    if (searching[j + k] != search[k]) {
+                        // if case sensitive match
+                        if ((searching[j + k].unicode() + 32) != search[k] && (searching[j + k].unicode() - 32) != search[k]) {
+                            break;
+                        }
+                    }
+                }
+                if (k == searchLength) {
+                    found = true;
+                }
+            }
+            stringsAdvancedSearchIndex++;
+        }
+
+        //
+        // finished search icon
+        //
+
+        if (found) {
+            if (stringsAdvancedSearchIndex % maxDisplayStrings == 0) {
+                ui->stringsScrollBar->setValue((stringsAdvancedSearchIndex / maxDisplayStrings) - 1);
+            }
+            else {
+                ui->stringsScrollBar->setValue(stringsAdvancedSearchIndex / maxDisplayStrings);
+            }
+            // highlight string
+            //qDebug() << "search string: " << stringsAdvancedSearchIterator;
+            //qDebug() << "search string: " << strings[stringsAdvancedSearchIterator - 1];
+            //ui->stringList->item((stringsAdvancedSearchIterator % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setSelected(true);
+            ui->stringList->item((stringsAdvancedSearchIndex % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setCheckState(Qt::Checked);
+            //ui->stringList->setFocus();
+            refreshStrings();
+        }
+        else if (stringsAdvancedSearchIndex == stringCount) {
+            stringsAdvancedSearchIndex = 0;
+        }
+    }
+}
+
+void MainWindow::on_stringSortUnsort_clicked()
+{
+    saveDisplayedStrings();
+    sorting = true;
+    if (stringsSorted) { // unsort
+        for (int i = 0; i < stringCount; i++) {
+            swapStringMap[i] = i;
+        }
+        strings = unsortedStrings;
+        stringsSorted = false;
+    }
+    else { // sort
+        for (int i = 0; i < stringCount; i++) {
+            strings[i] += "(" + QString::number(i);
+        }
+        strings.sort();
+        for (int i = 0; i < stringCount; i++) {
+            QString string = strings[i];
+            int startOfOldLoc = string.lastIndexOf("(", string.size() - 1);
+            int oldLoc = string.mid(startOfOldLoc + 1, string.size() - 1).toInt();
+            strings[i] = string.mid(0, startOfOldLoc);
+            swapStringMap[oldLoc] = i;
+        }
+        stringsSorted = true;
+    }
+
+    QMap<int, bool> tmpSavedSwapMap;
+    for (int i = 0; i < stringCount; i++) {
+        tmpSavedSwapMap[swapStringMap[i]] = savedStringMap[i];
+    }
+    savedStringMap = tmpSavedSwapMap;
+
+    refreshWindow();
+}
+
+void MainWindow::wheelEvent(QWheelEvent *event)
+{
+    /*
+    // only while showing hex
+    if (ui->stackedWidget->currentIndex() == 4 && ui->hexScrollBar->maximum() > 0) {
+
+        QPoint numDegrees = event->angleDelta() / 8;
+
+        if (!numDegrees.isNull()) {
+            QPoint numSteps = numDegrees / 15;
+            int move = static_cast<int>(numSteps.y());
+            qDebug() << "move" << move;
+            int currentValue = ui->hexScrollBar->value();
+            int min = ui->hexScrollBar->minimum();
+            int max = ui->hexScrollBar->maximum();
+
+            if (move == 1 && currentValue < max) {
+                ui->hexScrollBar ++;
+                qDebug() << "moved down";
+            }
+            else if (move == -1 && currentValue > min) {
+                ui->hexScrollBar --;
+                qDebug() << "moved up";
+            }
+        }
+
+        //event->accept();
+
+        //refreshHex();
+    }
+    */
+}
+
+void MainWindow::closeEvent (QCloseEvent *event)
 {
     saveChanges();
-    QFile file(QFileDialog::getOpenFileName(this, "Select a file to analyse", "D:/Downloads"));
-    open(&file);
+    QApplication::quit();
 }
+
+// BACKGROUND FUNCTIONS
 
 void MainWindow::open(QFile *file)
 {
@@ -430,149 +677,100 @@ void MainWindow::open(QFile *file)
     refreshWindow();
 }
 
-void MainWindow::on_actionEntropy_triggered()
+QString MainWindow::generateHash(char *data , int size)
 {
-    ui->stackedWidget->setCurrentIndex(5);
-    buildEntropyGraph();
-    refreshWindow();
+    QCryptographicHash hash(QCryptographicHash::Sha1);
+    hash.addData(data, size);
+    return hash.result().toHex().toUpper();
 }
 
-void MainWindow::refreshHex()
+QString MainWindow::generateFileHash(QString fullName)
 {
-    if (fileOpened) {
-        ui->hexTable->blockSignals(true);
-        ui->hexTable->clearContents();
-
-        hexBuilt = true;
-        int rowNameLength = 8;
-        displayCols = 16; // variable
-        displayRows = 16; // variable
-        maxCols = 16; // static
-        maxRows = 16; // static
-        dataStartPoint = ui->hexScrollBar->value();
-
-        // if file is big enough to have a scroll bar
-        if (fileSize / (displayRows * displayCols) > 0) {
-
-            // if last row is full with data
-            if (fileSize % displayCols == 0) {
-                ui->hexScrollBar->setMaximum(fileSize / displayCols - 16);
-            }
-            else {
-                ui->hexScrollBar->setMaximum(fileSize / displayCols - 15);
-            }
-        }
-        else {
-            ui->hexScrollBar->setMaximum(0);
-            if (fileSize > 0) {
-                if (fileSize % displayRows == 0) {
-                    displayRows = fileSize / displayRows;
-                }
-                else {
-                    displayRows = fileSize / displayRows + 1;
-                }
-            }
-            else {
-                displayRows = 0;
-            }
-        }
-
-        // display things
-        QString currentRow, maxRow, rowText = "";
-        currentRow = QString::number(dataStartPoint + 1);
-        maxRow = QString::number(ui->hexScrollBar->maximum() + 1);
-        ui->hexCurrentRowValue->setText(currentRow);
-        ui->hexMaxRowValue->setText(maxRow);
-
-        // for each row
-        for (int displayRow = 0; displayRow < displayRows; displayRow++) {
-
-            // rename rows
-            QString hexString = QString::number(dataStartPoint + displayRow, 16).toUpper() += "0";
-            QString rowName = "";
-            int hexStringCharLength = hexString.length();
-            int zeroPaddingCount = rowNameLength - hexStringCharLength;
-
-            for (int i = 0; i < zeroPaddingCount; i++) {
-                rowName += "0";
-            }
-            rowName += hexString;
-
-            ui->hexTable->verticalHeaderItem(displayRow)->setText(rowName);
-
-            // put hex into table
-            char c;
-            unsigned char uc;
-            QString hexText;
-            rowText = "";
-            QTableWidgetItem *hex;
-
-            // if last row
-            if (displayRow == displayRows - 1 && dataStartPoint == ui->hexScrollBar->maximum()) {
-                if (fileSize % displayCols == 0) {
-                    displayCols = fileSize % displayCols + displayCols;
-                }
-                else {
-                    displayCols = fileSize % displayCols;
-                }
-            }
-
-            // for each column in current row
-            for (int col = 0; col < displayCols; col++) {
-                c = rawData[(dataStartPoint * maxCols) + col + (displayRow * maxCols)];
-                uc = static_cast<unsigned char>(c);
-
-                // append char to decoded text
-                if (uc >= 32 && uc < 127) {
-                    rowText += c;
-                }
-                else {
-                    rowText += " ";
-                }
-
-                // convert char to hex
-                int temp, i = 1;
-                hexText ="00";
-                while(uc != 0) {
-
-                    temp = uc % 16;
-                    // to convert integer into character
-                    if(temp < 10)
-                    {
-                        temp += 48;
-                    }
-                    else
-                    {
-                        temp += 55;
-                    }
-                    hexText[i] = temp;
-                    i--;
-                    uc = uc / 16;
-                }
-
-                // insert hex into table
-                hex = new QTableWidgetItem(hexText);
-                hex->setTextAlignment(Qt::AlignCenter);
-                ui->hexTable->setItem(displayRow, col, hex);
-            }
-
-            // insert decoded text into table
-            hex = new QTableWidgetItem(rowText);
-            ui->hexTable->setItem(displayRow, 17, hex);
-        }
-        ui->hexTable->blockSignals(false);
+    QFile file(fullName);
+    QString hashString;
+    if (file.open(QIODevice::ReadOnly)) {
+        QCryptographicHash hash(QCryptographicHash::Sha1);
+        hash.addData(&file);
+        hashString = hash.result().toHex().toUpper();
+        file.close();
     }
+    return hashString;
+}
+
+bool MainWindow::isPacked()
+{
+    if (!packChecked) {
+
+        QString fullFileName = 34 + directory + fileName + 34;
+        QString command = "upx -l " + fullFileName + " > upx.tmp";
+        system(qPrintable(command));
+
+        // check output
+        QFile upxCheck("upx.tmp");
+        if (upxCheck.open(QIODevice::ReadOnly)) {
+            QTextStream in(&upxCheck);
+            int i = 0;
+            while (!in.atEnd()) {
+                in.readLine();
+                i++;
+            }
+            upxCheck.close();
+            if (i == 7) {
+                packed = true;
+            }
+            else {
+                packed = false;
+            }
+        }
+        // remove tmp file
+        QDir path;
+        path.setPath(path.currentPath());
+        path.remove("upx.tmp");
+        packChecked = true;
+    }
+    return packed;
+}
+
+bool MainWindow::pack()
+{
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Warning!", "Make sure to backup the file before packing!/nAre you sure you want to pack the current file?", QMessageBox::Yes|QMessageBox::No);
+    if (reply == QMessageBox::Yes) {
+        QString fullFileName = 34 + directory + fileName + 34;
+        QString command = "upx -5 " + fullFileName;
+        system(qPrintable(command));
+        return true;
+    }
+    return false;
+}
+
+bool MainWindow::unpack()
+{
+    QMessageBox::StandardButton reply;
+    reply = QMessageBox::question(this, "Warning!", "Make sure to backup the file before unpacking!/nAre you sure you want to unpack the current file?", QMessageBox::Yes|QMessageBox::No);
+    if (reply == QMessageBox::Yes) {
+        QString fullFileName = 34 + directory + fileName + 34;
+        QString command = "upx -d " + fullFileName;
+        system(qPrintable(command));
+        return true;
+    }
+    return false;
 }
 
 void MainWindow::findStrings()
 {
     if (!stringsBuilt && fileOpened) {
-        QString item;
+        QString item = "";
         bool nullSpaced = false, validString = false;
         stringCount = 0;
 
         // for each char in file
+        int stringStartLoc = 0;
         for (int i = 0; i < fileSize; i++) {
+
+            if (item == "") {
+                stringStartLoc = i;
+            }
 
             // get char
             char c = rawData[i];
@@ -631,7 +829,7 @@ void MainWindow::findStrings()
             if (validString) {
                 strings.insert(stringCount,item);
                 stringsMap[item] = true;
-                hexLocationMap[stringCount] = i - item.size();
+                hexLocationMap[stringCount] = stringStartLoc;
                 stringCount++;
                 item = "";
                 validString = false;
@@ -647,7 +845,6 @@ void MainWindow::findStrings()
 
         for (int i = 0; i < stringCount; i++) {
             swapStringMap[i] = i;
-            //unsortSwapStringMap[i] = strings[i];
         }
 
         unsortedStrings = strings;
@@ -728,10 +925,10 @@ void MainWindow::saveDisplayedStrings()
             if (ui->stringList->count() > 0) {
                 for (int i = 0; i < ui->stringList->count(); i++) {
                     if (ui->stringList->item(i)->checkState()) {
-                        savedStringMap[i + stringOffset] = true;
+                        savedStringMap[stringOffset + i] = true;
                     }
                     else {
-                        savedStringMap[i + stringOffset] = false;
+                        savedStringMap[stringOffset + i] = false;
                     }
                 }
                 firstStringsRefresh = false;
@@ -766,59 +963,6 @@ void MainWindow::refreshSavedStrings()
         QString count = QString::number(ui->savedStringList->count());
         ui->savedStringCountValue->setText(count);
     }
-}
-
-void MainWindow::on_stringsScrollBar_valueChanged()
-{
-    if (!reseting) {
-        refreshStrings();
-    }
-}
-
-void MainWindow::on_hexScrollBar_valueChanged()
-{
-    if (!reseting) {
-        refreshHex();
-    }
-}
-
-void MainWindow::wheelEvent(QWheelEvent *event)
-{
-    /*
-    // only while showing hex
-    if (ui->stackedWidget->currentIndex() == 4 && ui->hexScrollBar->maximum() > 0) {
-
-        QPoint numDegrees = event->angleDelta() / 8;
-
-        if (!numDegrees.isNull()) {
-            QPoint numSteps = numDegrees / 15;
-            int move = static_cast<int>(numSteps.y());
-            qDebug() << "move" << move;
-            int currentValue = ui->hexScrollBar->value();
-            int min = ui->hexScrollBar->minimum();
-            int max = ui->hexScrollBar->maximum();
-
-            if (move == 1 && currentValue < max) {
-                ui->hexScrollBar ++;
-                qDebug() << "moved down";
-            }
-            else if (move == -1 && currentValue > min) {
-                ui->hexScrollBar --;
-                qDebug() << "moved up";
-            }
-        }
-
-        //event->accept();
-
-        //refreshHex();
-    }
-    */
-}
-
-void MainWindow::on_actionDLL_s_triggered()
-{
-    ui->stackedWidget->setCurrentIndex(3);
-    refreshWindow();
 }
 
 void MainWindow::findDLLs()
@@ -956,6 +1100,133 @@ void MainWindow::findDLLs()
     }
 }
 
+void MainWindow::refreshHex()
+{
+    if (fileOpened) {
+        ui->hexTable->blockSignals(true);
+        ui->hexTable->clearContents();
+
+        hexBuilt = true;
+        int rowNameLength = 8;
+        displayCols = 16; // variable
+        displayRows = 16; // variable
+        maxCols = 16; // static
+        maxRows = 16; // static
+        dataStartPoint = ui->hexScrollBar->value();
+
+        // if file is big enough to have a scroll bar
+        if (fileSize / (displayRows * displayCols) > 0) {
+
+            // if last row is full with data
+            if (fileSize % displayCols == 0) {
+                ui->hexScrollBar->setMaximum(fileSize / displayCols - 16);
+            }
+            else {
+                ui->hexScrollBar->setMaximum(fileSize / displayCols - 15);
+            }
+        }
+        else {
+            ui->hexScrollBar->setMaximum(0);
+            if (fileSize > 0) {
+                if (fileSize % displayRows == 0) {
+                    displayRows = fileSize / displayRows;
+                }
+                else {
+                    displayRows = fileSize / displayRows + 1;
+                }
+            }
+            else {
+                displayRows = 0;
+            }
+        }
+
+        // display things
+        QString currentRow, maxRow, rowText = "";
+        currentRow = QString::number(dataStartPoint + 1);
+        maxRow = QString::number(ui->hexScrollBar->maximum() + 1);
+        ui->hexCurrentRowValue->setText(currentRow);
+        ui->hexMaxRowValue->setText(maxRow);
+
+        // for each row
+        for (int displayRow = 0; displayRow < displayRows; displayRow++) {
+
+            // rename rows
+            QString hexString = QString::number(dataStartPoint + displayRow, 16).toUpper() += "0";
+            QString rowName = "";
+            int hexStringCharLength = hexString.length();
+            int zeroPaddingCount = rowNameLength - hexStringCharLength;
+
+            for (int i = 0; i < zeroPaddingCount; i++) {
+                rowName += "0";
+            }
+            rowName += hexString;
+
+            ui->hexTable->verticalHeaderItem(displayRow)->setText(rowName);
+
+            // put hex into table
+            char c;
+            unsigned char uc;
+            QString hexText;
+            rowText = "";
+            QTableWidgetItem *hex;
+
+            // if last row
+            if (displayRow == displayRows - 1 && dataStartPoint == ui->hexScrollBar->maximum()) {
+                if (fileSize % displayCols == 0) {
+                    displayCols = fileSize % displayCols + displayCols;
+                }
+                else {
+                    displayCols = fileSize % displayCols;
+                }
+            }
+
+            // for each column in current row
+            for (int col = 0; col < displayCols; col++) {
+                c = rawData[(dataStartPoint * maxCols) + col + (displayRow * maxCols)];
+                uc = static_cast<unsigned char>(c);
+
+                // append char to decoded text
+                if (uc >= 32 && uc < 127) {
+                    rowText += c;
+                }
+                else {
+                    rowText += " ";
+                }
+
+                // convert char to hex
+                int temp, i = 1;
+                hexText ="00";
+                while(uc != 0) {
+
+                    temp = uc % 16;
+                    // to convert integer into character
+                    if(temp < 10)
+                    {
+                        temp += 48;
+                    }
+                    else
+                    {
+                        temp += 55;
+                    }
+                    hexText[i] = temp;
+                    i--;
+                    uc = uc / 16;
+                }
+
+                // insert hex into table
+                hex = new QTableWidgetItem(hexText);
+                hex->setTextAlignment(Qt::AlignCenter);
+                ui->hexTable->setItem(displayRow, col, hex);
+            }
+
+            // insert decoded text into table
+            hex = new QTableWidgetItem(rowText);
+            ui->hexTable->setItem(displayRow, 17, hex);
+        }
+        ui->hexTable->blockSignals(false);
+    }
+}
+
 void MainWindow::refreshChecklist()
 {
     if (fileOpened) {
@@ -1078,229 +1349,6 @@ void MainWindow::refreshWindow()
     this->setWindowTitle(basicWindowName + extendedWindowName);
 }
 
-void MainWindow::on_actionSeperate_Window_triggered()
-{
-    ui->stackedWidget->setCurrentIndex(7);
-}
-
-void MainWindow::on_stringSearchButton_clicked()
-{
-    if (stringsBuilt) {
-
-        QString search = ui->searchString->text();
-
-        if (stringsAdvancedSearchString != search) {
-            stringsAdvancedSearchIndex = 0;
-        }
-        stringsAdvancedSearchString = search;
-
-        bool found = false;
-        while (!found && stringsAdvancedSearchIndex < stringCount) {
-
-            //
-            // starting search icon
-            //
-
-            QString searching = strings[stringsAdvancedSearchIndex];
-            int searchLength = search.length();
-            int searchedLength = strings[stringsAdvancedSearchIndex].length();
-
-            // for each starting position the search string could fit into the searched string
-            for (int j = 0; j <= searchedLength - searchLength; j++) {
-                int k;
-                // for the length of the search string
-                for (k = 0; k < searchLength; k++) {
-                    // if chars dont match
-                    if (searching[j + k] != search[k]) {
-                        // if case sensitive match
-                        if ((searching[j + k].unicode() + 32) != search[k] && (searching[j + k].unicode() - 32) != search[k]) {
-                            break;
-                        }
-                    }
-                }
-                if (k == searchLength) {
-                    found = true;
-                }
-            }
-            stringsAdvancedSearchIndex++;
-        }
-
-        //
-        // finished search icon
-        //
-
-        if (found) {
-            if (stringsAdvancedSearchIndex % maxDisplayStrings == 0) {
-                ui->stringsScrollBar->setValue((stringsAdvancedSearchIndex / maxDisplayStrings) - 1);
-            }
-            else {
-                ui->stringsScrollBar->setValue(stringsAdvancedSearchIndex / maxDisplayStrings);
-            }
-            // highlight string
-            //qDebug() << "search string: " << stringsAdvancedSearchIterator;
-            //qDebug() << "search string: " << strings[stringsAdvancedSearchIterator - 1];
-            //ui->stringList->item((stringsAdvancedSearchIterator % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setSelected(true);
-            ui->stringList->item((stringsAdvancedSearchIndex % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setCheckState(Qt::Checked);
-            //ui->stringList->setFocus();
-            refreshStrings();
-        }
-        else if (stringsAdvancedSearchIndex == stringCount) {
-            stringsAdvancedSearchIndex = 0;
-        }
-    }
-}
-
-void MainWindow::on_savedStringList_itemDoubleClicked(QListWidgetItem *item)
-{
-    QApplication::clipboard()->setText(item->text());
-}
-
-void MainWindow::on_hexTable_itemChanged(QTableWidgetItem *item)
-{
-    if (fileOpened) {
-        int row =  item->row(), col =  item->column();
-
-        // check if cell is within displayrows and displaycols
-        if (row < maxRows && col < maxCols) {
-            bool inScope = true;
-            // if out of current file scope
-            if (ui->hexScrollBar->value() == ui->hexScrollBar->maximum()) {
-                if (row >= displayRows) {
-                    inScope = false;
-                }
-                else if (row == displayRows - 1) {
-                    if (col >= displayCols) {
-                        inScope = false;
-                    }
-                }
-            }
-
-            if(inScope) {
-                ui->hexTable->blockSignals(true);
-                QTableWidgetItem *hex;
-                QString hexText = "00";
-                QString text = item->text();
-
-                // check if entered value is valid
-                bool good = true;
-                if (text.size() == 1 || text.size() == 2) {
-                    for (int i = 0; i < text.size(); i++) {
-                        // if number or upper case char
-                        if ((text[i].unicode() >= 48 && text[i].unicode() <= 57) || (text[i].unicode() >= 65 && text[i].unicode() <= 70)) {
-                            if (text.size() == 1) {
-                                hexText[1] = text[i];
-                            }
-                            else {
-                                hexText[i] = text[i];
-                            }
-                        }
-                        // if lower case char
-                        else if (text[i].unicode() >= 97 && text[i].unicode() <= 102) {
-                            if (text.size() == 1) {
-                                hexText[1] = text[0].unicode() - 32;
-                            }
-                            else {
-                                hexText[i] = text[i].unicode() - 32;
-                            }
-                        }
-                        else {
-                            good = false;
-                        }
-                    }
-                }
-                else {
-                    good = false;
-                }
-
-                if (!good) {
-                    char c = rawData[(dataStartPoint * maxCols) + col + (row * maxCols)];
-                    unsigned char uc = static_cast<unsigned char>(c);
-                    // convert char to hex
-                    int temp, i = 1;
-                    while(uc != 0) {
-                        temp = uc % 16;
-                        // to convert integer into character
-                        if(temp < 10)
-                        {
-                            temp += 48;
-                        }
-                        else
-                        {
-                            temp += 55;
-                        }
-                        hexText[i] = temp;
-                        i--;
-                        uc = uc / 16;
-                    }
-                }
-
-                hex = new QTableWidgetItem(hexText);
-                hex->setTextAlignment(Qt::AlignCenter);
-                ui->hexTable->setItem(row, col, hex);
-
-                // hex to dec
-                int charDec1 = hexText[0].unicode(), charDec2 = hexText[1].unicode();
-                if (charDec1 > 57) {
-                    charDec1 = charDec1 - 55;
-                }
-                else {
-                    charDec1 = charDec1 - 48;
-                }
-                if (charDec2 > 57) {
-                    charDec2 = charDec2 - 55;
-                }
-                else {
-                    charDec2 = charDec2 - 48;
-                }
-                int fullDec = charDec1 * 16 + charDec2;
-
-                int location = (dataStartPoint * maxCols) + col + (row * maxCols);
-                if (!changedDataMap[location]) {
-                    originalDataMap[location] = rawData[location];
-                    changedDataMap[location] = true;
-                }
-
-                rawData[location] = fullDec;
-                dataChanged = true;
-            }
-            else {
-                ui->hexTable->clearContents();
-            }
-        }
-        else {
-            ui->hexTable->clearContents();
-        }
-    }
-    else {
-        ui->hexTable->clearContents();
-    }
-    refreshHex();
-}
-
-void MainWindow::on_actionUndo_All_Changes_triggered()
-{
-    undoChanges();
-    refreshWindow();
-}
-
-void MainWindow::undoChanges()
-{
-    if (dataChanged) {
-        for (int i = 0; i < fileSize; i++) {
-            if (changedDataMap[i]) {
-                rawData[i] = originalDataMap[i];
-            }
-        }
-        dataChanged = false;
-    }
-}
-
-void MainWindow::on_actionExit_triggered()
-{
-    saveChanges();
-    QApplication::quit();
-}
-
 void MainWindow::resetChecks()
 {
     reseting = true;
@@ -1331,11 +1379,25 @@ void MainWindow::resetChecks()
     sorting = false;
 
     hexLocationMap.clear();
+    originalDataMap.clear();
+    changedDataMap.clear();
     ui->hexScrollBar->setValue(0);
     ui->hexTable->horizontalHeader()->resizeSection(17, 150);
     entropy = 0;
     entropyGraphBuilt = false;
     reseting = false;
+}
+
+void MainWindow::undoChanges()
+{
+    if (dataChanged) {
+        for (int i = 0; i < fileSize; i++) {
+            if (changedDataMap[i]) {
+                rawData[i] = originalDataMap[i];
+            }
+        }
+        dataChanged = false;
+    }
 }
 
 void MainWindow::saveChanges()
@@ -1384,17 +1446,6 @@ void MainWindow::saveChanges()
         }
         dataChanged = false;
     }
-}
-
-void MainWindow::on_actionSave_triggered()
-{
-    saveChanges();
-}
-
-void MainWindow::closeEvent (QCloseEvent *event)
-{
-    saveChanges();
-    QApplication::quit();
 }
 
 void MainWindow::getEntropy()
@@ -1463,12 +1514,12 @@ void MainWindow::buildEntropyGraph()
     }
 }
 
-void MainWindow::on_stringList_itemDoubleClicked(QListWidgetItem *item)
+void MainWindow::stringToHexLocation(QListWidgetItem *item)
 {
-    // only works if strings arent sorted
+    // get item location in stringList display
     bool itemIndexFound = false;
     int i = 0;
-    while (!itemIndexFound) {
+    while (!itemIndexFound && i < maxDisplayStrings) {
         if (ui->stringList->item(i) == item) {
             itemIndexFound = true;
         }
@@ -1478,43 +1529,21 @@ void MainWindow::on_stringList_itemDoubleClicked(QListWidgetItem *item)
     }
     ui->stackedWidget->setCurrentIndex(4);
     refreshWindow();
-    qDebug() << hexLocationMap[swapStringMap[stringOffset + i]];
-    ui->hexScrollBar->setValue(hexLocationMap[swapStringMap[stringOffset + i]] / maxCols);
-}
 
-void MainWindow::on_stringSortUnsort_clicked()
-{
-    saveDisplayedStrings();
-    sorting = true;
     if (stringsSorted) {
-        QMap<int, int> tmpSavedSwapMap;
-        for (int i = 0; i < stringCount; i++) {
-            tmpSavedSwapMap[swapStringMap[i]] = i;
+        bool locFound = false;
+        int j = 0;
+        while (!locFound && j < stringCount) {
+            if (swapStringMap[j] == stringOffset + i) {
+                locFound = true;
+            }
+            else {
+                j++;
+            }
         }
-        swapStringMap = tmpSavedSwapMap;
-        strings = unsortedStrings;
-        stringsSorted = false;
+        ui->hexScrollBar->setValue(hexLocationMap[j] / maxCols);
     }
     else {
-        for (int i = 0; i < stringCount; i++) {
-            strings[i] += "(" + QString::number(i);
-        }
-        strings.sort();
-        for (int i = 0; i < stringCount; i++) {
-            QString string = strings[i];
-            int reservePos = string.lastIndexOf("(", string.size() - 1);
-            int newLoc = string.mid(reservePos + 1, string.size() - 1).toInt();
-            strings[i] = string.mid(0, reservePos);
-            swapStringMap[newLoc] = i;
-        }
-        stringsSorted = true;
+        ui->hexScrollBar->setValue(hexLocationMap[stringOffset + i] / maxCols);
     }
-
-    QMap<int, bool> tmpSavedSwapMap;
-    for (int i = 0; i < stringCount; i++) {
-        tmpSavedSwapMap[swapStringMap[i]] = savedStringMap[i];
-    }
-    savedStringMap = tmpSavedSwapMap;
-
-    refreshWindow();
 }
