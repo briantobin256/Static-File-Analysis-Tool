@@ -46,6 +46,7 @@ public:
     // string things
     QMap<QString, bool> stringsMap;
     QMap<int, bool> savedStringMap;
+    QMap<int, int> savedStringLocationMap;
     QMap<int, int> hexLocationMap;
     QMap<int, int> swapStringMap;
 
@@ -59,6 +60,7 @@ public:
     bool removeDuplicates;
     int stringLength;
     bool sorting;
+    bool removedStrings;
 
 
     bool fileOpened;
@@ -142,6 +144,8 @@ private slots:
 
     void on_stringSortUnsort_clicked();
 
+    void on_deleteSelectedStringsButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     QString generateHash(char *data, int size);
@@ -166,6 +170,7 @@ private:
     double chunkEntropy(int offset, int chunkSize);
     void buildEntropyGraph();
     void stringToHexLocation(QListWidgetItem *item);
+    void removeSelected();
 
     //void searchStringList;
 

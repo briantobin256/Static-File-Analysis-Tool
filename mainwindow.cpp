@@ -553,6 +553,12 @@ void MainWindow::on_stringSortUnsort_clicked()
     refreshWindow();
 }
 
+void MainWindow::on_deleteSelectedStringsButton_clicked()
+{
+    removeSelected();
+    refreshWindow();
+}
+
 void MainWindow::wheelEvent(QWheelEvent *event)
 {
     /*
@@ -921,7 +927,7 @@ void MainWindow::refreshStrings()
 void MainWindow::saveDisplayedStrings()
 {
     if (!firstStringsRefresh) {
-        if (!sorting) {
+        if (!sorting && !removedStrings) {
             if (ui->stringList->count() > 0) {
                 for (int i = 0; i < ui->stringList->count(); i++) {
                     if (ui->stringList->item(i)->checkState()) {
@@ -936,6 +942,7 @@ void MainWindow::saveDisplayedStrings()
         }
         else {
             sorting = false;
+            removedStrings = false;
         }
     }
     else {
@@ -949,7 +956,8 @@ void MainWindow::refreshSavedStrings()
         QStringList savedStrings;
         for (int i = 0; i < stringCount; i++) {
             if (savedStringMap[i]) {
-               savedStrings.insert(savedStrings.count(), strings[i]);
+               savedStrings += strings[i];
+               savedStringLocationMap[savedStrings.count() - 1] = i;
             }
         }
         ui->savedStringList->clear();
@@ -976,6 +984,7 @@ void MainWindow::findDLLs()
             ui->DLL_List->clear();
             QStringList dlls;
             QStringList dllsFunctions;
+            QStringList undocumentedDLLs;
 
             // for each string found
             for (int i = 0; i < stringCount; i++) {
@@ -999,13 +1008,11 @@ void MainWindow::findDLLs()
                 dllFunctionsFile = dllName.mid(0, dllName.length() - 4);
                 dllFunctionsFile.append(".txt");
                 dllFunctionsFileName.append(dllFunctionsFile);
+                dllsFunctions.append(dllName);
+                int dllListSize = dllsFunctions.size();
 
-                int dllSize = dllsFunctions.size() + 1;
                 QFile file(dllFunctionsFileName);
                 if (file.open(QIODevice::ReadOnly)) {
-
-                    dllsFunctions.append(dllName);
-
                     QTextStream in(&file);
                     while (!in.atEnd()) {
                         QString functionName = in.readLine();
@@ -1016,10 +1023,13 @@ void MainWindow::findDLLs()
                     file.close();
                 }
 
-                if (dllSize == dllsFunctions.size()) {
+                if (dllListSize == dllsFunctions.size()) {
+                    undocumentedDLLs += dllsFunctions[dllsFunctions.size() - 1];
                     dllsFunctions.removeLast();
                 }
             }
+
+            dllsFunctions += undocumentedDLLs;
 
             /*
 
@@ -1516,34 +1526,77 @@ void MainWindow::buildEntropyGraph()
 
 void MainWindow::stringToHexLocation(QListWidgetItem *item)
 {
-    // get item location in stringList display
     bool itemIndexFound = false;
     int i = 0;
-    while (!itemIndexFound && i < maxDisplayStrings) {
-        if (ui->stringList->item(i) == item) {
-            itemIndexFound = true;
-        }
-        else {
-            i++;
-        }
-    }
-    ui->stackedWidget->setCurrentIndex(4);
-    refreshWindow();
 
-    if (stringsSorted) {
-        bool locFound = false;
-        int j = 0;
-        while (!locFound && j < stringCount) {
-            if (swapStringMap[j] == stringOffset + i) {
-                locFound = true;
+    // if from find strings
+    if (ui->stackedWidget->currentIndex() == 1) {
+        ui->stackedWidget->setCurrentIndex(4);
+        refreshWindow();
+        while (!itemIndexFound && i < maxDisplayStrings) {
+            if (ui->stringList->item(i) == item) {
+                itemIndexFound = true;
             }
             else {
-                j++;
+                i++;
             }
         }
-        ui->hexScrollBar->setValue(hexLocationMap[j] / maxCols);
+        if (stringsSorted) {
+            bool locFound = false;
+            int j = 0;
+            while (!locFound && j < stringCount) {
+                if (swapStringMap[j] == stringOffset + i) {
+                    locFound = true;
+                }
+                else {
+                    j++;
+                }
+            }
+            ui->hexScrollBar->setValue(hexLocationMap[j] / maxCols);
+        }
+        else {
+            ui->hexScrollBar->setValue(hexLocationMap[stringOffset + i] / maxCols);
+        }
     }
-    else {
-        ui->hexScrollBar->setValue(hexLocationMap[stringOffset + i] / maxCols);
+    // if from saved strings
+    else if (ui->stackedWidget->currentIndex() == 2) {
+        ui->stackedWidget->setCurrentIndex(4);
+        refreshWindow();
+        while (!itemIndexFound && i < ui->savedStringList->count()) {
+            if (ui->savedStringList->item(i) == item) {
+                itemIndexFound = true;
+            }
+            else {
+                i++;
+            }
+        }
+        if (stringsSorted) {
+            bool locFound = false;
+            int j = 0;
+            while (!locFound && j < stringCount) {
+                if (swapStringMap[j] == savedStringLocationMap[i]) {
+                    locFound = true;
+                }
+                else {
+                    j++;
+                }
+            }
+            ui->hexScrollBar->setValue(hexLocationMap[j] / maxCols);
+        }
+        else {
+            ui->hexScrollBar->setValue(hexLocationMap[savedStringLocationMap[i]] / maxCols);
+        }
+    }
+}
+
+void MainWindow::removeSelected()
+{
+    if (fileOpened) {
+        QModelIndexList selection = ui->savedStringList->selectionModel()->selectedRows();
+        for (int i = 0; i < selection.count(); i++) {
+            QModelIndex index = selection.at(i);
+            savedStringMap[savedStringLocationMap[index.row()]] = false;
+        }
+        removedStrings = true;
     }
 }
