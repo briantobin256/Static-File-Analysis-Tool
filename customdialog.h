@@ -7,13 +7,13 @@ namespace Ui {
 class DialogBox;
 }
 
-class DialogBox : public QDialog
+class CustomDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit DialogBox(QWidget *parent = nullptr);
-    ~DialogBox();
+    explicit CustomDialog(QWidget *parent = nullptr);
+    ~CustomDialog();
 
 private slots:
     void on_pushButton_clicked();

@@ -478,7 +478,7 @@
      </palette>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>5</number>
     </property>
     <widget class="QWidget" name="page_0_Main_Window"/>
     <widget class="QWidget" name="page_1_Find_Strings">
@@ -1035,7 +1035,31 @@
       </property>
      </widget>
     </widget>
-    <widget class="QWidget" name="page_5_Entropy"/>
+    <widget class="QWidget" name="page_5_Entropy">
+     <widget class="QScrollArea" name="scrollArea">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>20</y>
+        <width>941</width>
+        <height>741</height>
+       </rect>
+      </property>
+      <property name="widgetResizable">
+       <bool>true</bool>
+      </property>
+      <widget class="QWidget" name="scrollAreaWidgetContents">
+       <property name="geometry">
+        <rect>
+         <x>0</x>
+         <y>0</y>
+         <width>939</width>
+         <height>739</height>
+        </rect>
+       </property>
+      </widget>
+     </widget>
+    </widget>
     <widget class="QWidget" name="page_6_Checklist">
      <widget class="QLabel" name="checklistFileNameLabel">
       <property name="geometry">
@@ -1317,7 +1341,7 @@
      <x>0</x>
      <y>0</y>
      <width>1003</width>
-     <height>30</height>
+     <height>31</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

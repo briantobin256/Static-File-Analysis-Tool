@@ -1,6 +1,6 @@
+#include "customdialog.h"
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
-#include "dialogbox.h"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -49,9 +49,9 @@ void MainWindow::on_actionUndo_All_Changes_triggered()
 void MainWindow::on_actionGenerate_Hash_triggered()
 {
     saveChanges();
-    DialogBox dialogBox;
-    dialogBox.setWindowTitle("Hash");
-    QLabel *label = new QLabel(&dialogBox);
+    dialogBox = new CustomDialog();
+    dialogBox->setWindowTitle("Hash");
+    QLabel *label = new QLabel(dialogBox);
 
     if (fileOpened) {
         fileHash = generateHash(rawData, fileSize);
@@ -62,21 +62,21 @@ void MainWindow::on_actionGenerate_Hash_triggered()
     }
 
     hashBuilt = true;
-    dialogBox.exec();
+    dialogBox->exec();
     refreshWindow();
 }
 
 void MainWindow::on_actionCreate_Backup_triggered()
 {
     saveChanges();
-    DialogBox dialogBox;
-    dialogBox.setWindowTitle("Backup");
-    QLabel *label = new QLabel(&dialogBox);
+    dialogBox = new CustomDialog();
+    dialogBox->setWindowTitle("Backup");
+    QLabel *label = new QLabel(dialogBox);
 
     if (fileOpened) {
         QDir dir;
         label->setText("Please select a location to store backups.");
-        dialogBox.exec();
+        dialogBox->exec();
         QFile file(QFileDialog::getExistingDirectory(this, "Select a location to store backups."));
         backupLoc = file.fileName();
         dir.setPath(backupLoc);
@@ -133,11 +133,11 @@ void MainWindow::on_actionCreate_Backup_triggered()
         else {
             label->setText("No location selected.");
         }
-        dialogBox.exec();
+        dialogBox->exec();
     }
     else {
         label->setText("You must first select a file to analyse before anything can be backed up.");
-        dialogBox.exec();
+        dialogBox->exec();
     }
 
     refreshWindow();
@@ -152,9 +152,9 @@ void MainWindow::on_actionExit_triggered()
 void MainWindow::on_actionCheck_if_Packed_triggered()
 {
     saveChanges();
-    DialogBox dialogBox;
-    dialogBox.setWindowTitle("Check if File is Packed");
-    QLabel *label = new QLabel(&dialogBox);
+    dialogBox = new CustomDialog();
+    dialogBox->setWindowTitle("Check if File is Packed");
+    QLabel *label = new QLabel(dialogBox);
 
     if (fileOpened) {
         getEntropy();
@@ -179,7 +179,7 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
         label->setText("No file is selected.");
     }
 
-    dialogBox.exec();
+    dialogBox->exec();
     packChecked = true;
     refreshWindow();
 }
@@ -187,9 +187,9 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
 void MainWindow::on_actionPack_triggered()
 {
     saveChanges();
-    DialogBox dialogBox;
-    dialogBox.setWindowTitle("Pack");
-    QLabel *label = new QLabel(&dialogBox);
+    dialogBox = new CustomDialog();
+    dialogBox->setWindowTitle("Pack");
+    QLabel *label = new QLabel(dialogBox);
 
     if (fileOpened) {
         if (isPacked()) {
@@ -221,16 +221,16 @@ void MainWindow::on_actionPack_triggered()
         label->setText("No file is selected.");
     }
 
-    dialogBox.exec();
+    dialogBox->exec();
     refreshWindow();
 }
 
 void MainWindow::on_actionUnpack_triggered()
 {
     saveChanges();
-    DialogBox dialogBox;
-    dialogBox.setWindowTitle("Unpack");
-    QLabel *label = new QLabel(&dialogBox);
+    dialogBox = new CustomDialog();
+    dialogBox->setWindowTitle("Unpack");
+    QLabel *label = new QLabel(dialogBox);
 
     if (fileOpened) {
         if (isPacked()) {
@@ -257,7 +257,7 @@ void MainWindow::on_actionUnpack_triggered()
         label->setText("No file is selected.");
     }
 
-    dialogBox.exec();
+    dialogBox->exec();
     refreshWindow();
 }
 
@@ -661,21 +661,21 @@ void MainWindow::open(QFile *file)
                 }
                 else {
                     // display not enough memory
-                    DialogBox dialogBox;
-                    dialogBox.setWindowTitle("Error");
-                    QLabel *label = new QLabel(&dialogBox);
+                    dialogBox = new CustomDialog();
+                    dialogBox->setWindowTitle("Error");
+                    QLabel *label = new QLabel(dialogBox);
                     label->setText("The file you choose is too big.\nThis system does not currently have enough memory to open this file.");
-                    dialogBox.exec();
+                    dialogBox->exec();
                 }
             }
         }
         else {
             // file too big
-            DialogBox dialogBox;
-            dialogBox.setWindowTitle("Error");
-            QLabel *label = new QLabel(&dialogBox);
+            dialogBox = new CustomDialog();
+            dialogBox->setWindowTitle("Error");
+            QLabel *label = new QLabel(dialogBox);
             label->setText("The file you choose is too big.\nMax file size of 2GB.");
-            dialogBox.exec();
+            dialogBox->exec();
         }
     }
     file->close();
@@ -1265,12 +1265,12 @@ void MainWindow::refreshChecklist()
             ui->checklistFileHashValue->setText(fileHash);
 
             if (oldHash != fileHash) {
-                DialogBox dialogBox;
-                dialogBox.setWindowTitle("Warning!");
-                QLabel *label = new QLabel(&dialogBox);
+                dialogBox = new CustomDialog();
+                dialogBox->setWindowTitle("Warning!");
+                QLabel *label = new QLabel(dialogBox);
                 QString text = "Filehash has been changed from: " + oldHash + " to: " + fileHash;
                 label->setText(text);
-                dialogBox.exec();
+                dialogBox->exec();
             }
 
             ui->checklistMainStepsList->item(1)->setCheckState(Qt::Checked);
@@ -1347,7 +1347,7 @@ void MainWindow::refreshWindow()
         break;
 
         case 5: extendedWindowName = " - Entropy";
-        getEntropy();
+        buildEntropyGraph();
         break;
 
         case 6: extendedWindowName = " - Checklist";
@@ -1442,11 +1442,11 @@ void MainWindow::saveChanges()
                 resetChecks();
             }
             else {
-                DialogBox dialogBox;
-                dialogBox.setWindowTitle("Error");
-                QLabel *label = new QLabel(&dialogBox);
+                dialogBox = new CustomDialog();
+                dialogBox->setWindowTitle("Error");
+                QLabel *label = new QLabel(dialogBox);
                 label->setText("An error has occured. No changes have been saved.");
-                dialogBox.exec();
+                dialogBox->exec();
 
                 path.remove(tmpName);
                 undoChanges();
@@ -1507,18 +1507,91 @@ double MainWindow::chunkEntropy(int offset, int chunkSize)
 
 void MainWindow::buildEntropyGraph()
 {
-    if (fileOpened) {
+    if (fileOpened && fileSize > 0) {
         if (!entropyGraphBuilt) {
+            int chunks = 64;
             int chunkSize = 256;
-            int chunks = fileSize / chunkSize;
+
+            // get good chunk size and no. of chunks(max 64)
+            bool goodChunkCount = false, goodChunkSize = false, goodChunkSize2 = false, goodChunkSize3 = false;
+            while ((!goodChunkSize || !goodChunkCount) && chunks > 0) {
+                if (fileSize / chunks > chunkSize && !goodChunkCount) {
+                    chunkSize *= 2;
+                }
+                else {
+                    if (chunks * chunkSize > fileSize && !goodChunkSize) {
+                        chunks--;
+                    }
+                    else {
+                        goodChunkSize = true;
+                    }
+                    goodChunkCount = true;
+                }
+            }
+
+            QBarSet *entropySet = new QBarSet("Chunk Entropy");
+            QStringList chunkRange;
+
             // for all full chunks
             for (int i = 0; i < chunks; i++) {
-                qDebug() << chunkEntropy(i * chunkSize, chunkSize);
+                *entropySet << chunkEntropy(i * chunkSize, chunkSize);
+                chunkRange << QString::number(i); //QString::number(i * chunkSize);// + " - " + QString::number((i * chunkSize) + chunkSize);
             }
             // last and incomplete chunk
             if (fileSize % chunkSize > 0) {
-                qDebug() << chunkEntropy(chunks * chunkSize, (fileSize % chunkSize + chunkSize) % chunkSize);
+                *entropySet << chunkEntropy(chunks * chunkSize, (fileSize % chunkSize + chunkSize) % chunkSize);
+                chunkRange << QString::number(chunks); //QString::number(chunks * chunkSize);// << " - " << QString::number((chunks * chunkSize) + ((fileSize % chunkSize + chunkSize) % chunkSize));
             }
+
+            QBarCategoryAxis *axisY = new QBarCategoryAxis();
+            QValueAxis *axisX = new QValueAxis();
+            //QValueAxis *axisY = new QValueAxis();
+            QHorizontalBarSeries *series = new QHorizontalBarSeries();
+
+            // reverse data for graph output
+            QBarSet *tmpSet = new QBarSet("");
+            QStringList tmpList;
+            for (int i = 0; i < entropySet->count(); i++) {
+                *tmpSet << entropySet->at(entropySet->count() - 1 - i);
+                tmpList << chunkRange.at(chunkRange.count() - 1 - i);
+
+            }
+            entropySet = tmpSet;
+            chunkRange = tmpList;
+
+            series->append(entropySet);
+            axisY->append(chunkRange);
+
+            QChart *chart = new QChart();
+            chart->addSeries(series);
+
+            if (fileSize % chunkSize > 0) {
+                if (chunks == 0) {
+                    chart->setTitle("Average file entropy across " + QString::number(1) + " chunk of " + QString::number(fileSize % chunkSize) + " bytes.");
+                }
+                else {
+                    chart->setTitle("Average file entropy across " + QString::number(chunks+1) + " chunks of " + QString::number(chunkSize) + " bytes each, with the last being the remainder of " + QString::number(fileSize % chunkSize) + " bytes.");
+                }
+
+            }
+            else {
+                chart->setTitle("Average file entropy across " + QString::number(chunks) + " chunks of " + QString::number(chunkSize) + " bytes each.");
+            }
+
+            //chart->addAxis(axisY, Qt::AlignLeft);
+
+            chart->addAxis(axisX, Qt::AlignBottom);
+            series->attachAxis(axisX);
+            axisX->setMax(8);
+            axisX->applyNiceNumbers();
+
+            chart->legend()->setVisible(false);
+            //chart->legend()->setAlignment(Qt::AlignBottom);
+            //chart->setAnimationOptions(QChart::AllAnimations);
+
+            QChartView *chartView = new QChartView(chart);
+            ui->scrollArea->setWidget(chartView);
+
             entropyGraphBuilt = true;
         }
     }

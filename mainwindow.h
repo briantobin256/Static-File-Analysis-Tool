@@ -3,6 +3,7 @@
 
 #include <QMainWindow>
 #include <QLabel>
+#include "customdialog.h"
 #include <QTextBrowser>
 #include <QDebug>
 #include <QFileDialog>
@@ -19,6 +20,7 @@
 #include <QCoreApplication>
 #include <QCloseEvent>
 #include <math.h>
+#include <QtCharts>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -148,6 +150,7 @@ private slots:
 
 private:
     Ui::MainWindow *ui;
+    CustomDialog *dialogBox;
     QString generateHash(char *data, int size);
     QString generateFileHash(QString fileName);
     void open(QFile *f);
