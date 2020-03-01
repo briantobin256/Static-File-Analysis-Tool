@@ -33,6 +33,7 @@ void MainWindow::on_actionOpen_triggered()
     saveChanges();
     QFile file(QFileDialog::getOpenFileName(this, "Select a file to analyse", "D:/Downloads"));
     open(&file);
+    file.close();
 }
 
 void MainWindow::on_actionSave_triggered()
@@ -207,6 +208,7 @@ void MainWindow::on_actionPack_triggered()
                     // open newly packed file to analyse
                     QFile file(directory + fileName);
                     open(&file);
+                    file.close();
                 }
                 else {
                     label->setText("The current file was not packed using UPX.");
@@ -244,6 +246,7 @@ void MainWindow::on_actionUnpack_triggered()
                 // open newly packed file to analyse
                 QFile file(directory + fileName);
                 open(&file);
+                file.close();
             }
             else {
                 label->setText("The current file was not unpacked.");
@@ -668,6 +671,8 @@ void MainWindow::open(QFile *file)
                     dialogBox->exec();
                 }
             }
+            resetChecks();
+            refreshWindow();
         }
         else {
             // file too big
@@ -678,9 +683,6 @@ void MainWindow::open(QFile *file)
             dialogBox->exec();
         }
     }
-    file->close();
-    resetChecks();
-    refreshWindow();
 }
 
 QString MainWindow::generateHash(char *data , int size)
@@ -1509,7 +1511,7 @@ void MainWindow::buildEntropyGraph()
 {
     if (fileOpened && fileSize > 0) {
         if (!entropyGraphBuilt) {
-            int chunks = 64;
+            int chunks = 64; // max chunks
             int chunkSize = 256;
 
             // get good chunk size and no. of chunks(max 64)
@@ -1565,17 +1567,27 @@ void MainWindow::buildEntropyGraph()
             QChart *chart = new QChart();
             chart->addSeries(series);
 
+            QString chunkBytes = " bytes";
+            if (chunkSize >= 1024) {
+                chunkBytes = QString::number(chunkSize / 1024) + " kibibytes";
+                if (chunkSize >= 1048576) {
+                    chunkBytes = QString::number(chunkSize / 1048576) + " mebibytes";
+                    if (chunkSize >= 1073741824) {
+                        chunkBytes = QString::number(chunkSize / 1073741824) + " gibibytes";
+                    }
+                }
+            }
             if (fileSize % chunkSize > 0) {
                 if (chunks == 0) {
-                    chart->setTitle("Average file entropy across " + QString::number(1) + " chunk of " + QString::number(fileSize % chunkSize) + " bytes.");
+                    chart->setTitle("Average file entropy across " + QString::number(1) + " chunk of " + chunkBytes);
                 }
                 else {
-                    chart->setTitle("Average file entropy across " + QString::number(chunks+1) + " chunks of " + QString::number(chunkSize) + " bytes each, with the last being the remainder of " + QString::number(fileSize % chunkSize) + " bytes.");
+                    chart->setTitle("Average file entropy across " + QString::number(chunks+1) + " chunks of " + chunkBytes + "  each, with the last being the remaining " + QString::number(fileSize % chunkSize) + " bytes.");
                 }
 
             }
             else {
-                chart->setTitle("Average file entropy across " + QString::number(chunks) + " chunks of " + QString::number(chunkSize) + " bytes each.");
+                chart->setTitle("Average file entropy across " + QString::number(chunks) + " chunks of " + chunkBytes +" each.");
             }
 
             //chart->addAxis(axisY, Qt::AlignLeft);
