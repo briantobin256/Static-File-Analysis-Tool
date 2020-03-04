@@ -173,6 +173,7 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
                 entropyVar = "The files entropy is \n" + QString::number(entropy) + "\nwhich would suggest that the file IS packed/compressed/encrypted.";
             }
 
+            entropyVar += "\nCheck the entropy graph for more in depth detail of the total file entropy.";
             label->setText(basicText + entropyVar);
         }
     }
@@ -182,6 +183,13 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
 
     dialogBox->exec();
     packChecked = true;
+    refreshWindow();
+}
+
+void MainWindow::on_actionEntropy_Graph_triggered()
+{
+    ui->stackedWidget->setCurrentIndex(5);
+    buildEntropyGraph();
     refreshWindow();
 }
 
@@ -286,13 +294,6 @@ void MainWindow::on_actionDLL_s_triggered()
 void MainWindow::on_actionHex_triggered()
 {
     ui->stackedWidget->setCurrentIndex(4);
-    refreshWindow();
-}
-
-void MainWindow::on_actionEntropy_triggered()
-{
-    ui->stackedWidget->setCurrentIndex(5);
-    buildEntropyGraph();
     refreshWindow();
 }
 

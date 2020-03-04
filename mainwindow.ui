@@ -13,7 +13,7 @@
   <property name="minimumSize">
    <size>
     <width>1003</width>
-    <height>770</height>
+    <height>820</height>
    </size>
   </property>
   <property name="maximumSize">
@@ -1362,6 +1362,8 @@
      <string>Packers</string>
     </property>
     <addaction name="actionCheck_if_Packed"/>
+    <addaction name="actionEntropy_Graph"/>
+    <addaction name="separator"/>
     <addaction name="actionPack"/>
     <addaction name="actionUnpack"/>
    </widget>
@@ -1371,13 +1373,6 @@
     </property>
     <addaction name="actionFind_Strings"/>
     <addaction name="actionSaved_Strings"/>
-   </widget>
-   <widget class="QMenu" name="menuVirusTotal">
-    <property name="title">
-     <string>VirusTotal</string>
-    </property>
-    <addaction name="actionWebsite"/>
-    <addaction name="actionUpload_File"/>
    </widget>
    <widget class="QMenu" name="menuChecklist">
     <property name="title">
@@ -1392,13 +1387,12 @@
     </property>
     <addaction name="actionDLL_s"/>
     <addaction name="actionHex"/>
-    <addaction name="actionEntropy"/>
+    <addaction name="actionDisassembly"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuPackers"/>
    <addaction name="menuStrings"/>
    <addaction name="menuAdvanced"/>
-   <addaction name="menuVirusTotal"/>
    <addaction name="menuChecklist"/>
   </widget>
   <action name="actionOpen">
@@ -1428,7 +1422,7 @@
   </action>
   <action name="actionCheck_if_Packed">
    <property name="text">
-    <string>Check if Packed</string>
+    <string>Check if UPX Packed</string>
    </property>
   </action>
   <action name="actionPack">
@@ -1502,6 +1496,16 @@
   <action name="actionUndo_All_Changes">
    <property name="text">
     <string>Undo All Changes</string>
+   </property>
+  </action>
+  <action name="actionEntropy_Graph">
+   <property name="text">
+    <string>Entropy Graph</string>
+   </property>
+  </action>
+  <action name="actionDisassembly">
+   <property name="text">
+    <string>Disassembly</string>
    </property>
   </action>
  </widget>

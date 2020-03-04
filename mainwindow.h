@@ -120,8 +120,6 @@ private slots:
 
     void on_actionOpen_triggered();
 
-    void on_actionEntropy_triggered();
-
     void on_hexScrollBar_valueChanged();
 
     void on_actionDLL_s_triggered();
@@ -147,6 +145,8 @@ private slots:
     void on_stringSortUnsort_clicked();
 
     void on_deleteSelectedStringsButton_clicked();
+
+    void on_actionEntropy_Graph_triggered();
 
 private:
     Ui::MainWindow *ui;
