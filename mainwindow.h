@@ -102,6 +102,7 @@ public:
     bool disassemblyBuilt;
     int codeStart;
     //int disassemblyOffset;
+    QMap<int, int>opTypeMap;
     QMap<int, QString>opcodeMap;
 
     bool reseting;

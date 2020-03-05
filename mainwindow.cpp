@@ -1714,8 +1714,11 @@ void MainWindow::refreshDisassembly()
                 QTextStream in(&file);
                 int i = 0;
                 while (!in.atEnd()) {
-                    QString functionName = in.readLine();
-                    opcodeMap[i] = functionName;
+                    QString line = in.readLine();
+                    QStringRef type(&line, 0, 1);
+                    QStringRef opcode(&line, 1, line.size() - 1);
+                    opTypeMap[i] = type.toInt();
+                    opcodeMap[i] = opcode.toString();
                     i++;
                 }
                 file.close();
@@ -1727,11 +1730,12 @@ void MainWindow::refreshDisassembly()
             disassemblyBuilt = true;
         }
 
-        int maxDisassemblyRows = 46;
+        int maxDisassemblyRows = 30;
         int disassemblyOffset = 0; // = scrollbar value * maxDisassemblyRows
         ui->disassemblyBrowser->clear();
 
         int currentOffset = 0;
+        QString disassemblyDisplay = "";
         for (int i = 0; i < maxDisassemblyRows; i++) {
             QString disassemblyLine = "";
 
@@ -1757,20 +1761,30 @@ void MainWindow::refreshDisassembly()
 
             // size of each field depends on opcode
 
+            // if undecoded
+            if (opTypeMap[opcode] == 0) {
 
+            }
+            // if single byte operator
+            else if (opTypeMap[opcode] == 1) {
 
+            }
+            // if has mod r/m
+            else if (opTypeMap[opcode] == 2) {
+                // calculate length
+                disassemblyLine += "<font color=\"Red\">";
+                currentOffset += 0; // += op.size
+            }
+            // if other
+            else if (opTypeMap[opcode] == 3) {
 
-
-
-            // find current instruction size
-
-            // find current instruction parameters
-
+            }
 
             disassemblyLine += instruction;
             disassemblyLine += parameters;
-            currentOffset += 0; // += op.size
-            ui->disassemblyBrowser->append(disassemblyLine);
+            disassemblyLine += "</font><br>";
+            disassemblyDisplay += disassemblyLine;
         }
+        ui->disassemblyBrowser->setHtml(disassemblyDisplay);
     }
 }
