@@ -97,6 +97,13 @@ public:
     bool entropyChecked;
     bool entropyGraphBuilt;
 
+
+    // disassembly
+    bool disassemblyBuilt;
+    int codeStart;
+    //int disassemblyOffset;
+    QMap<int, QString>opcodeMap;
+
     bool reseting;
 
 private slots:
@@ -148,6 +155,8 @@ private slots:
 
     void on_actionEntropy_Graph_triggered();
 
+    void on_actionDisassembly_triggered();
+
 private:
     Ui::MainWindow *ui;
     CustomDialog *dialogBox;
@@ -174,6 +183,7 @@ private:
     void buildEntropyGraph();
     void stringToHexLocation(QListWidgetItem *item);
     void removeSelected();
+    void refreshDisassembly();
 
     //void searchStringList;
 

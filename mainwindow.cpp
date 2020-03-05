@@ -305,7 +305,14 @@ void MainWindow::on_actionChecklistMain_triggered()
 
 void MainWindow::on_actionSeperate_Window_triggered()
 {
+    //ui->stackedWidget->setCurrentIndex(8);
+    refreshWindow();
+}
+
+void MainWindow::on_actionDisassembly_triggered()
+{
     ui->stackedWidget->setCurrentIndex(7);
+    refreshWindow();
 }
 
 void MainWindow::on_stringsScrollBar_valueChanged()
@@ -1356,6 +1363,10 @@ void MainWindow::refreshWindow()
         case 6: extendedWindowName = " - Checklist";
         refreshChecklist();
         break;
+
+        case 7: extendedWindowName = " - Disassembly";
+        refreshDisassembly();
+        break;
     }
 
     // window name
@@ -1398,6 +1409,10 @@ void MainWindow::resetChecks()
     ui->hexTable->horizontalHeader()->resizeSection(17, 150);
     entropy = 0;
     entropyGraphBuilt = false;
+
+    disassemblyBuilt = false;
+    codeStart = 0;
+
     reseting = false;
 }
 
@@ -1684,5 +1699,78 @@ void MainWindow::removeSelected()
             savedStringMap[savedStringLocationMap[index.row()]] = false;
         }
         removedStrings = true;
+    }
+}
+
+void MainWindow::refreshDisassembly()
+{
+    if (fileOpened) {
+
+        if (!disassemblyBuilt) {
+
+            // put opcodes in map
+            QFile file("OPCODES.txt");
+            if (file.open(QIODevice::ReadOnly)) {
+                QTextStream in(&file);
+                int i = 0;
+                while (!in.atEnd()) {
+                    QString functionName = in.readLine();
+                    opcodeMap[i] = functionName;
+                    i++;
+                }
+                file.close();
+            }
+
+            // find code start location
+            codeStart = 1024;
+
+            disassemblyBuilt = true;
+        }
+
+        int maxDisassemblyRows = 46;
+        int disassemblyOffset = 0; // = scrollbar value * maxDisassemblyRows
+        ui->disassemblyBrowser->clear();
+
+        int currentOffset = 0;
+        for (int i = 0; i < maxDisassemblyRows; i++) {
+            QString disassemblyLine = "";
+
+            char c = rawData[i + disassemblyOffset + codeStart + currentOffset];
+            unsigned char opcode = static_cast<unsigned char>(c);
+
+            QString line =  opcodeMap[opcode], instruction = "", parameters = "";
+            int split = line.indexOf(" ");
+            if (split > 0) {
+                QStringRef instructionRef(&line, 0, split + 1);
+                instruction = instructionRef.toString();
+                QStringRef parametersRef(&line, split, line.length() - split);
+                parameters = parametersRef.toString();
+            }
+            else {
+                instruction = line;
+            }
+
+            // get and decode a Mod R/M byte
+            // Scale Index Base (SIB) byte
+            // displacement bytes (0, 1, 2 or 4)
+            // immediate value (0, 1, 2 or 4)
+
+            // size of each field depends on opcode
+
+
+
+
+
+
+            // find current instruction size
+
+            // find current instruction parameters
+
+
+            disassemblyLine += instruction;
+            disassemblyLine += parameters;
+            currentOffset += 0; // += op.size
+            ui->disassemblyBrowser->append(disassemblyLine);
+        }
     }
 }

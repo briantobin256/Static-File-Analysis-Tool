@@ -478,7 +478,7 @@
      </palette>
     </property>
     <property name="currentIndex">
-     <number>5</number>
+     <number>7</number>
     </property>
     <widget class="QWidget" name="page_0_Main_Window"/>
     <widget class="QWidget" name="page_1_Find_Strings">
@@ -1331,7 +1331,18 @@
       </property>
      </widget>
     </widget>
-    <widget class="QWidget" name="page"/>
+    <widget class="QWidget" name="page_7_Disassembly">
+     <widget class="QTextBrowser" name="disassemblyBrowser">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>20</y>
+        <width>941</width>
+        <height>731</height>
+       </rect>
+      </property>
+     </widget>
+    </widget>
    </widget>
   </widget>
   <widget class="QStatusBar" name="statusbar"/>
@@ -1341,7 +1352,7 @@
      <x>0</x>
      <y>0</y>
      <width>1003</width>
-     <height>31</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
