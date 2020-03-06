@@ -1709,7 +1709,7 @@ void MainWindow::refreshDisassembly()
         if (!disassemblyBuilt) {
 
             // put opcodes in map
-            QFile file("OPCODES.txt");
+            QFile file("../Static-File-Analysis-Tool/OPCODES.txt");
             if (file.open(QIODevice::ReadOnly)) {
                 QTextStream in(&file);
                 int i = 0;
@@ -1734,50 +1734,149 @@ void MainWindow::refreshDisassembly()
         int disassemblyOffset = 0; // = scrollbar value * maxDisassemblyRows
         ui->disassemblyBrowser->clear();
 
-        int currentOffset = 0;
+        int instructionSizeOffset = 0;
         QString disassemblyDisplay = "";
+
+        // for each instruction in file
         for (int i = 0; i < maxDisassemblyRows; i++) {
-            QString disassemblyLine = "";
 
-            char c = rawData[i + disassemblyOffset + codeStart + currentOffset];
-            unsigned char opcode = static_cast<unsigned char>(c);
+            bool instructionComplete = false;
+            QString disassemblyLine = "", instruction = "", parameters = "";
 
-            QString line =  opcodeMap[opcode], instruction = "", parameters = "";
-            int split = line.indexOf(" ");
-            if (split > 0) {
-                QStringRef instructionRef(&line, 0, split + 1);
-                instruction = instructionRef.toString();
-                QStringRef parametersRef(&line, split, line.length() - split);
-                parameters = parametersRef.toString();
-            }
-            else {
-                instruction = line;
-            }
+            // current byte types
+            bool prefix = true, opcode = false, modByte = false, SIB = false, displacement = false, immediate = false;
 
-            // get and decode a Mod R/M byte
-            // Scale Index Base (SIB) byte
-            // displacement bytes (0, 1, 2 or 4)
-            // immediate value (0, 1, 2 or 4)
+            // for each byte in instruction
+            while (!instructionComplete) {
 
-            // size of each field depends on opcode
+                char c = rawData[disassemblyOffset + codeStart + instructionSizeOffset];
+                unsigned char byte = static_cast<unsigned char>(c);
 
-            // if undecoded
-            if (opTypeMap[opcode] == 0) {
+                //
+                // OPTIONAL INSTRUCTION PREFIX CHECK (F0, F2, F3, 2E, 36, 3E, 26, 64, 65, 66, 67)
+                //
 
-            }
-            // if single byte operator
-            else if (opTypeMap[opcode] == 1) {
+                if (prefix) {
 
-            }
-            // if has mod r/m
-            else if (opTypeMap[opcode] == 2) {
-                // calculate length
-                disassemblyLine += "<font color=\"Red\">";
-                currentOffset += 0; // += op.size
-            }
-            // if other
-            else if (opTypeMap[opcode] == 3) {
+                    // if LOCK prefix
+                    if (byte == 240) {
 
+                    }
+                    // if string manipulation prefix
+                    else if (byte == 242 || byte == 243) {
+
+                    }
+                    // if segment override prefix
+                    else if (byte == 46 || byte == 54 || byte == 62 || byte == 38 || byte == 100 || byte == 101) {
+
+                    }
+                    // if operand override
+                    else if (byte == 102) {
+
+                    }
+                    // if address override
+                    else if (byte == 103) {
+
+                    }
+                    else {
+                        prefix = false;
+                        opcode = true;
+                    }
+                }
+
+                //
+                // OPCODE CHECK
+                //
+
+                if (opcode && !prefix) {
+                    // if extended opcode
+                    if (byte == 15) {
+
+                    }
+                    else {
+                        // if has mod byte
+                        if (opTypeMap[byte] == 2) {
+                            modByte = true;
+                        }
+                        // else if single byte instruction
+                        else if (opTypeMap[byte] == 1) {
+                            instructionComplete = true;
+                        }
+                        opcode = false;
+
+                        QString line =  opcodeMap[byte];
+                        int split = line.indexOf(" ");
+                        if (split > 0) {
+                            QStringRef instructionRef(&line, 0, split + 1);
+                            instruction = instructionRef.toString();
+                            QStringRef parametersRef(&line, split, line.length() - split);
+                            parameters = parametersRef.toString();
+                        }
+                        else {
+                            instruction = line;
+                        }
+                    }
+                }
+
+                //
+                // MOD R/M CHECK
+                //
+
+                else if (modByte) {
+                    // calculate mod
+
+                    // calculate reg
+
+                    // calculate r/m
+
+                    modByte = false;
+                    SIB = true;
+                }
+
+                //
+                // SIB CHECK
+                //
+
+                else if (SIB) {
+                    // calculate scale
+
+                    // calculate index
+
+                    // calculate base
+
+                    SIB = false;
+
+                    // if displacement
+                    displacement = true;
+                }
+
+                //
+                // DISPLACEMENT
+                //
+
+                else if (displacement) {
+
+                    // if displacement end
+                    displacement = false;
+
+                    // if immediate
+                    immediate = true;
+                }
+
+                //
+                // IMMEDIATE CHECK
+                //
+
+                else if (immediate) {
+
+                    // if immediate end
+                    immediate = false;
+                }
+                else {
+                    instructionComplete = true;
+                }
+
+                instructionSizeOffset++;
             }
 
             disassemblyLine += instruction;

@@ -1,256 +1,256 @@
-2ADD Eb Gb
-2ADD Ev Gv
-2ADD Gb Eb
-2ADD Gv Ev
-3ADD al lb
-3ADD eax lv
-1PUSH es
-1POP es
-2OR Eb Gb
-2OR Eb Gb
-2OR Gb Eb
-2OR Gv Ev
-3OR al lb
-3OR eax lv
-1PUSH cs
-0TWOBYTE
-2ADC Eb Gb
-2ADC Ev Gv
-2ADC Gb Eb
-2ADC Gv Ev
-3ADC al lb
-3ADC eax lv
-1PUSH ss
-1POP ss
-2SBB Eb Gv
-2SBB Ev Gv
-2SBB Gb Eb
-2SBB Gv Ev
-3SBB al lb
-3SBB eax lv
-1PUSH ds
-1POP ds
-2AND Eb Gb
-2AND Ev Gv
-2AND Gb Eb
-2AND Gv Ev
-3AND al lb
-3AND eax lv
-1ES:
-1DAA
-2SUB Eb Gb
-2SUB Ev Gv
-2SUB Gb Eb
-2SUB Gv Ev
-3SUB al lb
-3SUB eax lv
-1CS:
-1DAS
-2XOR Eb Gb
-2XOR Ev Gv
-2XOR Gb Eb
-2XOR Gv Ev
-3XOR al lb
-3XOR eax lv
-1SS:
-1AAA
-2CMP Eb Gb
-2CMP Ev Gv
-2CMP Gb Eb
-2CMP Gb Ev
-3CMP al lb
-3CMP eax lv
-1DS:
-1AAS
-1INC eax
-1INC ecx
-1INC edx
-1INC ebx
-1INC esp
-1INC ebp
-1INC esi
-1INC edi
-1DEC eax
-1DEC ecx
-1DEC edx
-1DEC ebx
-1DEC esp
-1DEC ebp
-1DEC esi
-1DEC edi
-1PUSH eax
-1PUSH ecx
-1PUSH edx
-1PUSH ebx
-1PUSH esp
-1PUSH ebp
-1PUSH esi
-1PUSH edi
-1POP eax
-1POP ecx
-1POP edx
-1POP ebx
-1POP esp
-1POP ebp
-1POP esi
-1POP edi
-1PUSHA
-1POPA
-0BOUND Gv Ma
-2ARPL Ew Gw
-1FS:
-1GS:
-1OPSIZE:
-1ADSIZE:
-3PUSH lv
-2IMUL Gv Ew lv
-3PUSH lb
-2IMUL Gv Ev lb
-1INSB Yb DX
-1INSW Yz DX
-1OUTSB DX Xb
-1OUTSW DX Xw
-3JO Jb
-3JNO Jb
-3JB Jb
-3JNB Jb
-3JZ Jb
-3JNZ Jb
-3JBE Jb
-3JA Jb
-3JS Jb
-3JNS Jb
-3JP Jb
-3JNP Jb
-3JL Jb
-3JNL Jb
-3JLE Jb
-3JNLE Jb
-2ADD Eb lb
-2ADD Ev lv
-2SUB Eb lb
-2SUB Ev lb
-2TEST Eb Gb
-2TEST Ev Gv
-2XCHG Eb Gb
-2XCHG Ev Gv
-2MOV Eb Gv
-2MOV Ev Gv
-2MOV Gb Eb
-2MOV Gv Ev
-2MOV Ew Sw
-0LEA Gv M
-2MOV Sw Ew
-2POP Ev
-1NOP
-1XCHG eax ecx
-1XCHG eax edx
-1XCHG eax ebx
-1XCHG eax esp
-1XCHG eax ebp
-1XCHG eax esi
-1XCHG eax edi
-1CBW
-1CWD
-3CALL Ap
-1WAIT
-1PUSHF Fv
-1POPF Fv
-1SAHF
-1LAHF
-3MOV al Ob
-3MOV eax Ov
-3MOV Ob al
-3MOV Ov eax
-1MOVSB Xb Yb
-1MOVSW Xv Yv
-1CMPSB Xb Yb
-1CMPSW Xv Yv
-3TEST al lb
-3TEST eax lv
-1STOSB Yb al
-1STOSW Yv eax
-1LODSB al Xb
-1LODSW eax Xv
-1SCASB al Yb
-1SCASW eax Yv
-3MOV al lb
-3MOV CL lb
-3MOV DL lb
-3MOV BL lb
-3MOV AH lb
-3MOV CH lb
-3MOV DH lb
-3MOV BH lb
-3MOV eax lv
-3MOV ecx lv
-3MOV edx lv
-3MOV ebx lv
-3MOV esp lv
-3MOV ebp lv
-3MOV esi lv
-3MOV edi lv
-2#2 Eb lb
-2#2 Ev lb
-3RETN lw
-1RETN
-0LES Gv Mp
-0LDS Gv Mp
-2MOV Eb lb
-2MOV Ev lv
-0ENTER lw lb
-1LEAVE
-3RETF lw
-1RETF
-1INT3
-3INT lb
-1INTO
-1IRET
-2#2 Eb 1
-2#2 Ev 1
-2#2 Eb CL
-2#2 Ev CL
-3AAM lb
-3AAD lb
-0SALC
-1XLAT
-0ESC 0
-0ESC 1
-0ESC 2
-0ESC 3
-0ESC 4
-0ESC 5
-0ESC 6
-0ESC 7
-3LOOPNZ Jb
-3LOOPZ Jb
-3LOOP Jb
-3JCXZ Jb
-3IN al lb
-3IN eax lb
-3OUT lb al
-3OUT lb eax
-3CALL Jz
-3JMP Jz
-3JMP Ap
-3JMP Jb
-1IN al dx
-1IN eax dx
-1OUT dx al
-1OUT dx eax
-1LOCK:
-0INT1
-1REPNE:
-1REP:
-1HLT
-1CMC
-2#3 Eb
-2#3 Ev
-1CLC
-1STC
-1CLI
-1STI
-1CLD
-1STD
-0#4 INC/DEC
-0#5 INC/DEC
+2add eb gb
+2add ev gv
+2add gb eb
+2add gv ev
+3add al lb
+3add eax lv
+1push es
+1pop es
+2or eb gb
+2or eb gb
+2or gb eb
+2or gv ev
+3or al lb
+3or eax lv
+1push cs
+0twobyte
+2adc eb gb
+2adc ev gv
+2adc gb eb
+2adc gv ev
+3adc al lb
+3adc eax lv
+1push ss
+1pop ss
+2sbb eb gv
+2sbb ev gv
+2sbb gb eb
+2sbb gv ev
+3sbb al lb
+3sbb eax lv
+1push ds
+1pop ds
+2and eb gb
+2and ev gv
+2and gb eb
+2and gv ev
+3and al lb
+3and eax lv
+1es:
+1daa
+2sub eb gb
+2sub ev gv
+2sub gb eb
+2sub gv ev
+3sub al lb
+3sub eax lv
+1cs:
+1das
+2xor eb gb
+2xor ev gv
+2xor gb eb
+2xor gv ev
+3xor al lb
+3xor eax lv
+1ss:
+1aaa
+2cmp eb gb
+2cmp ev gv
+2cmp gb eb
+2cmp gb ev
+3cmp al lb
+3cmp eax lv
+1ds:
+1aas
+1inc eax
+1inc ecx
+1inc edx
+1inc ebx
+1inc esp
+1inc ebp
+1inc esi
+1inc edi
+1dec eax
+1dec ecx
+1dec edx
+1dec ebx
+1dec esp
+1dec ebp
+1dec esi
+1dec edi
+1push eax
+1push ecx
+1push edx
+1push ebx
+1push esp
+1push ebp
+1push esi
+1push edi
+1pop eax
+1pop ecx
+1pop edx
+1pop ebx
+1pop esp
+1pop ebp
+1pop esi
+1pop edi
+1pusha
+1popa
+0bound gv ma
+2arpl ew gw
+1fs:
+1gs:
+1opsize:
+1adsize:
+3push lv
+2imul gv ew lv
+3push lb
+2imul gv ev lb
+1insb yb dx
+1insw yz dx
+1outsb dx xb
+1outsw dx xw
+3jo jb
+3jno jb
+3jb jb
+3jnb jb
+3jz jb
+3jnz jb
+3jbe jb
+3ja jb
+3js jb
+3jns jb
+3jp jb
+3jnp jb
+3jl jb
+3jnl jb
+3jle jb
+3jnle jb
+2add eb lb
+2add ev lv
+2sub eb lb
+2sub ev lb
+2test eb gb
+2test ev gv
+2xchg eb gb
+2xchg ev gv
+2mov eb gv
+2mov ev gv
+2mov gb eb
+2mov gv ev
+2mov ew sw
+0lea gv m
+2mov sw ew
+2pop ev
+1nop
+1xchg eax ecx
+1xchg eax edx
+1xchg eax ebx
+1xchg eax esp
+1xchg eax ebp
+1xchg eax esi
+1xchg eax edi
+1cbw
+1cwd
+3call ap
+1wait
+1pushf fv
+1popf fv
+1sahf
+1lahf
+3mov al ob
+3mov eax ov
+3mov ob al
+3mov ov eax
+1movsb xb yb
+1movsw xv yv
+1cmpsb xb yb
+1cmpsw xv yv
+3test al lb
+3test eax lv
+1stosb yb al
+1stosw yv eax
+1lodsb al xb
+1lodsw eax xv
+1scasb al yb
+1scasw eax yv
+3mov al lb
+3mov cl lb
+3mov dl lb
+3mov bl lb
+3mov ah lb
+3mov ch lb
+3mov dh lb
+3mov bh lb
+3mov eax lv
+3mov ecx lv
+3mov edx lv
+3mov ebx lv
+3mov esp lv
+3mov ebp lv
+3mov esi lv
+3mov edi lv
+2#2 eb lb
+2#2 ev lb
+3retn lw
+1retn
+0les gv mp
+0lds gv mp
+2mov eb lb
+2mov ev lv
+0enter lw lb
+1leave
+3retf lw
+1retf
+1int3
+3int lb
+1into
+1iret
+2#2 eb 1
+2#2 ev 1
+2#2 eb cl
+2#2 ev cl
+3aam lb
+3aad lb
+0salc
+1xlat
+0esc 0
+0esc 1
+0esc 2
+0esc 3
+0esc 4
+0esc 5
+0esc 6
+0esc 7
+3loopnz jb
+3loopz jb
+3loop jb
+3jcxz jb
+3in al lb
+3in eax lb
+3out lb al
+3out lb eax
+3call jz
+3jmp jz
+3jmp ap
+3jmp jb
+1in al dx
+1in eax dx
+1out dx al
+1out dx eax
+1lock:
+0int1
+1repne:
+1rep:
+1hlt
+1cmc
+2#3 eb
+2#3 ev
+1clc
+1stc
+1cli
+1sti
+1cld
+1std
+0#4 inc/dec
+0#5 inc/dec
