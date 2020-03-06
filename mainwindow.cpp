@@ -1731,7 +1731,7 @@ void MainWindow::refreshDisassembly()
         }
 
         int maxDisassemblyRows = 30;
-        int disassemblyOffset = 0; // = scrollbar value * maxDisassemblyRows
+        //int disassemblyOffset = 0; // = scrollbar value * maxDisassemblyRows, (for displaying only)
         ui->disassemblyBrowser->clear();
 
         int instructionSizeOffset = 0;
@@ -1741,15 +1741,17 @@ void MainWindow::refreshDisassembly()
         for (int i = 0; i < maxDisassemblyRows; i++) {
 
             bool instructionComplete = false;
-            QString disassemblyLine = "", instruction = "", parameters = "";
+            int opcodeByte = 0;
 
             // current byte types
             bool prefix = true, opcode = false, modByte = false, SIB = false, displacement = false, immediate = false;
+            bool operandSizeModifier = false, memoryAddressToRegister = false;
+            int mod, reg, rm;
 
             // for each byte in instruction
             while (!instructionComplete) {
 
-                char c = rawData[disassemblyOffset + codeStart + instructionSizeOffset];
+                char c = rawData[codeStart + instructionSizeOffset];
                 unsigned char byte = static_cast<unsigned char>(c);
 
                 //
@@ -1772,7 +1774,7 @@ void MainWindow::refreshDisassembly()
                     }
                     // if operand override
                     else if (byte == 102) {
-
+                        operandSizeModifier = true;
                     }
                     // if address override
                     else if (byte == 103) {
@@ -1803,18 +1805,7 @@ void MainWindow::refreshDisassembly()
                             instructionComplete = true;
                         }
                         opcode = false;
-
-                        QString line =  opcodeMap[byte];
-                        int split = line.indexOf(" ");
-                        if (split > 0) {
-                            QStringRef instructionRef(&line, 0, split + 1);
-                            instruction = instructionRef.toString();
-                            QStringRef parametersRef(&line, split, line.length() - split);
-                            parameters = parametersRef.toString();
-                        }
-                        else {
-                            instruction = line;
-                        }
+                        opcodeByte = instructionSizeOffset;
                     }
                 }
 
@@ -1824,10 +1815,18 @@ void MainWindow::refreshDisassembly()
 
                 else if (modByte) {
                     // calculate mod
+                    mod = (byte / static_cast<int>(pow(2, 7)) % 2) * 10;
+                    mod += (byte / static_cast<int>(pow(2, 6)) % 2);
 
                     // calculate reg
+                    reg = (byte / static_cast<int>(pow(2, 5)) % 2) * 100;
+                    reg += (byte / static_cast<int>(pow(2, 4)) % 2) * 10;
+                    reg += (byte / static_cast<int>(pow(2, 3)) % 2);
 
                     // calculate r/m
+                    rm = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
+                    rm += (byte / 2 % 2) * 10;
+                    rm += (byte % 2);
 
                     modByte = false;
                     SIB = true;
@@ -1879,6 +1878,25 @@ void MainWindow::refreshDisassembly()
                 instructionSizeOffset++;
             }
 
+            // build instruction text and append to instruction list
+
+            QString instruction = "", parameters = "";
+            QString line =  opcodeMap[static_cast<unsigned char>(rawData[opcodeByte + codeStart])];
+            int split = line.indexOf(" ");
+            if (split > 0) {
+                QStringRef instructionRef(&line, 0, split + 1);
+                instruction = instructionRef.toString();
+                QStringRef parametersRef(&line, split, line.length() - split);
+                parameters = parametersRef.toString();
+            }
+            else {
+                instruction = line;
+            }
+
+//qDebug() << opcodeByte << line;
+
+            // tmp
+            QString disassemblyLine = "";
             disassemblyLine += instruction;
             disassemblyLine += parameters;
             disassemblyLine += "</font><br>";
