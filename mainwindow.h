@@ -185,6 +185,7 @@ private:
     void stringToHexLocation(QListWidgetItem *item);
     void removeSelected();
     void refreshDisassembly();
+    QString registerName(int regValue, int operandSize);
 
     //void searchStringList;
 

@@ -1746,7 +1746,8 @@ void MainWindow::refreshDisassembly()
             // current byte types
             bool prefix = true, opcode = false, modByte = false, SIB = false, displacement = false, immediate = false;
             bool operandSizeModifier = false, memoryAddressToRegister = false;
-            int mod, reg, rm;
+            int mod, reg, rm, displacementSize = 0, operandSize = 8;
+            QString modRegString = "", displacementRegString = "", sourceAddress = "", destinationAddress = "";
 
             // for each byte in instruction
             while (!instructionComplete) {
@@ -1799,6 +1800,20 @@ void MainWindow::refreshDisassembly()
                         // if has mod byte
                         if (opTypeMap[byte] == 2) {
                             modByte = true;
+                            // calculate if register is sender or reciever of data
+                            if (byte / 10 % 2 == 1) {
+                                memoryAddressToRegister = true;
+                            }
+
+                            // calculate operand size (default = 8bits)
+                            if (byte % 2 == 1) {
+                                if (operandSizeModifier) {
+                                    operandSize = 16;
+                                }
+                                else {
+                                    operandSize = 32;
+                                }
+                            }
                         }
                         // else if single byte instruction
                         else if (opTypeMap[byte] == 1) {
@@ -1814,22 +1829,51 @@ void MainWindow::refreshDisassembly()
                 //
 
                 else if (modByte) {
-                    // calculate mod
+                    // get addressing mode bits (first 2 bits)
                     mod = (byte / static_cast<int>(pow(2, 7)) % 2) * 10;
                     mod += (byte / static_cast<int>(pow(2, 6)) % 2);
 
-                    // calculate reg
+                    // get register bits (next 3 bits)
                     reg = (byte / static_cast<int>(pow(2, 5)) % 2) * 100;
                     reg += (byte / static_cast<int>(pow(2, 4)) % 2) * 10;
                     reg += (byte / static_cast<int>(pow(2, 3)) % 2);
 
-                    // calculate r/m
+                    // get r/m bits (last 3 bits)
                     rm = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
                     rm += (byte / 2 % 2) * 10;
                     rm += (byte % 2);
 
+                    // calculate addressing mode
+                    if (mod == 0) {
+                        if (rm == 100) {
+                            // SIB no displacement
+                            SIB = true;
+                        }
+                        else if (rm == 101) {
+                            // displaceement only addressing mode
+
+                        }
+                        else {
+                            // register indirect addressing mode
+
+                        }
+                    }
+                    else if (mod == 1) {
+                        SIB = true;
+                        displacementSize = 1;
+                    }
+                    else if (mod == 10) {
+                        SIB = true;
+                        displacementSize = 4;
+                    }
+                    else if (mod == 11) {
+                        // register addressing mode
+                        displacementRegString = registerName(rm, operandSize);
+                    }
+
+                    // get register value as a string
+                    modRegString = registerName(reg, operandSize);
                     modByte = false;
-                    SIB = true;
                 }
 
                 //
@@ -1844,19 +1888,15 @@ void MainWindow::refreshDisassembly()
                     // calculate base
 
                     SIB = false;
-
-                    // if displacement
-                    displacement = true;
                 }
 
                 //
                 // DISPLACEMENT
                 //
 
-                else if (displacement) {
+                else if (displacementSize > 0) {
 
-                    // if displacement end
-                    displacement = false;
+                    displacementSize--;
 
                     // if immediate
                     immediate = true;
@@ -1893,15 +1933,111 @@ void MainWindow::refreshDisassembly()
                 instruction = line;
             }
 
+            // calculate source and destination registers
+            if (memoryAddressToRegister) {
+                destinationAddress = modRegString;
+                sourceAddress = displacementRegString;
+            }
+            else {
+                destinationAddress = displacementRegString;
+                sourceAddress = modRegString;
+            }
+
+            if (opTypeMap[static_cast<unsigned char>(rawData[opcodeByte + codeStart])] == 1) {
+                destinationAddress = parameters;
+            }
+
 //qDebug() << opcodeByte << line;
 
             // tmp
             QString disassemblyLine = "";
             disassemblyLine += instruction;
-            disassemblyLine += parameters;
-            disassemblyLine += "</font><br>";
+            disassemblyLine += destinationAddress;
+            disassemblyLine += " ";
+            disassemblyLine += sourceAddress;
+            disassemblyLine += "<br>";
             disassemblyDisplay += disassemblyLine;
         }
         ui->disassemblyBrowser->setHtml(disassemblyDisplay);
     }
+}
+
+QString MainWindow::registerName(int regValue, int operandSize)
+{
+    QString registerName = "";
+    switch (regValue) {
+        case 0: switch (operandSize) {
+                    case 8: registerName = "al";
+                    break;
+                    case 16: registerName = "ax";
+                    break;
+                    case 32: registerName = "eax";
+                    break;
+                }
+        break;
+        case 1: switch (operandSize) {
+                    case 8: registerName = "cl";
+                    break;
+                    case 16: registerName = "cx";
+                    break;
+                    case 32: registerName = "ecx";
+                    break;
+                }
+        break;
+        case 10: switch (operandSize) {
+                    case 8: registerName = "dl";
+                    break;
+                    case 16: registerName = "dx";
+                    break;
+                    case 32: registerName = "edx";
+                    break;
+                }
+        break;
+        case 11: switch (operandSize) {
+                    case 8: registerName = "bl";
+                    break;
+                    case 16: registerName = "bx";
+                    break;
+                    case 32: registerName = "ebx";
+                    break;
+                }
+        break;
+        case 100: switch (operandSize) {
+                    case 8: registerName = "ah";
+                    break;
+                    case 16: registerName = "sp";
+                    break;
+                    case 32: registerName = "esp";
+                    break;
+                }
+        break;
+        case 101: switch (operandSize) {
+                    case 8: registerName = "ch";
+                    break;
+                    case 16: registerName = "bp";
+                    break;
+                    case 32: registerName = "ebp";
+                    break;
+                }
+        break;
+        case 110: switch (operandSize) {
+                    case 8: registerName = "dh";
+                    break;
+                    case 16: registerName = "si";
+                    break;
+                    case 32: registerName = "esi";
+                    break;
+                }
+        break;
+        case 111: switch (operandSize) {
+                    case 8: registerName = "bh";
+                    break;
+                    case 16: registerName = "di";
+                    break;
+                    case 32: registerName = "edi";
+                    break;
+                }
+        break;
+    }
+    return registerName;
 }
