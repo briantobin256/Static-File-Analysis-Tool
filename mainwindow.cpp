@@ -1741,13 +1741,26 @@ void MainWindow::refreshDisassembly()
         for (int i = 0; i < maxDisassemblyRows; i++) {
 
             bool instructionComplete = false;
-            int opcodeByte = 0;
+            int opcodeByte = 0, instructionStartByte = instructionSizeOffset;
+
+            QString instruction = "", parameters = "";
+            QString line =  opcodeMap[static_cast<unsigned char>(rawData[instructionSizeOffset + codeStart])];
+            int split = line.indexOf(" ");
+            if (split > 0) {
+                QStringRef instructionRef(&line, 0, split + 1);
+                instruction = instructionRef.toString();
+                QStringRef parametersRef(&line, split, line.length() - split);
+                parameters = parametersRef.toString();
+            }
+            else {
+                instruction = line;
+            }
 
             // current byte types
-            bool prefix = true, opcode = false, modByte = false, SIB = false, displacement = false, immediate = false;
-            bool operandSizeModifier = false, memoryAddressToRegister = false;
-            int mod, reg, rm, displacementSize = 0, operandSize = 8;
-            QString modRegString = "", displacementRegString = "", sourceAddress = "", destinationAddress = "";
+            bool prefix = true, opcode = false, modByte = false, SIB = false;
+            bool operandSizeModifier = false, regIsDestination = false;
+            int mod, reg, rm, displacementSize = 0, immediateSize = 0, operandSize = 8;
+            QString sourceOperand = "", destinationOperand = "";
 
             // for each byte in instruction
             while (!instructionComplete) {
@@ -1756,7 +1769,7 @@ void MainWindow::refreshDisassembly()
                 unsigned char byte = static_cast<unsigned char>(c);
 
                 //
-                // OPTIONAL INSTRUCTION PREFIX CHECK (F0, F2, F3, 2E, 36, 3E, 26, 64, 65, 66, 67)
+                // OPTIONAL INSTRUCTION PREFIX BYTE CHECK (F0, F2, F3, 2E, 36, 3E, 26, 64, 65, 66, 67)
                 //
 
                 if (prefix) {
@@ -1788,7 +1801,7 @@ void MainWindow::refreshDisassembly()
                 }
 
                 //
-                // OPCODE CHECK
+                // OPCODE BYTE CHECK
                 //
 
                 if (opcode && !prefix) {
@@ -1802,7 +1815,7 @@ void MainWindow::refreshDisassembly()
                             modByte = true;
                             // calculate if register is sender or reciever of data
                             if (byte / 10 % 2 == 1) {
-                                memoryAddressToRegister = true;
+                                regIsDestination = true;
                             }
 
                             // calculate operand size (default = 8bits)
@@ -1814,10 +1827,22 @@ void MainWindow::refreshDisassembly()
                                     operandSize = 32;
                                 }
                             }
+
+                            // has immediate constant (defined by opcodes in Immediate Group by intel)
+                            if ((byte >= 176 && byte <= 191) || (byte >= 128 && byte <= 131)) {
+                                // if immediate is a one byte signed constant
+                                if (byte / 10 % 2 == 1) {
+                                    immediateSize = 1;
+                                }
+                                else {
+                                    immediateSize = operandSize / 8;
+                                }
+                            }
                         }
                         // else if single byte instruction
                         else if (opTypeMap[byte] == 1) {
                             instructionComplete = true;
+                            destinationOperand = parameters;
                         }
                         opcode = false;
                         opcodeByte = instructionSizeOffset;
@@ -1825,7 +1850,7 @@ void MainWindow::refreshDisassembly()
                 }
 
                 //
-                // MOD R/M CHECK
+                // MOD REG R/M BYTE CHECK
                 //
 
                 else if (modByte) {
@@ -1850,29 +1875,55 @@ void MainWindow::refreshDisassembly()
                             SIB = true;
                         }
                         else if (rm == 101) {
-                            // displaceement only addressing mode
+                            // displacement only addressing mode
 
                         }
                         else {
                             // register indirect addressing mode
-
+                            if (regIsDestination) {
+                                sourceOperand = "[" + registerName(rm, operandSize) + "]";
+                                destinationOperand = registerName(reg, operandSize) + ", ";
+                            }
+                            else {
+                                sourceOperand =  "[" + registerName(reg, operandSize) + "]";
+                                destinationOperand = registerName(rm, operandSize) + ", ";
+                            }
+                            instructionComplete = true;
                         }
                     }
                     else if (mod == 1) {
-                        SIB = true;
                         displacementSize = 1;
+                        destinationOperand = registerName(reg, operandSize) + ", ";
+                        sourceOperand = "[";
+                        sourceOperand += registerName(rm, operandSize);
                     }
                     else if (mod == 10) {
-                        SIB = true;
+                        // need to keep track of size and add number together
+                        /*
                         displacementSize = 4;
+                        destinationOperand = registerName(reg, operandSize);
+                        sourceOperand = "[";
+                        sourceOperand += registerName(rm, operandSize);
+                        */
                     }
+                    // register addressing mode
                     else if (mod == 11) {
-                        // register addressing mode
-                        displacementRegString = registerName(rm, operandSize);
+                        // if no immediate
+                        if (immediateSize == 0) {
+                            if (regIsDestination) {
+                                sourceOperand = registerName(rm, operandSize);
+                                destinationOperand = registerName(reg, operandSize) + ", ";
+                            }
+                            else {
+                                sourceOperand = registerName(reg, operandSize);
+                                destinationOperand = registerName(rm, operandSize) + ", ";
+                            }
+                            instructionComplete = true;
+                        }
+                        else {
+                            destinationOperand = registerName(rm, operandSize) + ", ";
+                        }
                     }
-
-                    // get register value as a string
-                    modRegString = registerName(reg, operandSize);
                     modByte = false;
                 }
 
@@ -1891,25 +1942,29 @@ void MainWindow::refreshDisassembly()
                 }
 
                 //
-                // DISPLACEMENT
+                // DISPLACEMENT BYTE CHECK
                 //
 
                 else if (displacementSize > 0) {
-
+                    sourceOperand += "+" + QString::number(byte);
                     displacementSize--;
+                    if (displacementSize == 0) {
+                        sourceOperand += "]";
+                        instructionComplete = true;
+                    }
 
-                    // if immediate
-                    immediate = true;
                 }
 
                 //
-                // IMMEDIATE CHECK
+                // IMMEDIATE BYTE CHECK
                 //
 
-                else if (immediate) {
-
-                    // if immediate end
-                    immediate = false;
+                else if (immediateSize > 0) {
+                    sourceOperand += QString::number(byte);
+                    immediateSize--;
+                    if (immediateSize == 0) {
+                        instructionComplete = true;
+                    }
                 }
                 else {
                     instructionComplete = true;
@@ -1920,41 +1975,32 @@ void MainWindow::refreshDisassembly()
 
             // build instruction text and append to instruction list
 
-            QString instruction = "", parameters = "";
-            QString line =  opcodeMap[static_cast<unsigned char>(rawData[opcodeByte + codeStart])];
-            int split = line.indexOf(" ");
-            if (split > 0) {
-                QStringRef instructionRef(&line, 0, split + 1);
-                instruction = instructionRef.toString();
-                QStringRef parametersRef(&line, split, line.length() - split);
-                parameters = parametersRef.toString();
-            }
-            else {
-                instruction = line;
-            }
 
+/*
             // calculate source and destination registers
             if (memoryAddressToRegister) {
-                destinationAddress = modRegString;
-                sourceAddress = displacementRegString;
+                destinationOperand = modRegString;
+                sourceOperand = displacementRegString;
             }
             else {
-                destinationAddress = displacementRegString;
-                sourceAddress = modRegString;
+                destinationOperand = displacementRegString;
+                sourceOperand = modRegString;
             }
 
             if (opTypeMap[static_cast<unsigned char>(rawData[opcodeByte + codeStart])] == 1) {
-                destinationAddress = parameters;
+                destinationOperand = parameters;
             }
-
+*/
 //qDebug() << opcodeByte << line;
 
             // tmp
             QString disassemblyLine = "";
+            disassemblyLine += QString::number(instructionStartByte);
+            disassemblyLine += "    ";
             disassemblyLine += instruction;
-            disassemblyLine += destinationAddress;
+            disassemblyLine += destinationOperand;
             disassemblyLine += " ";
-            disassemblyLine += sourceAddress;
+            disassemblyLine += sourceOperand;
             disassemblyLine += "<br>";
             disassemblyDisplay += disassemblyLine;
         }
