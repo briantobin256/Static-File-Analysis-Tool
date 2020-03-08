@@ -96,7 +96,7 @@
 1pop edi
 1pusha
 1popa
-0bound gv ma
+2bound gv ma
 2arpl ew gw
 1fs:
 1gs:
@@ -214,14 +214,14 @@
 3aad lb
 0salc
 1xlat
-0esc 0
-0esc 1
-0esc 2
-0esc 3
-0esc 4
-0esc 5
-0esc 6
-0esc 7
+2esc 0
+2esc 1
+2esc 2
+2esc 3
+2esc 4
+2esc 5
+2esc 6
+2esc 7
 3loopnz jb
 3loopz jb
 3loop jb
@@ -252,5 +252,5 @@
 1sti
 1cld
 1std
-0#4 inc/dec
-0#5 inc/dec
+2#4 inc/dec
+2#5 inc/dec

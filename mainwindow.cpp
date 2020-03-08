@@ -1531,7 +1531,7 @@ void MainWindow::buildEntropyGraph()
             int chunkSize = 256;
 
             // get good chunk size and no. of chunks(max 64)
-            bool goodChunkCount = false, goodChunkSize = false, goodChunkSize2 = false, goodChunkSize3 = false;
+            bool goodChunkCount = false, goodChunkSize = false;
             while ((!goodChunkSize || !goodChunkCount) && chunks > 0) {
                 if (fileSize / chunks > chunkSize && !goodChunkCount) {
                     chunkSize *= 2;
@@ -1724,7 +1724,7 @@ void MainWindow::refreshDisassembly()
                 file.close();
             }
 
-            // find code start location
+            // find code start location (1024 is default for 32bit pe files?)
             codeStart = 1024;
 
             disassemblyBuilt = true;
@@ -1741,7 +1741,8 @@ void MainWindow::refreshDisassembly()
         for (int i = 0; i < maxDisassemblyRows; i++) {
 
             bool instructionComplete = false;
-            int opcodeByte = 0, instructionStartByte = instructionSizeOffset;
+            int opcodeByte = 0, instructionStartByte = instructionSizeOffset, displacementValue = 0;
+            unsigned int immediateValue = 0;
 
             QString instruction = "", parameters = "";
             QString line =  opcodeMap[static_cast<unsigned char>(rawData[instructionSizeOffset + codeStart])];
@@ -1758,8 +1759,8 @@ void MainWindow::refreshDisassembly()
 
             // current byte types
             bool prefix = true, opcode = false, modByte = false, SIB = false;
-            bool operandSizeModifier = false, regIsDestination = false;
-            int mod, reg, rm, displacementSize = 0, immediateSize = 0, operandSize = 8;
+            bool operandSizeModifier = false, regIsDestination = false, specialInstruction = false;
+            int mod, reg, rm, scale, index, base, displacementSize = 0, immediateSize = 0, operandSize = 8, specialByte;
             QString sourceOperand = "", destinationOperand = "";
 
             // for each byte in instruction
@@ -1838,13 +1839,64 @@ void MainWindow::refreshDisassembly()
                                     immediateSize = operandSize / 8;
                                 }
                             }
+
+                            // if instruction has multiple possible instructions
+                            if ((byte >= 128 && byte <= 131) || byte == 98 || byte == 192 || byte == 193 || (byte >= 208 && byte <= 211) || byte == 216 || byte == 246 || byte == 247 || byte == 255) {
+                                specialInstruction = true;
+                                specialByte = byte;
+                            }
                         }
                         // else if single byte instruction
                         else if (opTypeMap[byte] == 1) {
                             instructionComplete = true;
                             destinationOperand = parameters;
                         }
+                        else {
+                            // if has Short-Displacement jump on condition
+                            if (byte >= 112 && byte <= 127) {
+                                destinationOperand = "short ";
+                                displacementSize = 1;
+                            }
+                            // if move immediate byte into byte register
+                            else if (byte >= 176 && byte <= 183) {
+                                immediateSize = 1;
+
+                                // depends on opcode
+                                destinationOperand = "";
+                                // more needed
+                            }
+                            // if move immediate word/double into word/double register
+                            else if (byte >= 184 && byte <= 191) {
+                                int opcodeModBits;
+                                opcodeModBits = (byte / static_cast<int>(pow(2, 7)) % 2) * 10;
+                                opcodeModBits += (byte / static_cast<int>(pow(2, 6)) % 2);
+
+                                if (opcodeModBits == 10) {
+                                    immediateSize = 4;
+                                }
+                                else {
+                                    // guess
+                                    immediateSize = 2;
+                                }
+
+                                int opcodeRmBits;
+                                opcodeRmBits = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
+                                opcodeRmBits += (byte / 2 % 2) * 10;
+                                opcodeRmBits += (byte % 2);
+                                destinationOperand = registerName(opcodeRmBits, 32) + ", ";
+                            }
+                            // if single operand immediate value
+                            else if (byte == 104 || byte == 232) {
+                                if (operandSizeModifier) {
+                                    immediateSize = 2;
+                                }
+                                else {
+                                    immediateSize = 4;
+                                }
+                            }
+                        }
                         opcode = false;
+                        // for final display
                         opcodeByte = instructionSizeOffset;
                     }
                 }
@@ -1867,6 +1919,10 @@ void MainWindow::refreshDisassembly()
                     rm = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
                     rm += (byte / 2 % 2) * 10;
                     rm += (byte % 2);
+
+                    if (specialInstruction) {
+                        instruction = getSpecialByteInstruction(specialByte, reg);
+                    }
 
                     // calculate addressing mode
                     if (mod == 0) {
@@ -1892,19 +1948,22 @@ void MainWindow::refreshDisassembly()
                         }
                     }
                     else if (mod == 1) {
+                        if (rm == 100) {
+                            // SIB 1 displacement byte
+                            SIB = true;
+                        }
                         displacementSize = 1;
                         destinationOperand = registerName(reg, operandSize) + ", ";
-                        sourceOperand = "[";
-                        sourceOperand += registerName(rm, operandSize);
+                        sourceOperand = "[" + registerName(rm, operandSize);
                     }
                     else if (mod == 10) {
-                        // need to keep track of size and add number together
-                        /*
+                        if (rm == 100) {
+                            // SIB 4 displacement bytes
+                            SIB = true;
+                        }
                         displacementSize = 4;
                         destinationOperand = registerName(reg, operandSize);
-                        sourceOperand = "[";
-                        sourceOperand += registerName(rm, operandSize);
-                        */
+                        sourceOperand = "[" + registerName(rm, operandSize);
                     }
                     // register addressing mode
                     else if (mod == 11) {
@@ -1924,6 +1983,7 @@ void MainWindow::refreshDisassembly()
                             destinationOperand = registerName(rm, operandSize) + ", ";
                         }
                     }
+
                     modByte = false;
                 }
 
@@ -1932,13 +1992,58 @@ void MainWindow::refreshDisassembly()
                 //
 
                 else if (SIB) {
-                    // calculate scale
+                    // get scale bits (first 2 bits)
+                    scale = (byte / static_cast<int>(pow(2, 7)) % 2) * 10;
+                    scale += (byte / static_cast<int>(pow(2, 6)) % 2);
 
-                    // calculate index
+                    // get index bits (next 3 bits)
+                    index = (byte / static_cast<int>(pow(2, 5)) % 2) * 100;
+                    index += (byte / static_cast<int>(pow(2, 4)) % 2) * 10;
+                    index += (byte / static_cast<int>(pow(2, 3)) % 2);
 
-                    // calculate base
+                    // get base bits (last 3 bits)
+                    base = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
+                    base += (byte / 2 % 2) * 10;
+                    base += (byte % 2);
+
+                    // FF only ?
+                    switch (operandSize) {
+                        case 16: destinationOperand = "word ptr ";
+                        break;
+                        case 32: destinationOperand = "dword ptr ";
+                        break;
+                    }
+
+                    // get base register
+                    if (mod != 101) {
+                        destinationOperand += "[" + registerName(base, operandSize) + " ";
+                    }
+                    else if (mod == 0) {
+                        // displacement only
+                    }
+                    else {
+                         destinationOperand += "[ebp ";
+                    }
+
+                    // get index register
+                    destinationOperand += "+" + registerName(index, operandSize);
+
+                    // get index scale value
+                    switch (scale) {
+                        case 0: destinationOperand += "*1]";
+                        break;
+                        case 1: destinationOperand += "*2]";
+                        break;
+                        case 10: destinationOperand += "*4]";
+                        break;
+                        case 11: destinationOperand += "*8]";
+                        break;
+                    }
 
                     SIB = false;
+                    if (displacementSize == 0) {
+                        instructionComplete = true;
+                    }
                 }
 
                 //
@@ -1946,13 +2051,17 @@ void MainWindow::refreshDisassembly()
                 //
 
                 else if (displacementSize > 0) {
-                    sourceOperand += "+" + QString::number(byte);
+                    displacementValue += byte;
                     displacementSize--;
                     if (displacementSize == 0) {
-                        sourceOperand += "]";
+                        if (destinationOperand == "short ") {
+                            sourceOperand += "loc_" + QString::number(displacementValue);
+                        }
+                        else {
+                            sourceOperand += "+" + QString::number(displacementValue) + "]";
+                        }
                         instructionComplete = true;
                     }
-
                 }
 
                 //
@@ -1960,9 +2069,20 @@ void MainWindow::refreshDisassembly()
                 //
 
                 else if (immediateSize > 0) {
-                    sourceOperand += QString::number(byte);
+                    switch (immediateSize) {
+                    case 1 : immediateValue += byte;
+                    break;
+                    case 2 : immediateValue += pow(16,2) * byte;
+                    break;
+                    case 3 : immediateValue += pow(16,4) * byte;
+                    break;
+                    case 4 : immediateValue += pow(16,6) * byte;
+                    break;
+                    }
+
                     immediateSize--;
                     if (immediateSize == 0) {
+                        sourceOperand += QString::number(immediateValue);
                         instructionComplete = true;
                     }
                 }
@@ -1973,29 +2093,9 @@ void MainWindow::refreshDisassembly()
                 instructionSizeOffset++;
             }
 
-            // build instruction text and append to instruction list
-
-
-/*
-            // calculate source and destination registers
-            if (memoryAddressToRegister) {
-                destinationOperand = modRegString;
-                sourceOperand = displacementRegString;
-            }
-            else {
-                destinationOperand = displacementRegString;
-                sourceOperand = modRegString;
-            }
-
-            if (opTypeMap[static_cast<unsigned char>(rawData[opcodeByte + codeStart])] == 1) {
-                destinationOperand = parameters;
-            }
-*/
-//qDebug() << opcodeByte << line;
-
             // tmp
             QString disassemblyLine = "";
-            disassemblyLine += QString::number(instructionStartByte);
+            disassemblyLine += QString::number(instructionStartByte, 16).toUpper();
             disassemblyLine += "    ";
             disassemblyLine += instruction;
             disassemblyLine += destinationOperand;
@@ -2086,4 +2186,47 @@ QString MainWindow::registerName(int regValue, int operandSize)
         break;
     }
     return registerName;
+}
+
+QString MainWindow::getSpecialByteInstruction(int specialByte, int reg)
+{
+    if (specialByte == 255) {
+        switch (reg) {
+            case 0: return "inc ";
+            break;
+            case 1: return "dec ";
+            break;
+            case 10: return "call ";
+            break;
+            case 11: return "callf ";
+            break;
+            case 100: return "jmp ";
+            break;
+            case 101: return "jmpf ";
+            break;
+            case 110: return "push ";
+            break;
+        }
+    }
+    else if (specialByte == 128 || specialByte == 129 || specialByte == 130 || specialByte == 131) {
+        switch (reg) {
+            case 0: return "add ";
+            break;
+            case 1: return "or ";
+            break;
+            case 10: return "adc ";
+            break;
+            case 11: return "sbb ";
+            break;
+            case 100: return "and ";
+            break;
+            case 101: return "sub ";
+            break;
+            case 110: return "xor ";
+            break;
+            case 111: return "cmp ";
+            break;
+        }
+    }
+    return "";
 }
