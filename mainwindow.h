@@ -186,7 +186,8 @@ private:
     void removeSelected();
     void refreshDisassembly();
     QString registerName(int regValue, int operandSize);
-    QString getSpecialByteInstruction(int byte, int reg);
+    QString getSpecialByteInstruction(int specialByte, int reg);
+    QString getExtendedByteInstruction(int extendedByte, int reg);
 
     //void searchStringList;
 

@@ -36,32 +36,32 @@
 2and gv ev
 3and al lb
 3and eax lv
-1es:
-1daa
+1es: 
+1daa 
 2sub eb gb
 2sub ev gv
 2sub gb eb
 2sub gv ev
 3sub al lb
 3sub eax lv
-1cs:
-1das
+1cs: 
+1das 
 2xor eb gb
 2xor ev gv
 2xor gb eb
 2xor gv ev
 3xor al lb
 3xor eax lv
-1ss:
-1aaa
+1ss: 
+1aaa 
 2cmp eb gb
 2cmp ev gv
 2cmp gb eb
 2cmp gb ev
 3cmp al lb
 3cmp eax lv
-1ds:
-1aas
+1ds: 
+1aas 
 1inc eax
 1inc ecx
 1inc edx
@@ -94,14 +94,14 @@
 1pop ebp
 1pop esi
 1pop edi
-1pusha
-1popa
+1pusha 
+1popa 
 2bound gv ma
 2arpl ew gw
-1fs:
-1gs:
-1opsize:
-1adsize:
+1fs: 
+1gs: 
+1opsize: 
+1adsize: 
 3push lv
 2imul gv ew lv
 3push lb
@@ -139,10 +139,10 @@
 2mov gb eb
 2mov gv ev
 2mov ew sw
-0lea gv m
+2lea gv m
 2mov sw ew
 2pop ev
-1nop
+1nop 
 1xchg eax ecx
 1xchg eax edx
 1xchg eax ebx
@@ -150,14 +150,14 @@
 1xchg eax ebp
 1xchg eax esi
 1xchg eax edi
-1cbw
-1cwd
+1cbw 
+1cwd 
 3call ap
-1wait
+1wait 
 1pushf fv
 1popf fv
-1sahf
-1lahf
+1sahf 
+1lahf 
 3mov al ob
 3mov eax ov
 3mov ob al
@@ -193,27 +193,27 @@
 2#2 eb lb
 2#2 ev lb
 3retn lw
-1retn
+1retn 
 0les gv mp
 0lds gv mp
 2mov eb lb
 2mov ev lv
 0enter lw lb
-1leave
+1leave 
 3retf lw
-1retf
+1retf 
 1int3
 3int lb
-1into
-1iret
+1into 
+1iret 
 2#2 eb 1
 2#2 ev 1
 2#2 eb cl
 2#2 ev cl
 3aam lb
 3aad lb
-0salc
-1xlat
+0salc 
+1xlat 
 2esc 0
 2esc 1
 2esc 2
@@ -240,17 +240,193 @@
 1out dx eax
 1lock:
 0int1
-1repne:
-1rep:
-1hlt
-1cmc
+1repne: 
+1rep: 
+1hlt 
+1cmc 
 2#3 eb
 2#3 ev
-1clc
-1stc
-1cli
-1sti
-1cld
-1std
+1clc 
+1stc 
+1cli 
+1sti 
+1cld 
+1std 
 2#4 inc/dec
 2#5 inc/dec
+00
+00
+2lar 
+2lsl 
+00
+00
+1clts 
+00
+1invd 
+1wbinvd 
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+2mov 
+2mov 
+2mov 
+2mov 
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+2cmovo 
+2cmovno 
+2cmovb 
+2cmovnb 
+2cmovz 
+2cmovnz 
+2cmovbe 
+2cmovnbe 
+2cmovs 
+2cmovns 
+2cmovp 
+2cmovnp 
+2cmovl 
+2cmovnl 
+2cmovle 
+2cmovnle 
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+0jo 
+0jno 
+0jb 
+0jnb 
+0jz 
+0jnz 
+0jbe 
+0jnbe 
+0js 
+0jns 
+0jp 
+0jnp 
+0jl 
+0jnl 
+0jle 
+0jnle 
+2seto 
+2setno 
+2setb 
+2setnb 
+2setz 
+2setnz 
+2setbe 
+2setnbe 
+2sets 
+2setns 
+2setp 
+2setnp 
+2setl 
+2setnl 
+2setle 
+2setnle 
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
+00
