@@ -1740,7 +1740,7 @@ void MainWindow::refreshDisassembly()
         // for each instruction in file
         for (int i = 0; i < maxDisassemblyRows; i++) {
 
-            bool instructionComplete = false;
+            bool instructionComplete = false, error = false;
             int opcodeByte = 0, instructionStartByte = instructionSizeOffset, displacementValue = 0;
             unsigned int immediateValue = 0;
 
@@ -1749,8 +1749,9 @@ void MainWindow::refreshDisassembly()
             // current byte types
             bool prefix = true, opcode = false, modByte = false, SIB = false, extendedOpcode = false;
             bool operandSizeModifier = false, regIsDestination = false, specialInstruction = false;
-            int mod, reg, rm, scale, index, base, displacementIndex = 0, maxDisplacements = 0, immediateIndex = 0, maxImmediates = 0, operandSize = 8, specialByte, extended = 0;
+            int mod, reg, rm, scale, index, base, displacementIndex = 0, maxDisplacements = 0, immediateIndex = 0, maxImmediates = 0, operandSize = 8, extended = 0;
             QString sourceOperand = "", destinationOperand = "";
+            QString operand1 = "", operand2 = "";
 
             // for each byte in instruction
             while (!instructionComplete) {
@@ -1795,13 +1796,13 @@ void MainWindow::refreshDisassembly()
                 //
 
                 if (opcode && !prefix) {
-                    // if extended opcode
+                    // if extended instruction
                     if (byte == 15) {
                         extendedOpcode = true;
                         extended = 256;
                     }
                     else {
-                        // if has mod byte
+                        // if this instruction has a mod byte
                         if (opTypeMap[byte + extended] == 2) {
                             modByte = true;
                             // calculate if register is sender or reciever of data
@@ -1824,7 +1825,7 @@ void MainWindow::refreshDisassembly()
                             }
                             else {
                                 // has immediate constant (defined by opcodes in Immediate Group by intel)
-                                if ((byte >= 176 && byte <= 191) || (byte >= 128 && byte <= 131) || byte == 141) {
+                                if ((byte >= 176 && byte <= 191) || (byte >= 128 && byte <= 131)) {
                                     // if immediate is a one byte signed constant
                                     if (byte / 10 % 2 == 1) {
                                         maxImmediates = 1;
@@ -1834,13 +1835,12 @@ void MainWindow::refreshDisassembly()
                                     }
                                 }
                                 else if (byte == 199) {
-                                    maxImmediates = 4;
+                                    maxImmediates = operandSize / 8;
                                 }
 
-                                // if instruction has multiple possible instructions
+                                // if opcode has multiple possible instructions
                                 if ((byte >= 128 && byte <= 131) || byte == 98 || byte == 192 || byte == 193 || (byte >= 208 && byte <= 211) || byte == 216 || byte == 246 || byte == 247 || byte == 255) {
                                     specialInstruction = true;
-                                    specialByte = byte;
                                 }
                             }
                         }
@@ -1863,7 +1863,7 @@ void MainWindow::refreshDisassembly()
                             else {
                                 // if has Short-Displacement jump on condition
                                 if ((byte >= 112 && byte <= 127) || byte == 235) {
-                                    destinationOperand = "short ";
+                                    sourceOperand = "short ";
                                     maxDisplacements = 1;
                                 }
                                 // if move immediate byte into byte register
@@ -1892,7 +1892,7 @@ void MainWindow::refreshDisassembly()
                                     opcodeRmBits = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
                                     opcodeRmBits += (byte / 2 % 2) * 10;
                                     opcodeRmBits += (byte % 2);
-                                    destinationOperand = registerName(opcodeRmBits, 32) + ", ";
+                                    destinationOperand = registerName(opcodeRmBits, 32);
                                 }
                                 // if single operand immediate value
                                 else if (byte == 104 || byte == 232) {
@@ -1931,7 +1931,7 @@ void MainWindow::refreshDisassembly()
                     rm += (byte % 2);
 
                     if (specialInstruction) {
-                        instruction = getSpecialByteInstruction(specialByte, reg);
+                        instruction = getSpecialByteInstruction(opcodeByte, reg);
                     }
 
                     // calculate addressing mode
@@ -1939,6 +1939,15 @@ void MainWindow::refreshDisassembly()
                         if (rm == 100) {
                             // SIB no displacement
                             SIB = true;
+                            if (opcodeByte == 137) {
+                                sourceOperand = registerName(reg, operandSize);
+                            }
+                            else if (opcodeByte == 255) {
+
+                            }
+                            else {
+                                destinationOperand = registerName(reg, operandSize);
+                            }
                         }
                         else if (rm == 101) {
                             // displacement only addressing mode
@@ -1947,14 +1956,20 @@ void MainWindow::refreshDisassembly()
                         }
                         else {
                             // register indirect addressing mode
-                            if (regIsDestination) {
-                                sourceOperand = "[" + registerName(rm, operandSize) + "]";
-                                destinationOperand = registerName(reg, operandSize) + ", ";
+                            if (opcodeByte == 255) {
+                                destinationOperand = "[" + registerName(rm, operandSize) + "]";
                             }
                             else {
-                                sourceOperand =  "[" + registerName(reg, operandSize) + "]";
-                                destinationOperand = registerName(rm, operandSize) + ", ";
+                                if (regIsDestination) {
+                                    sourceOperand = "[" + registerName(rm, operandSize) + "]";
+                                    destinationOperand = registerName(reg, operandSize);
+                                }
+                                else {
+                                    sourceOperand =  "[" + registerName(reg, operandSize) + "]";
+                                    destinationOperand = registerName(rm, operandSize);
+                                }
                             }
+
                             instructionComplete = true;
                         }
                     }
@@ -1964,11 +1979,17 @@ void MainWindow::refreshDisassembly()
                             SIB = true;
                         }
                         maxDisplacements = 1;
-                        if (opcodeByte == 199) {
+                        if (opcodeByte == 198 || opcodeByte == 199) {
                             destinationOperand = "[" + registerName(rm, operandSize);
                         }
+                        else if (opcodeByte == 139) {
+                            destinationOperand = registerName(reg, operandSize);
+                            if (!SIB) {
+                                sourceOperand = "[" + registerName(rm, operandSize);
+                            }
+                        }
                         else {
-                            destinationOperand = registerName(reg, operandSize) + ", ";
+                            destinationOperand = registerName(reg, operandSize);
                             sourceOperand = "[" + registerName(rm, operandSize);
                         }
                     }
@@ -1987,16 +2008,16 @@ void MainWindow::refreshDisassembly()
                         if (maxImmediates == 0) {
                             if (regIsDestination) {
                                 sourceOperand = registerName(rm, operandSize);
-                                destinationOperand = registerName(reg, operandSize) + ", ";
+                                destinationOperand = registerName(reg, operandSize);
                             }
                             else {
                                 sourceOperand = registerName(reg, operandSize);
-                                destinationOperand = registerName(rm, operandSize) + ", ";
+                                destinationOperand = registerName(rm, operandSize);
                             }
                             instructionComplete = true;
                         }
                         else {
-                            destinationOperand = registerName(rm, operandSize) + ", ";
+                            destinationOperand = registerName(rm, operandSize);
                         }
                     }
 
@@ -2023,42 +2044,45 @@ void MainWindow::refreshDisassembly()
                     base += (byte % 2);
 
                     // FF only ?
-                    switch (operandSize) {
-                        case 16: destinationOperand = "word ptr ";
-                        break;
-                        case 32: destinationOperand = "dword ptr ";
-                        break;
-                    }
+                    QString sibOperand = "";
 
                     // get base register
                     if (mod != 101) {
-                        destinationOperand += "[" + registerName(base, operandSize) + " ";
+                        sibOperand += "[" + registerName(base, operandSize);
                     }
                     else if (mod == 0) {
                         // displacement only
                     }
                     else {
-                         destinationOperand += "[ebp ";
+                         sibOperand = "[ebp";
                     }
 
                     // get index register
-                    destinationOperand += "+" + registerName(index, operandSize);
+                    sibOperand += "+" + registerName(index, operandSize);
 
                     // get index scale value
                     switch (scale) {
-                        case 0: destinationOperand += "*1]";
+                        case 0: sibOperand += "*1";
                         break;
-                        case 1: destinationOperand += "*2]";
+                        case 1: sibOperand += "*2";
                         break;
-                        case 10: destinationOperand += "*4]";
+                        case 10: sibOperand += "*4";
                         break;
-                        case 11: destinationOperand += "*8]";
+                        case 11: sibOperand += "*8";
                         break;
                     }
 
                     SIB = false;
                     if (maxDisplacements == 0) {
                         instructionComplete = true;
+                        sibOperand += "]";
+                    }
+
+                    if (opcodeByte == 137) {
+                        destinationOperand = sibOperand;
+                    }
+                    else {
+                        sourceOperand = sibOperand;
                     }
                 }
 
@@ -2079,11 +2103,11 @@ void MainWindow::refreshDisassembly()
                     }
                     displacementIndex++;
                     if (displacementIndex == maxDisplacements) {
-                        if (destinationOperand == "short " || mod == 0) {
+                        if (sourceOperand == "short " || mod == 0) {
                             sourceOperand += QString::number(displacementValue);  // convert to loc_ value
                         }
                         else if (opcodeByte == 199) {
-                            destinationOperand += "+" + QString::number(displacementValue) + "],";
+                            destinationOperand += "+" + QString::number(displacementValue) + "]";
                         }
                         else {
                             sourceOperand += "+" + QString::number(displacementValue) + "]";
@@ -2117,6 +2141,7 @@ void MainWindow::refreshDisassembly()
                 }
                 else {
                     instructionComplete = true;
+                    error = true;
                 }
 
                 instructionSizeOffset++;
@@ -2142,15 +2167,40 @@ void MainWindow::refreshDisassembly()
                 }
             }
 
+            // check if number operand, determine if offset or sub_ or loc_ or any word ptr, add to display
+            /*
+            if (sibOperand == "") {
+                        switch (operandSize) {
+                            case 16: sibOperand = "word ptr ";
+                            break;
+                            case 32: sibOperand = "dword ptr ";
+                            break;
+                        }
+                    }
+            */
+
+
+
             // tmp
-            QString disassemblyLine = "";
-            disassemblyLine += QString::number(instructionStartByte, 16).toUpper();
-            disassemblyLine += "    ";
-            disassemblyLine += instruction;
-            disassemblyLine += destinationOperand;
-            disassemblyLine += " ";
-            disassemblyLine += sourceOperand;
-            disassemblyLine += "<br>";
+            QString disassemblyLine;
+            disassemblyLine = QString::number(instructionStartByte, 16).toUpper();
+            if (!error) {
+                disassemblyLine += "    ";
+                disassemblyLine += instruction;
+                if (destinationOperand != "") {
+                    disassemblyLine += destinationOperand;
+                    if (sourceOperand != "") {
+                        disassemblyLine += ", ";
+                    }
+                }
+                if (sourceOperand != "") {
+                    disassemblyLine += sourceOperand;
+                }
+                disassemblyLine += "<br>";
+            }
+            else {
+                disassemblyLine += "    ERROR!<br>";
+            }
             disassemblyDisplay += disassemblyLine;
         }
         ui->disassemblyBrowser->setHtml(disassemblyDisplay);
