@@ -1,65 +1,65 @@
-2add eb gb
-2add ev gv
-2add gb eb
-2add gv ev
-3add al lb
-3add eax lv
+2add 
+2add 
+2add 
+2add 
+3add al 
+3add eax 
 1push es
 1pop es
-2or eb gb
-2or eb gb
-2or gb eb
-2or gv ev
-3or al lb
-3or eax lv
+2or 
+2or 
+2or 
+2or 
+3or al 
+3or eax 
 1push cs
 0twobyte
-2adc eb gb
-2adc ev gv
-2adc gb eb
-2adc gv ev
-3adc al lb
-3adc eax lv
+2adc 
+2adc 
+2adc 
+2adc 
+3adc al 
+3adc eax 
 1push ss
 1pop ss
-2sbb eb gv
-2sbb ev gv
-2sbb gb eb
-2sbb gv ev
-3sbb al lb
-3sbb eax lv
+2sbb 
+2sbb 
+2sbb 
+2sbb 
+3sbb al 
+3sbb eax 
 1push ds
 1pop ds
-2and eb gb
-2and ev gv
-2and gb eb
-2and gv ev
-3and al lb
-3and eax lv
+2and 
+2and 
+2and 
+2and 
+3and al 
+3and eax 
 1es: 
 1daa 
-2sub eb gb
-2sub ev gv
-2sub gb eb
-2sub gv ev
-3sub al lb
-3sub eax lv
+2sub 
+2sub 
+2sub 
+2sub 
+3sub al 
+3sub eax 
 1cs: 
 1das 
-2xor eb gb
-2xor ev gv
-2xor gb eb
-2xor gv ev
-3xor al lb
-3xor eax lv
+2xor 
+2xor 
+2xor 
+2xor 
+3xor al 
+3xor eax 
 1ss: 
 1aaa 
-2cmp eb gb
-2cmp ev gv
-2cmp gb eb
-2cmp gb ev
-3cmp al lb
-3cmp eax lv
+2cmp 
+2cmp 
+2cmp 
+2cmp 
+3cmp al 
+3cmp eax 
 1ds: 
 1aas 
 1inc eax
