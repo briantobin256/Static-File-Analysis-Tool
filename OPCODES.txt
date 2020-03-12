@@ -62,38 +62,38 @@
 3cmp eax 
 1ds: 
 1aas 
-1inc eax
-1inc ecx
-1inc edx
-1inc ebx
-1inc esp
-1inc ebp
-1inc esi
-1inc edi
-1dec eax
-1dec ecx
-1dec edx
-1dec ebx
-1dec esp
-1dec ebp
-1dec esi
-1dec edi
-1push eax
-1push ecx
-1push edx
-1push ebx
-1push esp
-1push ebp
-1push esi
-1push edi
-1pop eax
-1pop ecx
-1pop edx
-1pop ebx
-1pop esp
-1pop ebp
-1pop esi
-1pop edi
+1inc 
+1inc 
+1inc 
+1inc 
+1inc 
+1inc 
+1inc 
+1inc 
+1dec 
+1dec 
+1dec 
+1dec 
+1dec 
+1dec 
+1dec 
+1dec 
+1push 
+1push 
+1push 
+1push 
+1push 
+1push 
+1push 
+1push 
+1pop 
+1pop 
+1pop 
+1pop 
+1pop 
+1pop 
+1pop 
+1pop 
 1pusha 
 1popa 
 2bound gv ma
