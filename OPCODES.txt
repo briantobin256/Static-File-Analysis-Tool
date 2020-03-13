@@ -143,19 +143,19 @@
 2mov sw ew
 2pop ev
 1nop 
-1xchg eax ecx
-1xchg eax edx
-1xchg eax ebx
-1xchg eax esp
-1xchg eax ebp
-1xchg eax esi
-1xchg eax edi
+1xchg 
+1xchg 
+1xchg 
+1xchg 
+1xchg 
+1xchg 
+1xchg 
 1cbw 
 1cwd 
-3call ap
-1wait 
-1pushf fv
-1popf fv
+3call 
+1fwait 
+1pushf 
+1popf 
 1sahf 
 1lahf 
 3mov al ob

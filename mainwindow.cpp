@@ -1740,9 +1740,9 @@ void MainWindow::refreshDisassembly()
         // for each instruction in file
         for (int i = 0; i < maxDisassemblyRows; i++) {
 
-            bool instructionComplete = false, error = false;
+            bool instructionComplete = false, error = false, secondImmediate = false;
             int opcodeByte = 0, instructionStartByte = instructionSizeOffset;
-            qint64 immediateValue = 0, displacementValue = 0;
+            qint64 immediateValue = 0, secondImmediateValue = 0, displacementValue = 0;
 
             QString instruction = "", parameters = "";
 
@@ -1765,7 +1765,6 @@ void MainWindow::refreshDisassembly()
                 //
 
                 if (prefix) {
-
                     // if LOCK prefix (F0)
                     if (byte == 240) {
 
@@ -1801,7 +1800,7 @@ void MainWindow::refreshDisassembly()
                 // OPCODE BYTE CHECK
                 //
 
-                if (opcode && !prefix) {
+                if (opcode) {
                     // if extended instruction
                     if (byte == 15) {
                         extendedOpcode = true;
@@ -1886,6 +1885,39 @@ void MainWindow::refreshDisassembly()
                                 }
 
                                 operand2 = "DX";
+                            }
+                            // if opcode is (91 - 97)
+                            else if (byte >= 145 && byte <= 151) {
+                                if (operandSizeModifier) {
+                                    operandSize = 16;
+                                }
+                                else {
+                                    operandSize = 32;
+                                }
+                                int opcodeRmBits;
+                                opcodeRmBits = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
+                                opcodeRmBits += (byte / 2 % 2) * 10;
+                                opcodeRmBits += (byte % 2);
+                                operand1 = registerName(opcodeRmBits, operandSize);
+                                operand2 = registerName(0, operandSize);
+                            }
+                            // if opcode is (98)
+                            else if (byte == 152) {
+                                if (operandSizeModifier) {
+                                    instruction = "cbw";
+                                }
+                                else {
+                                    instruction = "cwde";
+                                }
+                            }
+                            // if opcode is (99)
+                            else if (byte == 153) {
+                                if (operandSizeModifier) {
+                                    instruction = "cwd";
+                                }
+                                else {
+                                    instruction = "cdq";
+                                }
                             }
                             else {
                                 noOperands = true;
@@ -1978,6 +2010,7 @@ void MainWindow::refreshDisassembly()
                                 else if (byte == 106) {
                                      maxImmediates = 1;
                                 }
+                                // if A1
                                 else if (byte == 161) {
                                     if (operandSizeModifier) {
                                         operandSize = 16;
@@ -1988,6 +2021,15 @@ void MainWindow::refreshDisassembly()
                                         maxImmediates = 4;
                                     }
                                     operand1 = registerName(0, operandSize);
+                                }
+                                // if opcode is (9A)
+                                else if (byte == 154) {
+                                    if (operandSizeModifier) {
+                                        maxImmediates = 4;
+                                    }
+                                    else {
+                                        maxImmediates = 6;
+                                    }
                                 }
                             }
                         }
@@ -2352,23 +2394,30 @@ void MainWindow::refreshDisassembly()
                 //
 
                 else if (immediateIndex < maxImmediates) {
-                    switch (immediateIndex) {
-                        case 0 : immediateValue += byte;
-                        break;
-                        case 1 : immediateValue += pow(16,2) * byte;
-                        break;
-                        case 2 : immediateValue += pow(16,4) * byte;
-                        break;
-                        case 3 : immediateValue += pow(16,6) * byte;
-                        break;
+                    // if opcode is (9A)
+                    if (opcodeByte == 154) {
+                        if (immediateIndex == maxImmediates - 2 && !secondImmediate) {
+                            secondImmediateValue = immediateValue;
+                            immediateValue = 0;
+                            immediateIndex = 0;
+                            maxImmediates = 2;
+                            secondImmediate = true;
+                        }
                     }
+                    immediateValue += pow(16,immediateIndex * 2) * byte;
                     immediateIndex++;
                     if (immediateIndex == maxImmediates) {
-                        operand2 += QString::number(immediateValue);
+                        if (opcodeByte == 154) {
+                            operand2 = QString::number(immediateValue) + ":";
+                            operand2 += QString::number(secondImmediateValue);
+                        }
+                        else {
+                            operand2 += QString::number(immediateValue);
+                        }
                         instructionComplete = true;
                     }
                 }
-                else {
+                else if (!prefix) {
                     instructionComplete = true;
                     error = true;
                 }
