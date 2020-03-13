@@ -2009,6 +2009,10 @@ void MainWindow::refreshDisassembly()
                                 }
                                 operand1 = registerName(0, operandSize);
                             }
+                            // if opcode is (D7)
+                            else if (byte == 215) {
+                                operand1 = "byte ptr ds:[ebx]";
+                            }
                             else {
                                 noOperands = true;
                             }
@@ -2136,6 +2140,26 @@ void MainWindow::refreshDisassembly()
                                     maxImmediates = operandSize / 8;
                                     operand1isDestination = true;
                                 }
+                                // if opcode is (C2)
+                                else if (byte == 194) {
+                                    maxImmediates = 2;
+                                }
+                                // if opcode is (C8)
+                                else if (byte == 200) {
+                                    maxImmediates = 3;
+                                }
+                                // if opcode is (CA)
+                                else if (byte == 202) {
+                                    maxImmediates = 2;
+                                }
+                                // if opcode is (CD)
+                                else if (byte == 205) {
+                                    maxImmediates = 1;
+                                }
+                                // if opcode is (D4, D5)
+                                else if (byte == 212 || byte == 213) {
+                                    maxImmediates = 1;
+                                }
                             }
                         }
                         opcode = false;
@@ -2261,6 +2285,76 @@ void MainWindow::refreshDisassembly()
                                 operand2 = "dword ptr [";
                             }
                             operand2 += registerName(rm, 32) + "]";
+                            instructionComplete = true;
+                        }
+                        // if opcode is (C0, C1)
+                        else if (opcodeByte == 192 || opcodeByte == 193) {
+                            if (opcodeByte % 2 == 0) {
+                                operand1 = "byte ptr [";
+                            }
+                            else {
+                                if (operandSizeModifier) {
+                                    operand1 = "word ptr [";
+                                }
+                                else {
+                                    operand1 = "dword ptr [";
+                                }
+                            }
+                            operand1 += registerName(rm, 32) + "]";
+                            operand1isDestination = true;
+                        }
+                        // if opcode is (C4, C5)
+                        else if (opcodeByte == 196 || opcodeByte == 197) {
+                            if (operandSizeModifier) {
+                                operand1 = "dword ptr [";
+                                operandSize = 16;
+                            }
+                            else {
+                                operand1 = "fword ptr [";
+                                operandSize = 32;
+                            }
+                            operand1 += registerName(rm, 32) + "]";
+                            operand2 = registerName(reg, operandSize);
+                            instructionComplete = true;
+                        }
+                        // if opcode is (C6, C7)
+                        else if (opcodeByte == 198 || opcodeByte == 199) {
+                            if (opcodeByte % 2 == 0) {
+                                operand1 = "byte ptr [";
+                            }
+                            else {
+                                if (operandSizeModifier) {
+                                    operand1 = "word ptr [";
+                                    operandSize = 16;
+                                }
+                                else {
+                                    operand1 = "dword ptr [";
+                                    operandSize = 32;
+                                }
+                            }
+                            operand1 += registerName(rm, 32) + "]";
+                            operand1isDestination = true;
+                        }
+                        // if opcode is (D0 - D3)
+                        else if (opcodeByte >= 208 && opcodeByte <= 211) {
+                            if (opcodeByte / 2 % 2 == 0) {
+                                operand1 = "1";
+                            }
+                            else {
+                                operand1 = "cl";
+                            }
+                            if (opcodeByte % 2 == 0) {
+                                operand2 = "byte ptr [";
+                            }
+                            else {
+                                if (operandSizeModifier) {
+                                    operand2 = "word ptr [";
+                                }
+                                else {
+                                    operand2 = "dword ptr [";
+                                }
+                            }
+                            operand2 += registerName(reg, 32) + "]";
                             instructionComplete = true;
                         }
                         // if opcode is (FF)
@@ -2407,6 +2501,42 @@ void MainWindow::refreshDisassembly()
                             operand2 = registerName(rm, operandSize);
                             instructionComplete = true;
                         }
+                        // if opcode is (C0, C1)
+                        else if (opcodeByte == 192 || opcodeByte == 193) {
+                            if (opcodeByte % 2 == 0) {
+                                operand1 = registerName(rm, 8);
+                            }
+                            else {
+                                operand1 = registerName(rm, operandSize);
+                            }
+                            operand1isDestination = true;
+                        }
+                        // if opcode is (C6, C7)
+                        else if (opcodeByte == 198 || opcodeByte == 199) {
+                            if (opcodeByte % 2 == 0) {
+                                operand1 = registerName(rm, 8);
+                            }
+                            else {
+                                operand1 = registerName(rm, 32);
+                            }
+                            operand1isDestination = true;
+                        }
+                        // if opcode is (D0 - D3)
+                        else if (opcodeByte >= 208 && opcodeByte <= 211) {
+                            if (opcodeByte / 2 % 2 == 0) {
+                                operand1 = "1";
+                            }
+                            else {
+                                operand1 = "cl";
+                            }
+                            if (opcodeByte % 2 == 0) {
+                                operand2 = registerName(rm, 8);
+                            }
+                            else {
+                                operand2 = registerName(rm, operandSize);
+                            }
+                            instructionComplete = true;
+                        }
                         else {
                             operand1 = registerName(reg, operandSize);
                             operand2 = registerName(rm, operandSize);
@@ -2527,12 +2657,26 @@ void MainWindow::refreshDisassembly()
                             secondImmediate = true;
                         }
                     }
+                    // if opcode is (C8)
+                    else if (opcodeByte == 200) {
+                        if (immediateIndex == 2  && !secondImmediate) {
+                            secondImmediateValue = immediateValue;
+                            immediateValue = 0;
+                            immediateIndex = 0;
+                            maxImmediates = 1;
+                            secondImmediate = true;
+                        }
+                    }
                     immediateValue += pow(16,immediateIndex * 2) * byte;
                     immediateIndex++;
                     if (immediateIndex == maxImmediates) {
                         if (opcodeByte == 154) {
                             operand2 = QString::number(immediateValue) + ":";
                             operand2 += QString::number(secondImmediateValue);
+                        }
+                        else if (opcodeByte == 200) {
+                            operand1 = QString::number(immediateValue);
+                            operand2 = QString::number(secondImmediateValue);
                         }
                         else {
                             operand2 += QString::number(immediateValue);
@@ -2730,6 +2874,26 @@ QString MainWindow::getSpecialByteInstruction(int specialByte, int reg)
             case 110: return "xor ";
             break;
             case 111: return "cmp ";
+            break;
+        }
+    }
+    else if (specialByte == 192 || specialByte == 193 || (specialByte >= 208 && specialByte <= 211)) {
+        switch (reg) {
+            case 0: return "rol ";
+            break;
+            case 1: return "ror ";
+            break;
+            case 10: return "rcl ";
+            break;
+            case 11: return "rcr ";
+            break;
+            case 100: return "shl ";
+            break;
+            case 101: return "shr ";
+            break;
+            case 110: return "sal ";
+            break;
+            case 111: return "sar ";
             break;
         }
     }

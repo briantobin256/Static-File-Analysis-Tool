@@ -190,28 +190,28 @@
 3mov 
 3mov 
 3mov 
-2#2 eb lb
-2#2 ev lb
-3retn lw
-1retn 
-0les gv mp
-0lds gv mp
-2mov eb lb
-2mov ev lv
-0enter lw lb
+2#2 
+2#2 
+3ret 
+1ret 
+2les 
+2lds 
+2mov 
+2mov 
+0enter 
 1leave 
-3retf lw
+3retf 
 1retf 
 1int3
-3int lb
+3int 
 1into 
 1iret 
-2#2 eb 1
-2#2 ev 1
-2#2 eb cl
-2#2 ev cl
-3aam lb
-3aad lb
+2#2 
+2#2 
+2#2 
+2#2 
+3aam 
+3aad 
 0salc 
 1xlat 
 2esc 0
