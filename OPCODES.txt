@@ -2,64 +2,64 @@
 2add 
 2add 
 2add 
-3add al 
-3add eax 
+3add 
+3add 
 1push es
 1pop es
 2or 
 2or 
 2or 
 2or 
-3or al 
-3or eax 
+3or 
+3or 
 1push cs
 0twobyte
 2adc 
 2adc 
 2adc 
 2adc 
-3adc al 
-3adc eax 
+3adc 
+3adc 
 1push ss
 1pop ss
 2sbb 
 2sbb 
 2sbb 
 2sbb 
-3sbb al 
-3sbb eax 
+3sbb 
+3sbb 
 1push ds
 1pop ds
 2and 
 2and 
 2and 
 2and 
-3and al 
-3and eax 
+3and 
+3and 
 1es: 
 1daa 
 2sub 
 2sub 
 2sub 
 2sub 
-3sub al 
-3sub eax 
+3sub 
+3sub 
 1cs: 
 1das 
 2xor 
 2xor 
 2xor 
 2xor 
-3xor al 
-3xor eax 
+3xor 
+3xor 
 1ss: 
 1aaa 
 2cmp 
 2cmp 
 2cmp 
 2cmp 
-3cmp al 
-3cmp eax 
+3cmp 
+3cmp 
 1ds: 
 1aas 
 1inc 
@@ -96,52 +96,52 @@
 1pop 
 1pusha 
 1popa 
-2bound gv ma
-2arpl ew gw
+2bound 
+2arpl 
 1fs: 
 1gs: 
 1opsize: 
 1adsize: 
-3push lv
-2imul gv ew lv
-3push lb
-2imul gv ev lb
-1insb yb dx
-1insw yz dx
-1outsb dx xb
-1outsw dx xw
-3jo jb
-3jno jb
-3jb jb
-3jnb jb
-3jz jb
-3jnz jb
-3jbe jb
-3ja jb
-3js jb
-3jns jb
-3jp jb
-3jnp jb
-3jl jb
-3jnl jb
-3jle jb
-3jnle jb
-2add eb lb
-2add ev lv
-2sub eb lb
-2sub ev lb
-2test eb gb
-2test ev gv
-2xchg eb gb
-2xchg ev gv
-2mov eb gv
-2mov ev gv
-2mov gb eb
-2mov gv ev
-2mov ew sw
-2lea gv m
-2mov sw ew
-2pop ev
+3push 
+2imul 
+3push 
+2imul 
+1ins 
+1ins 
+1outs 
+1outs 
+3jo 
+3jno 
+3jb 
+3jnb 
+3jz 
+3jnz 
+3jbe 
+3ja 
+3js 
+3jns 
+3jp 
+3jnp 
+3jl 
+3jnl 
+3jle 
+3jnle 
+2add 
+2add 
+2sub 
+2sub 
+2test 
+2test 
+2xchg 
+2xchg 
+2mov 
+2mov 
+2mov 
+2mov 
+2mov 
+2lea 
+2mov 
+2pop 
 1nop 
 1xchg 
 1xchg 
@@ -158,38 +158,38 @@
 1popf 
 1sahf 
 1lahf 
-3mov al ob
-3mov eax ov
-3mov ob al
-3mov ov eax
-1movsb xb yb
-1movsw xv yv
-1cmpsb xb yb
-1cmpsw xv yv
-3test al lb
-3test eax lv
-1stosb yb al
-1stosw yv eax
-1lodsb al xb
-1lodsw eax xv
-1scasb al yb
-1scasw eax yv
-3mov al lb
-3mov cl lb
-3mov dl lb
-3mov bl lb
-3mov ah lb
-3mov ch lb
-3mov dh lb
-3mov bh lb
-3mov eax lv
-3mov ecx lv
-3mov edx lv
-3mov ebx lv
-3mov esp lv
-3mov ebp lv
-3mov esi lv
-3mov edi lv
+3mov 
+3mov 
+3mov 
+3mov 
+1movs 
+1movs 
+1cmps 
+1cmps 
+3test 
+3test 
+1stos 
+1stos 
+1lods 
+1lods 
+1scas 
+1scas 
+3mov 
+3mov 
+3mov 
+3mov 
+3mov 
+3mov 
+3mov 
+3mov 
+3mov 
+3mov 
+3mov 
+3mov 
+3mov 
+3mov 
+3mov 
+3mov 
 2#2 eb lb
 2#2 ev lb
 3retn lw
