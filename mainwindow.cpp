@@ -1741,16 +1741,16 @@ void MainWindow::refreshDisassembly()
         for (int i = 0; i < maxDisassemblyRows; i++) {
 
             bool instructionComplete = false, error = false, secondImmediate = false;
-            int opcodeByte = 0, instructionStartByte = instructionSizeOffset;
+            int opcodeByte = 0, instructionStartByte = instructionSizeOffset, errorStartLocation = 0;
             qint64 immediateValue = 0, secondImmediateValue = 0, displacementValue = 0;
 
             QString instruction = "", parameters = "";
 
             // current byte types
             bool prefix = true, opcode = false, modByte = false, SIB = false, extendedOpcode = false;
-            bool operandSizeModifier = false, regIsDestination = false, specialInstruction = false;
+            bool operandSizeModifier = false, regIsDestination = false, specialInstruction = false, aligning = false;
             int mod, reg, rm, scale, index, base, displacementIndex = 0, maxDisplacements = 0, immediateIndex = 0, maxImmediates = 0, operandSize = 8, extended = 0;
-            QString sourceOperand = "", destinationOperand = "";
+            //QString sourceOperand = "", destinationOperand = "";
             QString operand1 = "", operand2 = "";
             bool operand1isDestination = false, noOperands = false;
 
@@ -1801,6 +1801,8 @@ void MainWindow::refreshDisassembly()
                 //
 
                 if (opcode) {
+                    opcode = false;
+                    opcodeByte = byte;
                     // if extended instruction
                     if (byte == 15) {
                         extendedOpcode = true;
@@ -2009,9 +2011,34 @@ void MainWindow::refreshDisassembly()
                                 }
                                 operand1 = registerName(0, operandSize);
                             }
+                            // if opcode is (CC)
+                            else if (byte == 204) {
+                                if (!aligning) {
+                                    errorStartLocation = instructionStartByte;
+                                    aligning = true;
+                                    error = true;
+                                }
+                                if (instructionSizeOffset % 16 != 15) {
+                                    instructionComplete = false;
+                                    opcode = true;
+                                }
+                            }
                             // if opcode is (D7)
                             else if (byte == 215) {
                                 operand1 = "byte ptr ds:[ebx]";
+                            }
+                            // if opcode is (EC - EF)
+                            else if (byte >= 236 && byte <= 239) {
+                                operand1 = "dx";
+                                if (byte / 2 % 2 == 0) {
+                                    operand1isDestination = false;
+                                }
+                                if (byte % 2 == 0) {
+                                    operand2 = "al";
+                                }
+                                else {
+                                    operand2 = "eax";
+                                }
                             }
                             else {
                                 noOperands = true;
@@ -2046,11 +2073,37 @@ void MainWindow::refreshDisassembly()
                                     operand1isDestination = true;
                                     maxImmediates = operandSize / 8;
                                 }
-                                // if has Short-Displacement jump on condition (70 - 7F, E0 - E3, EB)
+                                // if has Short jump on condition (70 - 7F, E0 - E3, EB)
                                 else if ((byte >= 112 && byte <= 127) || (byte >= 224 && byte <= 227) || byte == 235) {
                                     operand2 = "short ";
-                                    maxDisplacements = 1;
+                                    maxImmediates = 1;
+                                    if ((byte >= 224 && byte <= 227) || byte == 235) {
+                                        immediateValue = instructionSizeOffset + 2;
+                                    }
                                     // set displacement value to be loc_xxxxx
+                                }
+                                // if opcode is (E4 - E7)
+                                else if (byte >= 228 && byte <= 231) {
+                                    if (byte % 2 == 0) {
+                                        operand1 = "al";
+                                    }
+                                    else {
+                                        operand1 = "eax";
+                                    }
+                                    if (byte / 2 % 2 == 0) {
+                                        operand1isDestination = true;
+                                    }
+                                    maxImmediates = 1;
+                                }
+                                // if opcode is (E8, E9)
+                                else if (byte == 232 || byte == 233) {
+                                    if (operandSizeModifier) {
+                                        maxImmediates = 2;
+                                    }
+                                    else {
+                                        maxImmediates = 4;
+                                    }
+                                    immediateValue = instructionSizeOffset + maxImmediates + 1;
                                 }
                                 // if move immediate byte into 8 bit register (B0 - B7)
                                 else if (byte >= 176 && byte <= 183) {
@@ -2094,8 +2147,8 @@ void MainWindow::refreshDisassembly()
                                 else if (byte == 106) {
                                      maxImmediates = 1;
                                 }
-                                // if opcode is (9A)
-                                else if (byte == 154) {
+                                // if opcode is (9A, EA)
+                                else if (byte == 154 || byte == 234) {
                                     if (operandSizeModifier) {
                                         maxImmediates = 4;
                                     }
@@ -2162,8 +2215,6 @@ void MainWindow::refreshDisassembly()
                                 }
                             }
                         }
-                        opcode = false;
-                        opcodeByte = byte;
                         extended = 0;
                     }
                 }
@@ -2357,25 +2408,38 @@ void MainWindow::refreshDisassembly()
                             operand2 += registerName(reg, 32) + "]";
                             instructionComplete = true;
                         }
+                        // if opcode is (FE)
+                        else if (opcodeByte == 254) {
+                            if (reg == 0) {
+                                instruction = "inc ";
+                            }
+                            else {
+                                instruction = "dec ";
+                            }
+                            operand2 = "byte ptr [" + registerName(rm, 32) + "]";
+                            instructionComplete = true;
+                        }
                         // if opcode is (FF)
                         else if (opcodeByte == 255) {
-                            operand1 = "[" + registerName(rm, 32) + "]";
-                            operand1isDestination = true;
+                            if (operandSizeModifier) {
+                                operand2 = "word ptr ";
+                            }
+                            else {
+                                operand2 = "dword ptr ";
+                            }
+                            if (rm == 100) {
+                                SIB = true;
+                            }
+                            else {
+                                operand2 += "[" + registerName(rm, 32) + "]";
+                                instructionComplete = true;
+                            }
                         }
                         // if SIB no displacement
                         else if (rm == 100) {
                             SIB = true;
-                            // if opcode is (89)
-                            if (opcodeByte == 137) {
-                                operand1 = registerName(reg, operandSize);
-                            }
-                            // if opcode is (FF)
-                            else if (opcodeByte == 255) {
-                            }
-                            else {
-                                operand1 = registerName(reg, operandSize);
-                                operand1isDestination = true;
-                            }
+                            operand1 = registerName(reg, operandSize);
+                            operand1isDestination = true;
                         }
                         // if displacement only addressing mode
                         else if (rm == 101) {
@@ -2435,9 +2499,28 @@ void MainWindow::refreshDisassembly()
                             }
                             operand1isDestination = true;
                         }
+                        // if opcode is (FE)
+                        if (opcodeByte == 254) {
+                            if (reg == 0) {
+                                instruction = "inc ";
+                            }
+                            else {
+                                instruction = "dec ";
+                            }
+                            operand2 = "byte ptr [" + registerName(rm, 32);
+                            operandSize = 32;
+                        }
                         // if opcode is (FF)
                         else if (opcodeByte == 255) {
-                            operand2 = "[" + registerName(rm, operandSize);
+                            if (operandSizeModifier) {
+                                operand2 = "word ptr ";
+                            }
+                            else {
+                                operand2 = "dword ptr ";
+                            }
+                            if (!SIB) {
+                                operand2 += "[" + registerName(rm, 32);
+                            }
                         }
                         else {
                             operand1 = registerName(reg, operandSize);
@@ -2451,9 +2534,34 @@ void MainWindow::refreshDisassembly()
                             SIB = true;
                         }
                         maxDisplacements = 4;
-                        operand1 = registerName(reg, operandSize);
-                        operand2 = "[" + registerName(rm, operandSize);
-                        operand1isDestination = true;
+                        // if opcode is (FE)
+                        if (opcodeByte == 254) {
+                            if (reg == 0) {
+                                instruction = "inc ";
+                            }
+                            else {
+                                instruction = "dec ";
+                            }
+                            operand2 = "byte ptr [" + registerName(rm, 32);
+                            operandSize = 32;
+                        }
+                        // if opcode is (FF)
+                        else if (opcodeByte == 255) {
+                            if (operandSizeModifier) {
+                                operand2 = "word ptr ";
+                            }
+                            else {
+                                operand2 = "dword ptr ";
+                            }
+                            if (!SIB) {
+                                operand2 += "[" + registerName(rm, 32);
+                            }
+                        }
+                        else {
+                            operand1 = registerName(reg, operandSize);
+                            operand2 = "[" + registerName(rm, operandSize);
+                            operand1isDestination = true;
+                        }
                     }
                     // else if register addressing mode
                     else if (mod == 11) {
@@ -2537,6 +2645,22 @@ void MainWindow::refreshDisassembly()
                             }
                             instructionComplete = true;
                         }
+                        // if opcode is (FE)
+                        else if (opcodeByte == 254) {
+                            if (reg == 0) {
+                                instruction = "inc ";
+                            }
+                            else {
+                                instruction = "dec ";
+                            }
+                            operand2 = registerName(rm, 8);
+                            instructionComplete = true;
+                        }
+                        // if opcode is (FF)
+                        else if (opcodeByte == 255) {
+                            operand2 = registerName(rm, 32);
+                            instructionComplete = true;
+                        }
                         else {
                             operand1 = registerName(reg, operandSize);
                             operand2 = registerName(rm, operandSize);
@@ -2572,11 +2696,8 @@ void MainWindow::refreshDisassembly()
                     if (mod != 101) {
                         operand2 += "[" + registerName(base, operandSize);
                     }
-                    else if (mod == 0) {
-                        // displacement only
-                    }
-                    else {
-                         operand2 = "[ebp";
+                    else if (mod == 1 || mod == 10) {
+                        operand2 = "[ebp";
                     }
 
                     // get index register
@@ -2647,8 +2768,8 @@ void MainWindow::refreshDisassembly()
                 //
 
                 else if (immediateIndex < maxImmediates) {
-                    // if opcode is (9A)
-                    if (opcodeByte == 154) {
+                    // if opcode is (9A, EA)
+                    if (opcodeByte == 154 || opcodeByte == 234) {
                         if (immediateIndex == maxImmediates - 2 && !secondImmediate) {
                             secondImmediateValue = immediateValue;
                             immediateValue = 0;
@@ -2670,7 +2791,7 @@ void MainWindow::refreshDisassembly()
                     immediateValue += pow(16,immediateIndex * 2) * byte;
                     immediateIndex++;
                     if (immediateIndex == maxImmediates) {
-                        if (opcodeByte == 154) {
+                        if (opcodeByte == 154 || opcodeByte == 234) {
                             operand2 = QString::number(immediateValue) + ":";
                             operand2 += QString::number(secondImmediateValue);
                         }
@@ -2691,27 +2812,6 @@ void MainWindow::refreshDisassembly()
                 instructionSizeOffset++;
             }
 
-            // get instruction mnemonic if not special
-            if (instruction == "") {
-                if (extendedOpcode) {
-                    opcodeByte += 256;
-                }
-                QString line =  opcodeMap[opcodeByte];
-                if (noOperands) {
-                    instruction = line;
-                }
-                else {
-                    int split = line.indexOf(" ");
-                    if (split > 0) {
-                        QStringRef instructionRef(&line, 0, split + 1);
-                        instruction += instructionRef.toString();
-                    }
-                    else {
-                        instruction = line;
-                    }
-                }
-            }
-
             // check if number operand, determine if offset or sub_ or loc_ or any word ptr, add to display
             /*
             if (sibOperand == "") {
@@ -2730,6 +2830,26 @@ void MainWindow::refreshDisassembly()
             QString disassemblyLine;
             disassemblyLine = QString::number(instructionStartByte, 16).toUpper();
             if (!error) {
+                // get instruction mnemonic if not special
+                if (instruction == "") {
+                    if (extendedOpcode) {
+                        opcodeByte += 256;
+                    }
+                    QString line =  opcodeMap[opcodeByte];
+                    if (noOperands) {
+                        instruction = line;
+                    }
+                    else {
+                        int split = line.indexOf(" ");
+                        if (split > 0) {
+                            QStringRef instructionRef(&line, 0, split + 1);
+                            instruction += instructionRef.toString();
+                        }
+                        else {
+                            instruction = line;
+                        }
+                    }
+                }
                 disassemblyLine += "    ";
                 disassemblyLine += instruction;
                 if (!operand1isDestination) {
@@ -2750,7 +2870,14 @@ void MainWindow::refreshDisassembly()
                 }
             }
             else {
-                disassemblyLine += "    ERROR!<br>";
+                if (aligning) {
+                    aligning = false;
+                    disassemblyLine = QString::number(errorStartLocation, 16).toUpper();
+                    disassemblyLine += "    align 16<br>";
+                }
+                else {
+                    disassemblyLine += "    ERROR!<br>";
+                }
             }
             disassemblyDisplay += disassemblyLine;
         }
@@ -2894,6 +3021,26 @@ QString MainWindow::getSpecialByteInstruction(int specialByte, int reg)
             case 110: return "sal ";
             break;
             case 111: return "sar ";
+            break;
+        }
+    }
+    else if (specialByte == 246 || specialByte == 247) {
+        switch (reg) {
+            case 0: return "test ";
+            break;
+            case 1: return "test ";
+            break;
+            case 10: return "not ";
+            break;
+            case 11: return "neg ";
+            break;
+            case 100: return "mul ";
+            break;
+            case 101: return "imul ";
+            break;
+            case 110: return "div ";
+            break;
+            case 111: return "idiv ";
             break;
         }
     }

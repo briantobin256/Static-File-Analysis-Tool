@@ -222,22 +222,22 @@
 2esc 5
 2esc 6
 2esc 7
-3loopnz jb
-3loopz jb
-3loop jb
-3jcxz jb
-3in al lb
-3in eax lb
-3out lb al
-3out lb eax
-3call jz
-3jmp jz
-3jmp ap
-3jmp jb
-1in al dx
-1in eax dx
-1out dx al
-1out dx eax
+3loopne 
+3loope 
+3loop 
+3jecxz 
+3in 
+3in 
+3out 
+3out 
+3call 
+3jmp 
+3jmp 
+3jmp 
+1in 
+1in 
+1out 
+1out 
 1lock:
 0int1
 1repne: 
