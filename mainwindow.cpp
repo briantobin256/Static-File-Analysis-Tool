@@ -1730,7 +1730,7 @@ void MainWindow::refreshDisassembly()
             disassemblyBuilt = true;
         }
 
-        int maxDisassemblyRows = 300;
+        int maxDisassemblyRows = 2000;
         //int disassemblyOffset = 0; // = scrollbar value * maxDisassemblyRows, (for displaying only)
         ui->disassemblyBrowser->clear();
 
@@ -1799,7 +1799,6 @@ void MainWindow::refreshDisassembly()
                 //
 
                 if (opcode) {
-                    opcode = false;
                     opcodeByte = byte;
                     // if extended instruction
                     if (byte == 15) {
@@ -1807,6 +1806,7 @@ void MainWindow::refreshDisassembly()
                         extended = 256;
                     }
                     else {
+                        opcode = false;
                         // if this instruction has a mod byte
                         if (opTypeMap[byte + extended] == 2) {
                             modByte = true;
@@ -1851,18 +1851,23 @@ void MainWindow::refreshDisassembly()
                         else if (opTypeMap[byte + extended] == 1) {
                             instructionComplete = true;
                             operand1isDestination = true;
+
+                            int opcodeRmBits;
+                            opcodeRmBits = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
+                            opcodeRmBits += (byte / 2 % 2) * 10;
+                            opcodeRmBits += (byte % 2);
+
+                            if (operandSizeModifier) {
+                                operandSize = 16;
+                                operandPrefix = "word ptr ";
+                            }
+                            else {
+                                operandSize = 32;
+                                operandPrefix = "dword ptr ";
+                            }
+
                             // if opcode is (40 - 5F)
                             if (byte >= 65 && byte <= 95) {
-                                if (operandSizeModifier) {
-                                    operandSize = 16;
-                                }
-                                else {
-                                    operandSize = 32;
-                                }
-                                int opcodeRmBits;
-                                opcodeRmBits = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
-                                opcodeRmBits += (byte / 2 % 2) * 10;
-                                opcodeRmBits += (byte % 2);
                                 operand1 = registerName(opcodeRmBits, operandSize);
                             }
                             // if opcode is (6C - 6F)
@@ -1870,22 +1875,9 @@ void MainWindow::refreshDisassembly()
                                 // if 8 bit
                                 if (byte % 2 == 0) {
                                     operand2 = "byte ptr ";
-                                    if (operandSizeModifier) {
-                                        if (byte / 2 % 2 == 0) {
-                                            instruction = "data16 ins ";
-                                        }
-                                        else {
-                                            instruction = "data16 outs ";
-                                        }
-                                    }
                                 }
                                 else {
-                                    if (operandSizeModifier) {
-                                        operand2 = "word ptr ";
-                                    }
-                                    else {
-                                        operand2 = "dword ptr ";
-                                    }
+                                    operand2 = operandPrefix;
                                 }
                                 // if 6C or 6D
                                 if (byte / 2 % 2 == 0) {
@@ -1895,21 +1887,10 @@ void MainWindow::refreshDisassembly()
                                 else {
                                     operand2 += "ds:[esi]";
                                 }
-
                                 operand1 = "dx";
                             }
                             // if opcode is (91 - 97)
                             else if (byte >= 145 && byte <= 151) {
-                                if (operandSizeModifier) {
-                                    operandSize = 16;
-                                }
-                                else {
-                                    operandSize = 32;
-                                }
-                                int opcodeRmBits;
-                                opcodeRmBits = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
-                                opcodeRmBits += (byte / 2 % 2) * 10;
-                                opcodeRmBits += (byte % 2);
                                 operand1 = registerName(opcodeRmBits, operandSize);
                                 operand2 = registerName(0, operandSize);
                             }
@@ -1934,24 +1915,10 @@ void MainWindow::refreshDisassembly()
                             // if opcode is (A4 - A7)
                             else if (byte >= 164 && byte <= 167) {
                                 if (byte % 2 == 1) {
-                                    if (operandSizeModifier) {
-                                        operand1 = "word ptr ";
-                                        operand2 = "word ptr ";
-                                    }
-                                    else {
-                                        operand1 = "dword ptr ";
-                                        operand2 = "dword ptr ";
-                                    }
+                                    operand1 = operandPrefix;
+                                    operand2 = operandPrefix;
                                 }
                                 else {
-                                    if (operandSizeModifier) {
-                                        if (byte / 2 % 2 == 0) {
-                                            instruction = "data16 movs ";
-                                        }
-                                        else {
-                                            instruction = "data16 cmps ";
-                                        }
-                                    }
                                     operand1 = "byte ptr ";
                                     operand2 = "byte ptr ";
                                 }
@@ -1970,36 +1937,6 @@ void MainWindow::refreshDisassembly()
                                 // if AA or AB
                                 if (byte / 4 % 2 == 0) {
                                     operand1isDestination = false;
-                                }
-                                // if AB, AD or AF
-                                if (byte % 2 == 1) {
-                                    if (operandSizeModifier) {
-                                        operandSize = 16;
-                                        operand2 = "word ptr ";
-                                    }
-                                    else {
-                                        operandSize = 32;
-                                        operand2 = "dword ptr ";
-                                    }
-                                }
-                                else {
-                                    operand2 = "byte ptr ";
-                                    if (byte == 170) {
-                                        if (operandSizeModifier) {
-                                            instruction = "data16 stos ";
-                                        }
-                                    }
-                                    else if (byte == 172) {
-                                        if (operandSizeModifier) {
-                                            instruction = "data16 lods ";
-                                        }
-                                    }
-                                    else {
-                                        if (operandSizeModifier) {
-                                            instruction = "data16 scas ";
-                                        }
-                                    }
-
                                 }
                                 // if AA, AB, AE, AF
                                 if (byte / 2 % 2 == 1) {
@@ -2045,29 +1982,28 @@ void MainWindow::refreshDisassembly()
                         }
                         // else has immediate value(s) only
                         else {
+
+                            // calculate operand size (default 8 bits)
+                            if (operandSizeModifier) {
+                                operandSize = 16;
+                            }
+                            else {
+                                operandSize = 32;
+                            }
+
                             if (extendedOpcode) {
                                 if (byte >= 128 && byte <= 144) {
-                                    if (operandSizeModifier) {
-                                        operandSize = 16;
-                                    }
-                                    else {
-                                        operandSize = 32;
-                                    }
                                     maxImmediates = operandSize / 8;
                                 }
                             }
                             else {
+                                int opcodeRmBits;
+                                opcodeRmBits = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
+                                opcodeRmBits += (byte / 2 % 2) * 10;
+                                opcodeRmBits += (byte % 2);
+
                                 // if opcode is (04, 05, 0C, 0D, 14, 15, 1C, 1D, 24, 25, 2C, 2D, 34, 35, 3C, 3D)
                                 if (byte >= 4 && byte <= 61) {
-                                    // calculate operand size (default = 8bits)
-                                    if (byte % 2 == 1) {
-                                        if (operandSizeModifier) {
-                                            operandSize = 16;
-                                        }
-                                        else {
-                                            operandSize = 32;
-                                        }
-                                    }
                                     operand1 = registerName(0, operandSize);
                                     operand1isDestination = true;
                                     maxImmediates = operandSize / 8;
@@ -2107,40 +2043,18 @@ void MainWindow::refreshDisassembly()
                                 // if move immediate byte into 8 bit register (B0 - B7)
                                 else if (byte >= 176 && byte <= 183) {
                                     maxImmediates = 1;
-                                    int opcodeRmBits;
-                                    opcodeRmBits = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
-                                    opcodeRmBits += (byte / 2 % 2) * 10;
-                                    opcodeRmBits += (byte % 2);
                                     operand1 = registerName(opcodeRmBits, 8);
                                     operand1isDestination = true;
                                 }
                                 // if move immediate word/double into 16/32 bit register (B8 - BF)
                                 else if (byte >= 184 && byte <= 191) {
-                                    if (operandSizeModifier) {
-                                        maxImmediates = 2;
-                                        operandSize = 16;
-                                    }
-                                    else {
-                                        maxImmediates = 4;
-                                        operandSize = 32;
-                                    }
-
-                                    int opcodeRmBits;
-                                    opcodeRmBits = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
-                                    opcodeRmBits += (byte / 2 % 2) * 10;
-                                    opcodeRmBits += (byte % 2);
-
+                                    maxImmediates = operandSize / 8;
                                     operand1 = registerName(opcodeRmBits, operandSize);
                                     operand1isDestination = true;
                                 }
                                 // if single operand immediate value (68, E8, E9)
                                 else if (byte == 104 || byte == 232 || byte == 233) {
-                                    if (operandSizeModifier) {
-                                        maxImmediates = 2;
-                                    }
-                                    else {
-                                        maxImmediates = 4;
-                                    }
+                                    maxImmediates = operandSize / 8;
                                 }
                                 // if single operand immediate byte (6A)
                                 else if (byte == 106) {
@@ -2148,26 +2062,10 @@ void MainWindow::refreshDisassembly()
                                 }
                                 // if opcode is (9A, EA)
                                 else if (byte == 154 || byte == 234) {
-                                    if (operandSizeModifier) {
-                                        maxImmediates = 4;
-                                    }
-                                    else {
-                                        maxImmediates = 6;
-                                    }
+                                    maxImmediates = (operandSize / 8) + 2;
                                 }
                                 // if opcode is (A0 - A3)
                                 else if (byte >= 160 && byte <= 163) {
-                                    if (byte % 2 == 1) {
-                                        if (operandSizeModifier) {
-                                            operandSize = 16;
-                                        }
-                                        else {
-                                            operandSize = 32;
-                                        }
-                                    }
-                                    else if (operandSizeModifier) {
-                                        instruction = "data16 mov ";
-                                    }
                                     if (byte / 2 % 2 == 0) {
                                          operand1isDestination = true;
                                     }
@@ -2178,16 +2076,10 @@ void MainWindow::refreshDisassembly()
                                 // if opcode is (A8, A9)
                                 else if (byte == 168 || byte == 169) {
                                     if (byte % 2 == 1) {
-                                        if (operandSizeModifier) {
-                                            operandSize = 16;
-                                        }
-                                        else {
-                                            operandSize = 32;
-                                        }
                                         operand1 = registerName(0, operandSize);
                                     }
                                     else {
-                                        operand1 = registerName(0, operandSize);
+                                        operand1 = registerName(0, 8);
                                     }
                                     maxImmediates = operandSize / 8;
                                     operand1isDestination = true;
@@ -2424,7 +2316,6 @@ void MainWindow::refreshDisassembly()
                         operand2 += "]";
                     }
                     if (maxImmediates != 0) {
-                        operand2 += ", ";
                         instructionComplete = false;
                     }
                 }
