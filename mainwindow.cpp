@@ -1747,16 +1747,16 @@ void MainWindow::refreshDisassembly()
         // for each instruction in file
         while (codeStartLoc + instructionSizeOffset < codeEndLoc) {
 
-            bool instructionComplete = false, error = false, secondImmediate = false;
+            // current instruction variables
+            bool instructionComplete = false, error = false, secondImmediate = false, hasModByte = false;
             int opcodeByte = 0, instructionStartByte = instructionSizeOffset, errorStartLocation = 0;
             qint64 immediateValue = 0, secondImmediateValue = 0, displacementValue = 0;
-
             QString instruction = "", parameters = "";
 
             // current byte types
             bool prefix = true, opcode = false, modByte = false, SIB = false, extendedOpcode = false;
             bool operandSizeModifier = false, specialInstruction = false, aligning = false;
-            int mod, reg, rm, scale, index, base, displacementIndex = 0, maxDisplacements = 0, immediateIndex = 0, maxImmediates = 0, operandSize = 8, extended = 0;
+            int mod = 0, reg = 0, rm = 0, scale = 0, index = 0, base = 0, displacementIndex = 0, maxDisplacements = 0, immediateIndex = 0, maxImmediates = 0, operandSize = 8, extended = 0;
             QString operand1 = "", operand2 = "", operandPrefix = "";
             bool operand1isDestination = false, noOperands = false;
 
@@ -1785,11 +1785,6 @@ void MainWindow::refreshDisassembly()
                     // if operand override (66)
                     else if (byte == 102) {
                         operandSizeModifier = true;
-                        //
-                        // make sure to go back through code to use this modified value
-
-
-                        //
                     }
                     // if address override (67)
                     else if (byte == 103) {
@@ -1817,6 +1812,7 @@ void MainWindow::refreshDisassembly()
                         // if this instruction has a mod byte
                         if (opTypeMap[byte + extended] == 2) {
                             modByte = true;
+                            hasModByte = true;
 
                             // calculate operand size (default = 8bits)
                             if (byte % 2 == 1) {
@@ -1834,7 +1830,16 @@ void MainWindow::refreshDisassembly()
                             }
 
                             if (extendedOpcode) {
-
+                                // has immediate constant (3A, )
+                                if (byte == 58 || (byte >= 112 && byte <= 115) || (byte >= 128 && byte <= 143) || byte == 164 || byte == 172 || byte == 178 || byte == 180 || byte == 181 || byte == 186 || byte == 194 || byte == 196 || byte == 197 || byte == 198) {
+                                    // only XX has immediate bigger than 1
+                                    if ((byte >= 128 && byte <= 143) || byte == 178 || byte == 180 || byte == 181) {
+                                        maxImmediates = operandSize / 8;
+                                    }
+                                    else {
+                                        maxImmediates = 1;
+                                    }
+                                }
                             }
                             else {
                                 // has immediate constant (69, 6B, 80 - 83, C0, C1, C6, C7)
@@ -1874,7 +1879,7 @@ void MainWindow::refreshDisassembly()
                             }
 
                             // if opcode is (40 - 5F)
-                            if (byte >= 65 && byte <= 95) {
+                            if (byte >= 64 && byte <= 95) {
                                 operand1 = registerName(opcodeRmBits, operandSize);
                             }
                             // if opcode is (6C - 6F)
@@ -2113,7 +2118,6 @@ void MainWindow::refreshDisassembly()
                                 }
                             }
                         }
-                        extended = 0;
                     }
                 }
 
@@ -2140,7 +2144,6 @@ void MainWindow::refreshDisassembly()
                         instruction = getSpecialByteInstruction(opcodeByte, reg);
                     }
 
-
                     if (mod == 1) {
                         maxDisplacements = 1;
                     }
@@ -2148,7 +2151,9 @@ void MainWindow::refreshDisassembly()
                         maxDisplacements = operandSize / 8;
                     }
 
-                    operand2 = operandPrefix;
+                    if (opcodeByte == 255) {
+                        operand2 = operandPrefix;
+                    }
 
                     // if has SIB
                     if (rm == 100 && mod != 11) {
@@ -2335,20 +2340,7 @@ void MainWindow::refreshDisassembly()
                     displacementValue += pow(16,displacementIndex * 2) * byte;
                     displacementIndex++;
                     if (displacementIndex == maxDisplacements) {
-                        if (operand2 == "short " || mod == 0) {
-                            operand2 += QString::number(displacementValue); // convert to loc_ value
-                        }
-                        else if (opcodeByte == 246 || opcodeByte == 247 || opcodeByte == 198 || opcodeByte == 199 || opcodeByte == 137 || opcodeByte == 131) {
-                            if (maxImmediates == 0) {
-                                operand2 += "+" + QString::number(displacementValue) + "]";
-                            }
-                            else {
-                                operand1 += "+" + QString::number(displacementValue) + "]";
-                            }
-                        }
-                        else {
-                            operand2 += "+" + QString::number(displacementValue) + "]";
-                        }
+                        operand2 += "+" + QString::number(displacementValue) + "]";
 
                         // if register addressing mode
                         if (mod == 0 && rm == 101) {
@@ -2389,6 +2381,7 @@ void MainWindow::refreshDisassembly()
                     immediateValue += pow(16,immediateIndex * 2) * byte;
                     immediateIndex++;
                     if (immediateIndex == maxImmediates) {
+
                         if (opcodeByte == 154 || opcodeByte == 234) {
                             operand2 = QString::number(immediateValue) + ":";
                             operand2 += QString::number(secondImmediateValue);
@@ -2397,11 +2390,13 @@ void MainWindow::refreshDisassembly()
                             operand1 = QString::number(immediateValue);
                             operand2 = QString::number(secondImmediateValue);
                         }
-                        else if (opcodeByte == 105 || opcodeByte == 107 || (opcodeByte >= 128 && opcodeByte <= 131) || opcodeByte == 192 || opcodeByte == 193 || opcodeByte == 198 || opcodeByte == 199 || opcodeByte == 246 || opcodeByte == 247) {
-                            operand2 += ", " + QString::number(immediateValue);
-                        }
                         else {
-                            operand2 += QString::number(immediateValue);
+                            if (!hasModByte) {// && !operand1isDestination) {
+                                operand2 += QString::number(immediateValue);
+                            }
+                            else {
+                                operand1 += QString::number(immediateValue);
+                            }
                         }
                         instructionComplete = true;
                     }
@@ -2420,7 +2415,7 @@ void MainWindow::refreshDisassembly()
 
             // tmp
             QString disassemblyLine;
-            disassemblyLine = QString::number(instructionStartByte, 16).toUpper();
+            disassemblyLine = QString::number(instructionStartByte + 4096, 16).toUpper();
             if (!error) {
                 // get instruction mnemonic if not special
                 if (instruction == "") {
@@ -2445,18 +2440,34 @@ void MainWindow::refreshDisassembly()
                 disassemblyLine += "    ";
                 disassemblyLine += instruction;
                 if (!operand1isDestination) {
+                    if (operand2 != "") {
+                        disassemblyLine += operand2;
+                        if (operand1 != "") {
+                            disassemblyLine += ", ";
+                            disassemblyLine += operand1;
+                        }
+                    }
+                    /*
                     disassemblyLine += operand2;
                     if (operand1 != "") {
                         disassemblyLine += ", ";
                         disassemblyLine += operand1;
-                    }
+                    }*/
                     disassemblyLine += "<br>";
                 }
                 else {
+                    if (operand1 != "") {
+                        disassemblyLine += operand1;
+                        if (operand2 != "") {
+                            disassemblyLine += ", ";
+                            disassemblyLine += operand2;
+                        }
+                    /*
                     disassemblyLine += operand1;
                     if (operand2 != "") {
                         disassemblyLine += ", ";
                         disassemblyLine += operand2;
+                    }*/
                     }
                     disassemblyLine += "<br>";
                 }
@@ -2733,7 +2744,7 @@ void MainWindow::getPEinformation()
                 for (int i = 0; i < 4; i++) {
                     codeStartLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[textLocation + 20 + i]);
                 }
-                // find end = codestart + virtual size
+                // find end
                 int virtualSize = 0;
                 for (int i = 0; i < 4; i++) {
                     virtualSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[textLocation + 8 + i]);
@@ -2747,8 +2758,5 @@ void MainWindow::getPEinformation()
                 IATSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 220 + i]);
             }
         }
-
-        //qDebug() << codeEndLoc;
-
     }
 }
