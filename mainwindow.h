@@ -101,6 +101,7 @@ public:
     bool PEinfoBuilt;
     bool PE;
     int codeStartLoc;
+    int codeEndLoc;
     int IATLoc;
     int IATSize;
 

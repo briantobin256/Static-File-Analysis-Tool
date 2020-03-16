@@ -1734,15 +1734,18 @@ void MainWindow::refreshDisassembly()
             disassemblyBuilt = true;
         }
 
-        int maxDisassemblyRows = 2000;
         //int disassemblyOffset = 0; // = scrollbar value * maxDisassemblyRows, (for displaying only)
         ui->disassemblyBrowser->clear();
 
         int instructionSizeOffset = 0;
         QString disassemblyDisplay = "";
 
+        if (codeEndLoc == 0) {
+            disassemblyDisplay += "File could not be disassembled. Not a 32 bit PE File?";
+        }
+
         // for each instruction in file
-        for (int i = 0; i < maxDisassemblyRows; i++) {
+        while (codeStartLoc + instructionSizeOffset < codeEndLoc) {
 
             bool instructionComplete = false, error = false, secondImmediate = false;
             int opcodeByte = 0, instructionStartByte = instructionSizeOffset, errorStartLocation = 0;
@@ -2683,6 +2686,8 @@ void MainWindow::getPEinformation()
         PE = true;
     }
     PEinfoBuilt = true;
+    codeStartLoc = 0, codeEndLoc = 0;
+    IATLoc = 0, IATSize = 0;
 
     if (PE) {
         // if PE, find PE header location (3C)
@@ -2722,23 +2727,28 @@ void MainWindow::getPEinformation()
                 }
             }
 
-            // find code start location
+            // find code start and end location
             if (textFound) {
-                codeStartLoc = 0;
+                // find start
                 for (int i = 0; i < 4; i++) {
                     codeStartLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[textLocation + 20 + i]);
                 }
+                // find end = codestart + virtual size
+                int virtualSize = 0;
+                for (int i = 0; i < 4; i++) {
+                    virtualSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[textLocation + 8 + i]);
+                }
+                codeEndLoc = virtualSize + codeStartLoc;
             }
 
             // find Import Address Table location and size
-            IATLoc = 0, IATSize = 0;
             for (int i = 0; i < 4; i++) {
                 IATLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 216 + i]);
                 IATSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 220 + i]);
             }
         }
-qDebug() << peHeaderStartLoc + 128;
-        qDebug() << IATLoc<<IATSize;
+
+        //qDebug() << codeEndLoc;
 
     }
 }
