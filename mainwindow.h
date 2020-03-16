@@ -108,6 +108,8 @@ public:
 
     // disassembly
     bool disassemblyBuilt;
+    int maxDisplayInstructions;
+    QStringList disassembly;
     //int disassemblyOffset;
     QMap<int, int>opTypeMap;
     QMap<int, QString>opcodeMap;
@@ -165,6 +167,8 @@ private slots:
 
     void on_actionDisassembly_triggered();
 
+    void on_disassemblyScrollBar_valueChanged();
+
 private:
     Ui::MainWindow *ui;
     CustomDialog *dialogBox;
@@ -198,6 +202,7 @@ private:
     QString getExtendedByteInstruction(int extendedByte, int reg);
     int getOperandSize(unsigned char byte, bool operandSizeModifier);
     void getPEinformation();
+    void getDisassembly();
 
     //void searchStringList;
 

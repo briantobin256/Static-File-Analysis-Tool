@@ -329,6 +329,13 @@ void MainWindow::on_hexScrollBar_valueChanged()
     }
 }
 
+void MainWindow::on_disassemblyScrollBar_valueChanged()
+{
+    if (!reseting) {
+        refreshDisassembly();
+    }
+}
+
 void MainWindow::on_stringList_itemDoubleClicked(QListWidgetItem *item)
 {
     stringToHexLocation(item);
@@ -521,7 +528,7 @@ void MainWindow::on_stringSearchButton_clicked()
             //ui->stringList->item((stringsAdvancedSearchIterator % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setSelected(true);
             ui->stringList->item((stringsAdvancedSearchIndex % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setCheckState(Qt::Checked);
             //ui->stringList->setFocus();
-            refreshStrings();
+            //refreshStrings();
         }
         else if (stringsAdvancedSearchIndex == stringCount) {
             stringsAdvancedSearchIndex = 0;
@@ -871,19 +878,8 @@ void MainWindow::findStrings()
         QString count = QString::number(stringCount);
         ui->stringCountValue->setText(count);
 
-        stringsBuilt = true;
-    }
-}
-
-void MainWindow::refreshStrings()
-{
-    if (fileOpened) {
-        saveDisplayedStrings();
-        ui->stringList->clear();
         maxDisplayStrings = 24; // eventually based on ui things
-        int displayStringCount = maxDisplayStrings;
-        stringOffset = ui->stringsScrollBar->value() * maxDisplayStrings;
-
+        // scroll bar value
         if (stringCount % maxDisplayStrings > 0) {
             ui->stringsScrollBar->setMaximum(stringCount / maxDisplayStrings);
         }
@@ -895,6 +891,18 @@ void MainWindow::refreshStrings()
                 ui->stringsScrollBar->setMaximum(stringCount / maxDisplayStrings - 1);
             }
         }
+        stringsBuilt = true;
+    }
+}
+
+void MainWindow::refreshStrings()
+{
+    if (fileOpened) {
+        saveDisplayedStrings();
+        ui->stringList->clear();
+
+        int displayStringCount = maxDisplayStrings;
+        stringOffset = ui->stringsScrollBar->value() * maxDisplayStrings;
 
         if (ui->stringsScrollBar->value() == ui->stringsScrollBar->maximum()) {
             if (stringCount % maxDisplayStrings > 0) {
@@ -1412,9 +1420,8 @@ void MainWindow::resetChecks()
     entropyGraphBuilt = false;
 
     disassemblyBuilt = false;
-    codeStartLoc = 0;
-    IATLoc = 0;
-    PE = false;
+    disassembly.clear();
+    ui->disassemblyScrollBar->setValue(0);
 
     reseting = false;
 }
@@ -1709,41 +1716,63 @@ void MainWindow::refreshDisassembly()
 {
     if (fileOpened) {
 
-        // if PE
-
-            // if codeStartLoc > 0
-
         if (!disassemblyBuilt) {
-
-            // put opcodes in map
-            QFile file("OPCODES.txt");
-            if (file.open(QIODevice::ReadOnly)) {
-                QTextStream in(&file);
-                int i = 0;
-                while (!in.atEnd()) {
-                    QString line = in.readLine();
-                    QStringRef type(&line, 0, 1);
-                    QStringRef opcode(&line, 1, line.size() - 1);
-                    opTypeMap[i] = type.toInt();
-                    opcodeMap[i] = opcode.toString();
-                    i++;
-                }
-                file.close();
-            }
-
-            disassemblyBuilt = true;
+            getDisassembly();
         }
 
-        //int disassemblyOffset = 0; // = scrollbar value * maxDisassemblyRows, (for displaying only)
         ui->disassemblyBrowser->clear();
 
-        int instructionSizeOffset = 0;
-        QString disassemblyDisplay = "";
+        int instructionOffset = ui->disassemblyScrollBar->value();
 
-        if (codeEndLoc == 0) {
-            disassemblyDisplay += "File could not be disassembled. Not a 32 bit PE File?";
+        // build display
+        QString displayInstructions;
+        for (int i = 0; i < maxDisplayInstructions; i++) {
+            displayInstructions += disassembly[instructionOffset + i];
         }
 
+        ui->disassemblyBrowser->setHtml(displayInstructions);
+
+        // display things
+        QString currentPage = QString::number(ui->disassemblyScrollBar->value() + 1);
+        QString maxPage = QString::number(ui->disassemblyScrollBar->maximum() + 1);
+        QString display;
+        display.append(currentPage);
+        display.append(" / ");
+        display.append(maxPage);
+        ui->disassemblyPageNumberValue->setText(display);
+    }
+}
+
+void MainWindow::getDisassembly()
+{
+    if (!disassemblyBuilt) {
+
+        // put opcodes in map
+        QFile file("OPCODES.txt");
+        if (file.open(QIODevice::ReadOnly)) {
+            QTextStream in(&file);
+            int i = 0;
+            while (!in.atEnd()) {
+                QString line = in.readLine();
+                QStringRef type(&line, 0, 1);
+                QStringRef opcode(&line, 1, line.size() - 1);
+                opTypeMap[i] = type.toInt();
+                opcodeMap[i] = opcode.toString();
+                i++;
+            }
+            file.close();
+        }
+        else {
+            codeEndLoc = 0;
+            // output could not open opcode text file
+        }
+
+        if (codeEndLoc == 0) {
+            disassembly += "File could not be disassembled. Not a 32 bit PE File?";
+        }
+
+        int instructionSizeOffset = 0;
+        QMap<int, QString> locMap;
         // for each instruction in file
         while (codeStartLoc + instructionSizeOffset < codeEndLoc) {
 
@@ -1755,9 +1784,9 @@ void MainWindow::refreshDisassembly()
 
             // current byte types
             bool prefix = true, opcode = false, modByte = false, SIB = false, extendedOpcode = false;
-            bool operandSizeModifier = false, specialInstruction = false, aligning = false;
+            bool operandSizeModifier = false, specialInstruction = false, aligning = false, rareInstruction = false;
             int mod = 0, reg = 0, rm = 0, scale = 0, index = 0, base = 0, displacementIndex = 0, maxDisplacements = 0, immediateIndex = 0, maxImmediates = 0, operandSize = 8, extended = 0;
-            QString operand1 = "", operand2 = "", operandPrefix = "";
+            QString operand1 = "", operand2 = "", operandPrefix = "", disassemblyLine = "";
             bool operand1isDestination = false, noOperands = false;
 
             // for each byte in instruction
@@ -1770,17 +1799,18 @@ void MainWindow::refreshDisassembly()
                 //
 
                 if (prefix) {
+
                     // if LOCK prefix (F0)
                     if (byte == 240) {
-
+                        rareInstruction = true;
                     }
                     // if string manipulation prefix (F2, F3)
                     else if (byte == 242 || byte == 243) {
-
+                        rareInstruction = true;
                     }
                     // if segment override prefix (26, 2E, 36, 3E, 64, 65)
                     else if (byte == 38 || byte == 46 || byte == 54 || byte == 62 ||  byte == 100 || byte == 101) {
-
+                        rareInstruction = true;
                     }
                     // if operand override (66)
                     else if (byte == 102) {
@@ -1788,7 +1818,7 @@ void MainWindow::refreshDisassembly()
                     }
                     // if address override (67)
                     else if (byte == 103) {
-
+                        rareInstruction = true;
                     }
                     else {
                         prefix = false;
@@ -1806,6 +1836,7 @@ void MainWindow::refreshDisassembly()
                     if (byte == 15) {
                         extendedOpcode = true;
                         extended = 256;
+                        rareInstruction = true;
                     }
                     else {
                         opcode = false;
@@ -1830,10 +1861,9 @@ void MainWindow::refreshDisassembly()
                             }
 
                             if (extendedOpcode) {
-                                // has immediate constant (3A, )
-                                if (byte == 58 || (byte >= 112 && byte <= 115) || (byte >= 128 && byte <= 143) || byte == 164 || byte == 172 || byte == 178 || byte == 180 || byte == 181 || byte == 186 || byte == 194 || byte == 196 || byte == 197 || byte == 198) {
-                                    // only XX has immediate bigger than 1
-                                    if ((byte >= 128 && byte <= 143) || byte == 178 || byte == 180 || byte == 181) {
+                                // has immediate constant
+                                if (byte == 58 || (byte >= 112 && byte <= 115) || byte == 164 || byte == 172 || byte == 178 || byte == 180 || byte == 181 || byte == 186 || byte == 194 || byte == 196 || byte == 197 || byte == 198) {
+                                    if (byte == 178 || byte == 180 || byte == 181) {
                                         maxImmediates = operandSize / 8;
                                     }
                                     else {
@@ -2006,6 +2036,8 @@ void MainWindow::refreshDisassembly()
                             if (extendedOpcode) {
                                 if (byte >= 128 && byte <= 144) {
                                     maxImmediates = operandSize / 8;
+                                    operand2 += "short ";
+                                    rareInstruction = false;
                                 }
                             }
                             else {
@@ -2391,8 +2423,15 @@ void MainWindow::refreshDisassembly()
                             operand2 = QString::number(secondImmediateValue);
                         }
                         else {
-                            if (!hasModByte) {// && !operand1isDestination) {
-                                operand2 += QString::number(immediateValue);
+                            if (!hasModByte) {
+                                if (operand2 == "short ") {
+                                    QString loc = "loc_" + QString::number(immediateValue + instructionSizeOffset + 1 + 4198400, 16).toUpper();
+                                    operand2 += loc;
+                                    locMap.insert(disassembly.count(), loc);
+                                }
+                                else {
+                                    operand2 += QString::number(immediateValue);
+                                }
                             }
                             else {
                                 operand1 += QString::number(immediateValue);
@@ -2413,9 +2452,14 @@ void MainWindow::refreshDisassembly()
                 instructionSizeOffset++;
             }
 
-            // tmp
-            QString disassemblyLine;
-            disassemblyLine = QString::number(instructionStartByte + 4096, 16).toUpper();
+            //
+            // GET LINE READY FOR OUTPUT
+            //
+
+            if (rareInstruction) {
+                disassemblyLine = "<font color='red'>";
+            }
+            disassemblyLine += QString::number(instructionStartByte + 4198400, 16).toUpper();
             if (!error) {
                 // get instruction mnemonic if not special
                 if (instruction == "") {
@@ -2437,7 +2481,7 @@ void MainWindow::refreshDisassembly()
                         }
                     }
                 }
-                disassemblyLine += "    ";
+                disassemblyLine += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
                 disassemblyLine += instruction;
                 if (!operand1isDestination) {
                     if (operand2 != "") {
@@ -2447,44 +2491,41 @@ void MainWindow::refreshDisassembly()
                             disassemblyLine += operand1;
                         }
                     }
-                    /*
-                    disassemblyLine += operand2;
-                    if (operand1 != "") {
-                        disassemblyLine += ", ";
-                        disassemblyLine += operand1;
-                    }*/
-                    disassemblyLine += "<br>";
                 }
-                else {
-                    if (operand1 != "") {
-                        disassemblyLine += operand1;
-                        if (operand2 != "") {
-                            disassemblyLine += ", ";
-                            disassemblyLine += operand2;
-                        }
-                    /*
+                else if (operand1 != "") {
                     disassemblyLine += operand1;
                     if (operand2 != "") {
                         disassemblyLine += ", ";
                         disassemblyLine += operand2;
-                    }*/
                     }
-                    disassemblyLine += "<br>";
                 }
+                disassemblyLine += "<br>";
             }
             else {
                 if (aligning) {
                     aligning = false;
-                    disassemblyLine = QString::number(errorStartLocation, 16).toUpper();
-                    disassemblyLine += "    align 16<br>";
+                    disassemblyLine = QString::number(errorStartLocation + 4198400, 16).toUpper();
+                    disassemblyLine += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;align 10h<br>";
                 }
                 else {
-                    disassemblyLine += "    ERROR!<br>";
+                    disassemblyLine += "<font color='red'>ERROR!<br></font>";
                 }
             }
-            disassemblyDisplay += disassemblyLine;
+
+            if (rareInstruction) {
+                disassemblyLine += "</font>";
+            }
+
+            disassembly += disassemblyLine;
         }
-        ui->disassemblyBrowser->setHtml(disassemblyDisplay);
+
+        // for all locations found eg. loc_401000, go back through and add a location tag
+        // using locMap
+        //qDebug() << locMap;
+
+        maxDisplayInstructions = 30;
+        ui->disassemblyScrollBar->setMaximum(disassembly.count() - maxDisplayInstructions);
+        disassemblyBuilt = true;
     }
 }
 
