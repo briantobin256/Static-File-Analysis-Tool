@@ -98,9 +98,15 @@ public:
     bool entropyGraphBuilt;
 
 
+    bool PEinfoBuilt;
+    bool PE;
+    int codeStartLoc;
+    int IATLoc;
+    int IATSize;
+
+
     // disassembly
     bool disassemblyBuilt;
-    int codeStart;
     //int disassemblyOffset;
     QMap<int, int>opTypeMap;
     QMap<int, QString>opcodeMap;
@@ -190,6 +196,7 @@ private:
     QString getSpecialByteInstruction(int specialByte, int reg);
     QString getExtendedByteInstruction(int extendedByte, int reg);
     int getOperandSize(unsigned char byte, bool operandSizeModifier);
+    void getPEinformation();
 
     //void searchStringList;
 

@@ -649,6 +649,7 @@ void MainWindow::open(QFile *file)
                     ds.readRawData(rawData, fileSize);
                     fileOpened = true;
                     resetChecks();
+                    getPEinformation();
 
                     // get file name and directory
                     QString fullFileName = file->fileName();
@@ -679,7 +680,7 @@ void MainWindow::open(QFile *file)
                     dialogBox->exec();
                 }
             }
-            resetChecks();
+            //resetChecks();
             refreshWindow();
         }
         else {
@@ -1411,7 +1412,9 @@ void MainWindow::resetChecks()
     entropyGraphBuilt = false;
 
     disassemblyBuilt = false;
-    codeStart = 0;
+    codeStartLoc = 0;
+    IATLoc = 0;
+    PE = false;
 
     reseting = false;
 }
@@ -1706,6 +1709,10 @@ void MainWindow::refreshDisassembly()
 {
     if (fileOpened) {
 
+        // if PE
+
+            // if codeStartLoc > 0
+
         if (!disassemblyBuilt) {
 
             // put opcodes in map
@@ -1723,9 +1730,6 @@ void MainWindow::refreshDisassembly()
                 }
                 file.close();
             }
-
-            // find code start location (1024 is default for 32bit pe files?)
-            codeStart = 1024;
 
             disassemblyBuilt = true;
         }
@@ -1755,7 +1759,7 @@ void MainWindow::refreshDisassembly()
 
             // for each byte in instruction
             while (!instructionComplete) {
-                char c = rawData[codeStart + instructionSizeOffset];
+                char c = rawData[codeStartLoc + instructionSizeOffset];
                 unsigned char byte = static_cast<unsigned char>(c);
 
                 //
@@ -2325,16 +2329,7 @@ void MainWindow::refreshDisassembly()
                 //
 
                 else if (displacementIndex < maxDisplacements) {
-                    switch (displacementIndex) {
-                        case 0 : displacementValue += byte;
-                        break;
-                        case 1 : displacementValue += pow(16,2) * byte;
-                        break;
-                        case 2 : displacementValue += pow(16,4) * byte;
-                        break;
-                        case 3 : displacementValue += pow(16,6) * byte;
-                        break;
-                    }
+                    displacementValue += pow(16,displacementIndex * 2) * byte;
                     displacementIndex++;
                     if (displacementIndex == maxDisplacements) {
                         if (operand2 == "short " || mod == 0) {
@@ -2679,4 +2674,71 @@ QString MainWindow::segmentRegisterName(int reg)
         break;
     }
     return "";
+}
+
+void MainWindow::getPEinformation()
+{
+    // check if file is a PE file (first two bytes are 4D, 5A or M, Z in text)
+    if (rawData[0] == 'M' && rawData[1] == 'Z') {
+        PE = true;
+    }
+    PEinfoBuilt = true;
+
+    if (PE) {
+        // if PE, find PE header location (3C)
+        int peHeaderStartLoc = static_cast<unsigned char>(rawData[60]);
+        int peHeaderSize = 24;
+
+        // get number of sections in the file
+        int sectionCount = 0;
+        sectionCount = static_cast<unsigned char>(rawData[peHeaderStartLoc + 6]);
+        sectionCount += pow(16, 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 7]);
+
+        // get size of optional header
+        int optionalHeaderSize;
+        optionalHeaderSize = static_cast<unsigned char>(rawData[peHeaderStartLoc + 20]);
+        optionalHeaderSize += pow(16, 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 21]);
+
+        // if file has an optional header
+        if (optionalHeaderSize > 0) {
+
+            // find text section
+            bool textFound = false;
+            int sectionSize = 40, textLocation;
+            int sectionLocation = peHeaderStartLoc + peHeaderSize + optionalHeaderSize, sectionNumber = 0;
+
+            while (!textFound && sectionNumber < sectionCount) {
+                QString sectionName = "";
+                for (int i = 0; i < 5; i++) {
+                    sectionName += rawData[sectionLocation + i];
+                }
+                if (sectionName == ".text") {
+                    textFound = true;
+                    textLocation = sectionLocation;
+                }
+                else {
+                    sectionLocation += sectionSize;
+                    sectionNumber++;
+                }
+            }
+
+            // find code start location
+            if (textFound) {
+                codeStartLoc = 0;
+                for (int i = 0; i < 4; i++) {
+                    codeStartLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[textLocation + 20 + i]);
+                }
+            }
+
+            // find Import Address Table location and size
+            IATLoc = 0, IATSize = 0;
+            for (int i = 0; i < 4; i++) {
+                IATLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 216 + i]);
+                IATSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 220 + i]);
+            }
+        }
+qDebug() << peHeaderStartLoc + 128;
+        qDebug() << IATLoc<<IATSize;
+
+    }
 }
