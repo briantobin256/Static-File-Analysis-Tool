@@ -1772,7 +1772,7 @@ void MainWindow::getDisassembly()
         }
 
         int instructionSizeOffset = 0;
-        QMap<int, QString> locMap;
+        QMap<QString, bool> locMap;
         // for each instruction in file
         while (codeStartLoc + instructionSizeOffset < codeEndLoc) {
 
@@ -1869,6 +1869,10 @@ void MainWindow::getDisassembly()
                                     else {
                                         maxImmediates = 1;
                                     }
+                                }
+                                // is correct
+                                if ((byte >= 144 && byte <= 159)) {
+                                    rareInstruction = false;
                                 }
                             }
                             else {
@@ -2036,7 +2040,6 @@ void MainWindow::getDisassembly()
                             if (extendedOpcode) {
                                 if (byte >= 128 && byte <= 144) {
                                     maxImmediates = operandSize / 8;
-                                    operand2 += "short ";
                                     rareInstruction = false;
                                 }
                             }
@@ -2192,97 +2195,100 @@ void MainWindow::getDisassembly()
                         SIB = true;
                     }
 
-                    // if opcode is (00 - 03, 08 - 0B, 10 - 13, 18 - 1B, 20 - 23, 28 - 2B, 30 - 33, 38 - 3B)
-                    if (opcodeByte < 60) {
-                        operand1 = registerName(reg, operandSize);
-                        if (opcodeByte / 2 % 2 == 1) {
+                    // if not extended
+                    if (!extended) {
+                        // if opcode is (00 - 03, 08 - 0B, 10 - 13, 18 - 1B, 20 - 23, 28 - 2B, 30 - 33, 38 - 3B)
+                        if (opcodeByte < 60) {
+                            operand1 = registerName(reg, operandSize);
+                            if (opcodeByte / 2 % 2 == 1) {
+                                operand1isDestination = true;
+                            }
+                        }
+                        // if opcode is (62)
+                        else if (opcodeByte == 98) {
+                            if (operandSizeModifier) {
+                                operand2 = "dword ptr ";
+                                operandSize = 16;
+                            }
+                            else {
+                                operand2 = "qword ptr ";
+                                operandSize = 32;
+                            }
+                            operand1 = registerName(reg, operandSize);
                             operand1isDestination = true;
                         }
-                    }
-                    // if opcode is (62)
-                    else if (opcodeByte == 98) {
-                        if (operandSizeModifier) {
-                            operand2 = "dword ptr ";
-                            operandSize = 16;
+                        // if opcode is (63)
+                        else if (opcodeByte == 99) {
+                            operand1 = registerName(reg, 16);
+                            operand2 = "word ptr ";
                         }
-                        else {
-                            operand2 = "qword ptr ";
-                            operandSize = 32;
-                        }
-                        operand1 = registerName(reg, operandSize);
-                        operand1isDestination = true;
-                    }
-                    // if opcode is (63)
-                    else if (opcodeByte == 99) {
-                        operand1 = registerName(reg, 16);
-                        operand2 = "word ptr ";
-                    }
-                    // if opcode is (69, 6B)
-                    else if (opcodeByte == 105 || opcodeByte == 107) {
-                        operand1 = registerName(reg, operandSize);
-                        operand1isDestination = true;
-                    }
-                    // if opcode is (84 - 89)
-                    else if (opcodeByte >= 132 && opcodeByte <= 137) {
-                        operand1 = registerName(reg, operandSize);
-                    }
-                    // if opcode is (8A, 8B)
-                    else if (opcodeByte == 138 || opcodeByte == 139) {
-                        operand1 = registerName(reg, operandSize);
-                        operand1isDestination = true;
-                    }
-                    // if opcode is (8C, 8E)
-                    else if (opcodeByte == 140 || opcodeByte == 142) {
-                        operand1 = segmentRegisterName(reg);
-                        operand2 = "word ptr ";
-                        if (opcodeByte / 2 % 2 == 1) {
+                        // if opcode is (69, 6B)
+                        else if (opcodeByte == 105 || opcodeByte == 107) {
+                            operand1 = registerName(reg, operandSize);
                             operand1isDestination = true;
                         }
-                    }
-                    // if opcode is (8D)
-                    else if (opcodeByte == 141) {
-                        operand1 = registerName(reg, operandSize);
-                        operand1isDestination = true;
-                    }
-                    // if opcode is (C4, C5)
-                    else if (opcodeByte == 196 || opcodeByte == 197) {
-                        operand1 = registerName(reg, 32);
-                        operand1isDestination = true;
-                        if (operandSizeModifier) {
-                            operand2 = "dword ptr ";
+                        // if opcode is (84 - 89)
+                        else if (opcodeByte >= 132 && opcodeByte <= 137) {
+                            operand1 = registerName(reg, operandSize);
                         }
-                        else {
-                            operand2 = "fword ptr ";
+                        // if opcode is (8A, 8B)
+                        else if (opcodeByte == 138 || opcodeByte == 139) {
+                            operand1 = registerName(reg, operandSize);
+                            operand1isDestination = true;
                         }
-                    }
-                    // if opcode is (D0 - D3)
-                    else if (opcodeByte >= 208 && opcodeByte <= 211) {
-                        if (opcodeByte / 2 % 2 == 0) {
-                            operand1 = "1";
+                        // if opcode is (8C, 8E)
+                        else if (opcodeByte == 140 || opcodeByte == 142) {
+                            operand1 = segmentRegisterName(reg);
+                            operand2 = "word ptr ";
+                            if (opcodeByte / 2 % 2 == 1) {
+                                operand1isDestination = true;
+                            }
                         }
-                        else {
-                            operand1 = "cl";
+                        // if opcode is (8D)
+                        else if (opcodeByte == 141) {
+                            operand1 = registerName(reg, operandSize);
+                            operand1isDestination = true;
                         }
-                    }
-                    // if opcode is (F6)
-                    else if (opcodeByte == 246) {
-                        if (reg == 0) {
-                            maxImmediates = 1;
+                        // if opcode is (C4, C5)
+                        else if (opcodeByte == 196 || opcodeByte == 197) {
+                            operand1 = registerName(reg, 32);
+                            operand1isDestination = true;
+                            if (operandSizeModifier) {
+                                operand2 = "dword ptr ";
+                            }
+                            else {
+                                operand2 = "fword ptr ";
+                            }
                         }
-                    }
-                    // if opcode is (F7)
-                    else if (opcodeByte == 247) {
-                        if (reg == 0) {
-                            maxImmediates = operandSize / 8;
+                        // if opcode is (D0 - D3)
+                        else if (opcodeByte >= 208 && opcodeByte <= 211) {
+                            if (opcodeByte / 2 % 2 == 0) {
+                                operand1 = "1";
+                            }
+                            else {
+                                operand1 = "cl";
+                            }
                         }
-                    }
-                    // if opcode is (FE)
-                    else if (opcodeByte == 254) {
-                        if (reg == 0) {
-                            instruction = "inc ";
+                        // if opcode is (F6)
+                        else if (opcodeByte == 246) {
+                            if (reg == 0) {
+                                maxImmediates = 1;
+                            }
                         }
-                        else {
-                            instruction = "dec ";
+                        // if opcode is (F7)
+                        else if (opcodeByte == 247) {
+                            if (reg == 0) {
+                                maxImmediates = operandSize / 8;
+                            }
+                        }
+                        // if opcode is (FE)
+                        else if (opcodeByte == 254) {
+                            if (reg == 0) {
+                                instruction = "inc ";
+                            }
+                            else {
+                                instruction = "dec ";
+                            }
                         }
                     }
 
@@ -2424,10 +2430,11 @@ void MainWindow::getDisassembly()
                         }
                         else {
                             if (!hasModByte) {
-                                if (operand2 == "short ") {
-                                    QString loc = "loc_" + QString::number(immediateValue + instructionSizeOffset + 1 + 4198400, 16).toUpper();
-                                    operand2 += loc;
-                                    locMap.insert(disassembly.count(), loc);
+                                if (operand2 == "short " || (opcodeByte >= 128 && opcodeByte <= 144 && extended)) {
+                                    QString loc = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
+                                    operand2 += "loc_" + loc;
+                                    qDebug() << instructionSizeOffset<<immediateValue;
+                                    locMap[loc] = true;
                                 }
                                 else {
                                     operand2 += QString::number(immediateValue);
@@ -2519,9 +2526,28 @@ void MainWindow::getDisassembly()
             disassembly += disassemblyLine;
         }
 
+        //
+        // FORMATTING
+        //
+
+        // for all locations and sub locations
+        int instructionIterator = 0, locCount = 0, totalLocs = disassembly.count();
+        while (instructionIterator < totalLocs) {
+            QString instruction = disassembly[instructionIterator + (locCount * 2)];
+            int split = instruction.indexOf('&');
+            QStringRef instructionRef(&instruction, split - 6, split);
+            QString loc = instructionRef.toString();
+            if (locMap[loc]) {
+                disassembly.insert(instructionIterator + (locCount * 2), loc + "<br>");
+                disassembly.insert(instructionIterator + (locCount * 2) + 1, loc + "&nbsp;loc_" + loc + "<br>");
+                locCount++;
+            }
+            instructionIterator++;
+        }
+
         // for all locations found eg. loc_401000, go back through and add a location tag
         // using locMap
-        //qDebug() << locMap;
+        qDebug() << codeStartLoc;
 
         maxDisplayInstructions = 30;
         ui->disassemblyScrollBar->setMaximum(disassembly.count() - maxDisplayInstructions);
