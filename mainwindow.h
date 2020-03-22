@@ -113,6 +113,7 @@ public:
     //int disassemblyOffset;
     QMap<int, int>opTypeMap;
     QMap<int, QString>opcodeMap;
+    QMap<QString, int> locOffsetMap;
 
     bool reseting;
 
@@ -169,6 +170,8 @@ private slots:
 
     void on_disassemblyScrollBar_valueChanged();
 
+    void on_disassemblyBrowser_anchorClicked(const QUrl &arg1);
+
 private:
     Ui::MainWindow *ui;
     CustomDialog *dialogBox;
@@ -203,6 +206,8 @@ private:
     int getOperandSize(unsigned char byte, bool operandSizeModifier);
     void getPEinformation();
     void getDisassembly();
+    QString byteToHexString(int c);
+    QString immediateFormat(QString s);
 
     //void searchStringList;
 

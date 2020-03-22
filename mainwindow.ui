@@ -6,19 +6,19 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1003</width>
+    <width>1000</width>
     <height>820</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>1003</width>
+    <width>1000</width>
     <height>820</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>1003</width>
+    <width>1000</width>
     <height>820</height>
    </size>
   </property>
@@ -30,10 +30,22 @@
     <property name="geometry">
      <rect>
       <x>0</x>
-      <y>-10</y>
-      <width>1001</width>
-      <height>771</height>
+      <y>0</y>
+      <width>1000</width>
+      <height>770</height>
      </rect>
+    </property>
+    <property name="minimumSize">
+     <size>
+      <width>1000</width>
+      <height>770</height>
+     </size>
+    </property>
+    <property name="maximumSize">
+     <size>
+      <width>1000</width>
+      <height>770</height>
+     </size>
     </property>
     <property name="palette">
      <palette>
@@ -485,8 +497,8 @@
      <widget class="QLabel" name="stringCountLabel">
       <property name="geometry">
        <rect>
-        <x>30</x>
-        <y>740</y>
+        <x>20</x>
+        <y>700</y>
         <width>101</width>
         <height>20</height>
        </rect>
@@ -501,9 +513,9 @@
      <widget class="QLabel" name="stringCountValue">
       <property name="geometry">
        <rect>
-        <x>140</x>
-        <y>740</y>
-        <width>101</width>
+        <x>130</x>
+        <y>700</y>
+        <width>191</width>
         <height>20</height>
        </rect>
       </property>
@@ -515,10 +527,22 @@
       <property name="geometry">
        <rect>
         <x>960</x>
-        <y>20</y>
-        <width>21</width>
-        <height>671</height>
+        <y>10</y>
+        <width>25</width>
+        <height>680</height>
        </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>25</width>
+        <height>680</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>25</width>
+        <height>680</height>
+       </size>
       </property>
       <property name="maximum">
        <number>0</number>
@@ -534,17 +558,29 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>20</y>
-        <width>941</width>
-        <height>681</height>
+        <y>10</y>
+        <width>940</width>
+        <height>680</height>
        </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>940</width>
+        <height>680</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>940</width>
+        <height>680</height>
+       </size>
       </property>
      </widget>
      <widget class="QLineEdit" name="searchString">
       <property name="geometry">
        <rect>
         <x>530</x>
-        <y>720</y>
+        <y>710</y>
         <width>331</width>
         <height>25</height>
        </rect>
@@ -553,8 +589,8 @@
      <widget class="QPushButton" name="stringSearchButton">
       <property name="geometry">
        <rect>
-        <x>890</x>
-        <y>720</y>
+        <x>880</x>
+        <y>710</y>
         <width>71</width>
         <height>31</height>
        </rect>
@@ -566,8 +602,8 @@
      <widget class="QLabel" name="stringsPageNumberLabel">
       <property name="geometry">
        <rect>
-        <x>290</x>
-        <y>740</y>
+        <x>30</x>
+        <y>730</y>
         <width>69</width>
         <height>20</height>
        </rect>
@@ -579,9 +615,9 @@
      <widget class="QLabel" name="stringsPageNumberValue">
       <property name="geometry">
        <rect>
-        <x>370</x>
-        <y>740</y>
-        <width>69</width>
+        <x>90</x>
+        <y>730</y>
+        <width>191</width>
         <height>20</height>
        </rect>
       </property>
@@ -592,8 +628,8 @@
      <widget class="QPushButton" name="stringSortUnsort">
       <property name="geometry">
        <rect>
-        <x>420</x>
-        <y>720</y>
+        <x>400</x>
+        <y>710</y>
         <width>101</width>
         <height>31</height>
        </rect>
@@ -608,9 +644,9 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>20</y>
-        <width>971</width>
-        <height>681</height>
+        <y>10</y>
+        <width>940</width>
+        <height>680</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -618,6 +654,18 @@
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>940</width>
+        <height>680</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>940</width>
+        <height>680</height>
+       </size>
       </property>
       <property name="focusPolicy">
        <enum>Qt::NoFocus</enum>
@@ -683,15 +731,46 @@
        <string>Delete Selected</string>
       </property>
      </widget>
+     <widget class="QScrollBar" name="savedStringsScrollBar">
+      <property name="geometry">
+       <rect>
+        <x>960</x>
+        <y>10</y>
+        <width>25</width>
+        <height>680</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>25</width>
+        <height>680</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>25</width>
+        <height>680</height>
+       </size>
+      </property>
+      <property name="maximum">
+       <number>0</number>
+      </property>
+      <property name="pageStep">
+       <number>16</number>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="page_3_DLLs">
      <widget class="QListWidget" name="DLL_List">
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>20</y>
-        <width>980</width>
-        <height>690</height>
+        <y>10</y>
+        <width>940</width>
+        <height>680</height>
        </rect>
       </property>
       <property name="sizePolicy">
@@ -699,6 +778,18 @@
         <horstretch>0</horstretch>
         <verstretch>0</verstretch>
        </sizepolicy>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>940</width>
+        <height>680</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>940</width>
+        <height>680</height>
+       </size>
       </property>
       <property name="focusPolicy">
        <enum>Qt::NoFocus</enum>
@@ -725,6 +816,37 @@
        <enum>QAbstractItemView::SingleSelection</enum>
       </property>
      </widget>
+     <widget class="QScrollBar" name="dllScrollBar">
+      <property name="geometry">
+       <rect>
+        <x>960</x>
+        <y>10</y>
+        <width>25</width>
+        <height>680</height>
+       </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>25</width>
+        <height>680</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>25</width>
+        <height>680</height>
+       </size>
+      </property>
+      <property name="maximum">
+       <number>0</number>
+      </property>
+      <property name="pageStep">
+       <number>16</number>
+      </property>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
+      </property>
+     </widget>
     </widget>
     <widget class="QWidget" name="page_4_Hex_Mode">
      <widget class="QTableWidget" name="hexTable">
@@ -734,7 +856,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>20</y>
+        <y>10</y>
         <width>928</width>
         <height>680</height>
        </rect>
@@ -1040,7 +1162,7 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>20</y>
+        <y>10</y>
         <width>941</width>
         <height>741</height>
        </rect>
@@ -1336,20 +1458,44 @@
       <property name="geometry">
        <rect>
         <x>10</x>
-        <y>20</y>
-        <width>941</width>
-        <height>681</height>
+        <y>10</y>
+        <width>940</width>
+        <height>680</height>
        </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>940</width>
+        <height>680</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>940</width>
+        <height>680</height>
+       </size>
       </property>
      </widget>
      <widget class="QScrollBar" name="disassemblyScrollBar">
       <property name="geometry">
        <rect>
         <x>960</x>
-        <y>20</y>
-        <width>21</width>
-        <height>671</height>
+        <y>10</y>
+        <width>25</width>
+        <height>680</height>
        </rect>
+      </property>
+      <property name="minimumSize">
+       <size>
+        <width>25</width>
+        <height>680</height>
+       </size>
+      </property>
+      <property name="maximumSize">
+       <size>
+        <width>25</width>
+        <height>680</height>
+       </size>
       </property>
       <property name="maximum">
        <number>0</number>
@@ -1364,21 +1510,21 @@
      <widget class="QLabel" name="disassemblyPageNumberLabel">
       <property name="geometry">
        <rect>
-        <x>210</x>
-        <y>740</y>
+        <x>150</x>
+        <y>720</y>
         <width>69</width>
         <height>20</height>
        </rect>
       </property>
       <property name="text">
-       <string>Page:</string>
+       <string>Line: </string>
       </property>
      </widget>
      <widget class="QLabel" name="disassemblyPageNumberValue">
       <property name="geometry">
        <rect>
-        <x>290</x>
-        <y>740</y>
+        <x>230</x>
+        <y>720</y>
         <width>69</width>
         <height>20</height>
        </rect>
@@ -1396,7 +1542,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1003</width>
+     <width>1000</width>
      <height>31</height>
     </rect>
    </property>

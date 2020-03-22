@@ -192,8 +192,8 @@
 3mov 
 2#2 
 2#2 
-3ret 
-1ret 
+3retn 
+1retn 
 2les 
 2lds 
 2mov 

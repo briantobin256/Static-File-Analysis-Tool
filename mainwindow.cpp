@@ -1223,24 +1223,7 @@ void MainWindow::refreshHex()
                 }
 
                 // convert char to hex
-                int temp, i = 1;
-                hexText ="00";
-                while(uc != 0) {
-
-                    temp = uc % 16;
-                    // to convert integer into character
-                    if(temp < 10)
-                    {
-                        temp += 48;
-                    }
-                    else
-                    {
-                        temp += 55;
-                    }
-                    hexText[i] = temp;
-                    i--;
-                    uc = uc / 16;
-                }
+                hexText = byteToHexString(uc);
 
                 // insert hex into table
                 hex = new QTableWidgetItem(hexText);
@@ -1254,6 +1237,27 @@ void MainWindow::refreshHex()
         }
         ui->hexTable->blockSignals(false);
     }
+}
+
+QString MainWindow::byteToHexString(int c)
+{
+    int temp, i = 1;
+    QString hexText = "00";
+    while(c != 0) {
+        temp = c % 16;
+        if(temp < 10)
+        {
+            temp += 48;
+        }
+        else
+        {
+            temp += 55;
+        }
+        hexText[i] = temp;
+        i--;
+        c = c / 16;
+    }
+    return hexText;
 }
 
 void MainWindow::refreshChecklist()
@@ -1567,8 +1571,8 @@ void MainWindow::buildEntropyGraph()
             }
             // last and incomplete chunk
             if (fileSize % chunkSize > 0) {
-                *entropySet << chunkEntropy(chunks * chunkSize, (fileSize % chunkSize + chunkSize) % chunkSize);
-                chunkRange << QString::number(chunks); //QString::number(chunks * chunkSize);// << " - " << QString::number((chunks * chunkSize) + ((fileSize % chunkSize + chunkSize) % chunkSize));
+                //*entropySet << chunkEntropy(chunks * chunkSize, (fileSize % chunkSize + chunkSize) % chunkSize);
+                //chunkRange << QString::number(chunks); //QString::number(chunks * chunkSize);// << " - " << QString::number((chunks * chunkSize) + ((fileSize % chunkSize + chunkSize) % chunkSize));
             }
 
             QBarCategoryAxis *axisY = new QBarCategoryAxis();
@@ -1604,13 +1608,14 @@ void MainWindow::buildEntropyGraph()
                 }
             }
             if (fileSize % chunkSize > 0) {
+                /*
                 if (chunks == 0) {
                     chart->setTitle("Average file entropy across " + QString::number(1) + " chunk of " + chunkBytes);
                 }
                 else {
                     chart->setTitle("Average file entropy across " + QString::number(chunks+1) + " chunks of " + chunkBytes + "  each, with the last being the remaining " + QString::number(fileSize % chunkSize) + " bytes.");
-                }
-
+                }*/
+                chart->setTitle("Average file entropy across " + QString::number(chunks+1) + " chunk of " + chunkBytes);
             }
             else {
                 chart->setTitle("Average file entropy across " + QString::number(chunks) + " chunks of " + chunkBytes +" each.");
@@ -1777,9 +1782,9 @@ void MainWindow::getDisassembly()
         while (codeStartLoc + instructionSizeOffset < codeEndLoc) {
 
             // current instruction variables
-            bool instructionComplete = false, error = false, secondImmediate = false, hasModByte = false;
+            bool instructionComplete = false, error = false, secondImmediate = false, hasModByte = false, seperator = false;
             int opcodeByte = 0, instructionStartByte = instructionSizeOffset, errorStartLocation = 0;
-            qint64 immediateValue = 0, secondImmediateValue = 0, displacementValue = 0;
+            int immediateValue = 0, secondImmediateValue = 0, displacementValue = 0;
             QString instruction = "", parameters = "";
 
             // current byte types
@@ -1788,6 +1793,7 @@ void MainWindow::getDisassembly()
             int mod = 0, reg = 0, rm = 0, scale = 0, index = 0, base = 0, displacementIndex = 0, maxDisplacements = 0, immediateIndex = 0, maxImmediates = 0, operandSize = 8, extended = 0;
             QString operand1 = "", operand2 = "", operandPrefix = "", disassemblyLine = "";
             bool operand1isDestination = false, noOperands = false;
+            QString imVal = "", secImVal = "";
 
             // for each byte in instruction
             while (!instructionComplete) {
@@ -2025,6 +2031,11 @@ void MainWindow::getDisassembly()
                             else {
                                 noOperands = true;
                             }
+
+                            // if call or jump, add seperator
+                            if (byte == 195 || byte == 203) {
+                                seperator = true;
+                            }
                         }
                         // else has immediate value(s) only
                         else {
@@ -2059,10 +2070,6 @@ void MainWindow::getDisassembly()
                                 else if ((byte >= 112 && byte <= 127) || (byte >= 224 && byte <= 227) || byte == 235) {
                                     operand2 = "short ";
                                     maxImmediates = 1;
-                                    if ((byte >= 224 && byte <= 227) || byte == 235) {
-                                        immediateValue = instructionSizeOffset + 2;
-                                    }
-                                    // set displacement value to be loc_xxxxx
                                 }
                                 // if opcode is (E4 - E7)
                                 else if (byte >= 228 && byte <= 231) {
@@ -2150,6 +2157,11 @@ void MainWindow::getDisassembly()
                                 // if opcode is (D4, D5)
                                 else if (byte == 212 || byte == 213) {
                                     maxImmediates = 1;
+                                }
+
+                                // if call or jump, add seperator
+                                if ((byte >= 233 && byte <= 235) || byte == 194 || byte == 202) {
+                                    seperator = true;
                                 }
                             }
                         }
@@ -2375,14 +2387,36 @@ void MainWindow::getDisassembly()
                 //
 
                 else if (displacementIndex < maxDisplacements) {
-                    displacementValue += pow(16,displacementIndex * 2) * byte;
+                    // sign check
+                    bool negative = false;
+                    if (displacementIndex == maxDisplacements - 1) {
+                        if (byte >= 128) {
+                            negative = true;
+                            if (maxDisplacements == 1) {
+                                byte -= (byte % 128) * 2;
+                            }
+                        }
+                    }
+
+                    qint64 k = pow(16,displacementIndex * 2) * byte;
+                    displacementValue += k;
                     displacementIndex++;
+                    
                     if (displacementIndex == maxDisplacements) {
-                        operand2 += "+" + QString::number(displacementValue) + "]";
+
+                        if (negative) {
+                            if (maxDisplacements > 1) {
+                                displacementValue *= -1;
+                            }
+                            operand2 += "-" + QString::number(displacementValue, 16).toUpper() + "h]";
+                        }
+                        else {
+                            operand2 += "+" + QString::number(displacementValue, 16).toUpper() + "h]";
+                        }
 
                         // if register addressing mode
                         if (mod == 0 && rm == 101) {
-                            operand2 = "dword ptr ds:" + QString::number(displacementValue); // convert to loc_ value
+                            operand2 = "dword ptr ds:" + QString::number(displacementValue, 16).toUpper() + "h"; // convert to loc_ value
                         }
 
                         if (maxImmediates == 0) {
@@ -2399,8 +2433,8 @@ void MainWindow::getDisassembly()
                     // if opcode is (9A, EA)
                     if (opcodeByte == 154 || opcodeByte == 234) {
                         if (immediateIndex == maxImmediates - 2 && !secondImmediate) {
-                            secondImmediateValue = immediateValue;
-                            immediateValue = 0;
+                            secImVal = imVal;
+                            imVal = "";
                             immediateIndex = 0;
                             maxImmediates = 2;
                             secondImmediate = true;
@@ -2409,39 +2443,73 @@ void MainWindow::getDisassembly()
                     // if opcode is (C8)
                     else if (opcodeByte == 200) {
                         if (immediateIndex == 2  && !secondImmediate) {
-                            secondImmediateValue = immediateValue;
-                            immediateValue = 0;
+                            secImVal = imVal;
+                            imVal = "";
                             immediateIndex = 0;
                             maxImmediates = 1;
                             secondImmediate = true;
                         }
                     }
-                    immediateValue += pow(16,immediateIndex * 2) * byte;
+
+                    // immediate value in hex
+                    imVal.prepend(byteToHexString(byte));
+
+                    // immediate value added to instruction pointer
+                    bool negative = false;
+                    // if a jump or call to a location
+                    if (operand2 == "short " || (opcodeByte >= 128 && opcodeByte <= 143 && extended)) {
+                        if (maxImmediates == 1) {
+                            if (byte >= 128) {
+                                negative = true;
+                                byte -= (byte % 128) * 2;
+                            }
+                        }
+                        qint64 k = pow(16,immediateIndex * 2) * byte;
+                        immediateValue += k;
+                    }
+                    // if signed value
+                    else {
+                        if (opcodeByte == 106 || opcodeByte == 107 || opcodeByte == 131) {
+                            if (byte >= 128) {
+                                imVal.prepend("FFFFFF");
+                            }
+                        }
+                    }
+
                     immediateIndex++;
+
+                    // end
                     if (immediateIndex == maxImmediates) {
 
+                        imVal = immediateFormat(imVal);
+                        secImVal = immediateFormat(secImVal);
+
                         if (opcodeByte == 154 || opcodeByte == 234) {
-                            operand2 = QString::number(immediateValue) + ":";
-                            operand2 += QString::number(secondImmediateValue);
+                            operand2 = imVal + ":";
+                            operand2 += secImVal;
                         }
                         else if (opcodeByte == 200) {
-                            operand1 = QString::number(immediateValue);
-                            operand2 = QString::number(secondImmediateValue);
+                            operand1 = imVal;
+                            operand2 = secImVal;
                         }
                         else {
                             if (!hasModByte) {
-                                if (operand2 == "short " || (opcodeByte >= 128 && opcodeByte <= 144 && extended)) {
+                                if (negative) {
+                                    immediateValue *= -1;
+                                }
+                                // if a jump or call to a location
+                                if (operand2 == "short " || (opcodeByte >= 128 && opcodeByte <= 143 && extended)) {
                                     QString loc = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
-                                    operand2 += "loc_" + loc;
-                                    qDebug() << instructionSizeOffset<<immediateValue;
+                                    operand2 += "<a href='" + loc + "'>";
+                                    operand2 += "loc_" + loc + "</a>";
                                     locMap[loc] = true;
                                 }
                                 else {
-                                    operand2 += QString::number(immediateValue);
+                                    operand2 += imVal;
                                 }
                             }
                             else {
-                                operand1 += QString::number(immediateValue);
+                                operand1 += imVal;
                             }
                         }
                         instructionComplete = true;
@@ -2466,7 +2534,8 @@ void MainWindow::getDisassembly()
             if (rareInstruction) {
                 disassemblyLine = "<font color='red'>";
             }
-            disassemblyLine += QString::number(instructionStartByte + 4198400, 16).toUpper();
+            QString location = QString::number(instructionStartByte + 4198400, 16).toUpper();
+            disassemblyLine += location;
             if (!error) {
                 // get instruction mnemonic if not special
                 if (instruction == "") {
@@ -2524,6 +2593,10 @@ void MainWindow::getDisassembly()
             }
 
             disassembly += disassemblyLine;
+
+            if (seperator) {
+                disassembly += location + " ; ---------------------------------------------------------------------------<br>";
+            }
         }
 
         //
@@ -2540,19 +2613,41 @@ void MainWindow::getDisassembly()
             if (locMap[loc]) {
                 disassembly.insert(instructionIterator + (locCount * 2), loc + "<br>");
                 disassembly.insert(instructionIterator + (locCount * 2) + 1, loc + "&nbsp;loc_" + loc + "<br>");
+                locOffsetMap[loc] = instructionIterator + (locCount * 2);
                 locCount++;
             }
             instructionIterator++;
         }
 
-        // for all locations found eg. loc_401000, go back through and add a location tag
-        // using locMap
-        qDebug() << codeStartLoc;
-
         maxDisplayInstructions = 30;
         ui->disassemblyScrollBar->setMaximum(disassembly.count() - maxDisplayInstructions);
+        ui->disassemblyBrowser->setOpenExternalLinks(false);
         disassemblyBuilt = true;
     }
+}
+
+QString MainWindow::immediateFormat(QString s)
+{
+    // remove zeros
+    bool stillZero = true;
+    while (stillZero) {
+        if (s.size() > 0 && s[0] == '0') {
+            s.remove(0, 1);
+        }
+        else {
+            stillZero = false;
+        }
+    }
+    // add h if not value between 0 and 9
+    if (s.size() == 1) {
+        if (s[0] >= 65 && s[0] <= 70) {
+            s += "h";
+        }
+    }
+    else {
+        s += "h";
+    }
+    return s;
 }
 
 QString MainWindow::registerName(int reg, int operandSize)
@@ -2826,4 +2921,10 @@ void MainWindow::getPEinformation()
             }
         }
     }
+}
+
+void MainWindow::on_disassemblyBrowser_anchorClicked(const QUrl &arg1)
+{
+    ui->disassemblyScrollBar->setValue(locOffsetMap[arg1.url()]);
+    refreshDisassembly();
 }
