@@ -540,18 +540,17 @@ void MainWindow::on_stringSortUnsort_clicked()
 {
     saveDisplayedStrings();
     sorting = true;
-    if (stringsSorted) { // unsort
-        for (int i = 0; i < stringCount; i++) {
-            swapStringMap[i] = i;
-        }
+    if (stringsSorted) {
         strings = unsortedStrings;
         stringsSorted = false;
     }
     else { // sort
+        // append string location onto string
         for (int i = 0; i < stringCount; i++) {
             strings[i] += "(" + QString::number(i);
         }
         strings.sort();
+        // remove string location and keep track of old location
         for (int i = 0; i < stringCount; i++) {
             QString string = strings[i];
             int startOfOldLoc = string.lastIndexOf("(", string.size() - 1);
@@ -562,12 +561,19 @@ void MainWindow::on_stringSortUnsort_clicked()
         stringsSorted = true;
     }
 
+    // swap values in saved strings map
     QMap<int, bool> tmpSavedSwapMap;
-    for (int i = 0; i < stringCount; i++) {
-        tmpSavedSwapMap[swapStringMap[i]] = savedStringMap[i];
+    if (stringsSorted) {
+        for (int i = 0; i < stringCount; i++) {
+            tmpSavedSwapMap[swapStringMap[i]] = savedStringMap[i];
+        }
+    }
+    else {
+        for (int i = 0; i < stringCount; i++) {
+            tmpSavedSwapMap[i] = savedStringMap[swapStringMap[i]];
+        }
     }
     savedStringMap = tmpSavedSwapMap;
-
     refreshWindow();
 }
 
@@ -1735,8 +1741,6 @@ void MainWindow::refreshDisassembly()
             displayInstructions += disassembly[instructionOffset + i];
         }
 
-        ui->disassemblyBrowser->setHtml(displayInstructions);
-
         // display things
         QString currentPage = QString::number(ui->disassemblyScrollBar->value() + 1);
         QString maxPage = QString::number(ui->disassemblyScrollBar->maximum() + 1);
@@ -1745,12 +1749,17 @@ void MainWindow::refreshDisassembly()
         display.append(" / ");
         display.append(maxPage);
         ui->disassemblyPageNumberValue->setText(display);
+
+        // font
+        displayInstructions.prepend("<p style='font-family:courier;font-size:15px;'>");
+        displayInstructions.append("</p>");
+        ui->disassemblyBrowser->setHtml(displayInstructions);
     }
 }
 
 void MainWindow::getDisassembly()
 {
-    if (!disassemblyBuilt) {
+    if (!disassemblyBuilt && codeEndLoc != 0) {
 
         // put opcodes in map
         QFile file("OPCODES.txt");
@@ -1769,22 +1778,18 @@ void MainWindow::getDisassembly()
         }
         else {
             codeEndLoc = 0;
-            // output could not open opcode text file
-        }
-
-        if (codeEndLoc == 0) {
-            disassembly += "File could not be disassembled. Not a 32 bit PE File?";
+            disassembly += "Opcode text file could not be opened!<br>Try running as administrator or reinstalling the program!";
         }
 
         int instructionSizeOffset = 0;
-        QMap<QString, bool> locMap;
+        QMap<QString, bool> locMap, subMap;
         // for each instruction in file
         while (codeStartLoc + instructionSizeOffset < codeEndLoc) {
 
             // current instruction variables
             bool instructionComplete = false, error = false, secondImmediate = false, hasModByte = false, seperator = false;
             int opcodeByte = 0, instructionStartByte = instructionSizeOffset, errorStartLocation = 0;
-            int immediateValue = 0, secondImmediateValue = 0, displacementValue = 0;
+            int immediateValue = 0, displacementValue = 0;
             QString instruction = "", parameters = "";
 
             // current byte types
@@ -2092,7 +2097,6 @@ void MainWindow::getDisassembly()
                                     else {
                                         maxImmediates = 4;
                                     }
-                                    immediateValue = instructionSizeOffset + maxImmediates + 1;
                                 }
                                 // if move immediate byte into 8 bit register (B0 - B7)
                                 else if (byte >= 176 && byte <= 183) {
@@ -2195,7 +2199,7 @@ void MainWindow::getDisassembly()
                         maxDisplacements = 1;
                     }
                     else if (mod == 10) {
-                        maxDisplacements = operandSize / 8;
+                        maxDisplacements = 4;
                     }
 
                     if (opcodeByte == 255) {
@@ -2457,7 +2461,7 @@ void MainWindow::getDisassembly()
                     // immediate value added to instruction pointer
                     bool negative = false;
                     // if a jump or call to a location
-                    if (operand2 == "short " || (opcodeByte >= 128 && opcodeByte <= 143 && extended)) {
+                    if (operand2 == "short " || opcodeByte == 232 || (opcodeByte >= 128 && opcodeByte <= 143 && extended)) {
                         if (maxImmediates == 1) {
                             if (byte >= 128) {
                                 negative = true;
@@ -2497,12 +2501,19 @@ void MainWindow::getDisassembly()
                                 if (negative) {
                                     immediateValue *= -1;
                                 }
-                                // if a jump or call to a location
+                                // if a jump to a location
                                 if (operand2 == "short " || (opcodeByte >= 128 && opcodeByte <= 143 && extended)) {
                                     QString loc = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
                                     operand2 += "<a href='" + loc + "'>";
                                     operand2 += "loc_" + loc + "</a>";
                                     locMap[loc] = true;
+                                }
+                                // if a call to a location
+                                else if (opcodeByte == 232) {
+                                    QString sub = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
+                                    operand2 += "<a href='" + sub + "'>";
+                                    operand2 += "sub_" + sub + "</a>";
+                                    subMap[sub] = true;
                                 }
                                 else {
                                     operand2 += imVal;
@@ -2595,7 +2606,7 @@ void MainWindow::getDisassembly()
             disassembly += disassemblyLine;
 
             if (seperator) {
-                disassembly += location + " ; ---------------------------------------------------------------------------<br>";
+                disassembly += location + " ; -------------------------------------------------------------------<br>";
             }
         }
 
@@ -2616,14 +2627,27 @@ void MainWindow::getDisassembly()
                 locOffsetMap[loc] = instructionIterator + (locCount * 2);
                 locCount++;
             }
+            else if (subMap[loc]) {
+                disassembly.insert(instructionIterator + (locCount * 2), loc + "<br>");
+                disassembly.insert(instructionIterator + (locCount * 2) + 1, loc + "&nbsp;sub_" + loc + "<br>");
+                locOffsetMap[loc] = instructionIterator + (locCount * 2);
+                locCount++;
+            }
             instructionIterator++;
         }
 
-        maxDisplayInstructions = 30;
+        maxDisplayInstructions = 40;
         ui->disassemblyScrollBar->setMaximum(disassembly.count() - maxDisplayInstructions);
         ui->disassemblyBrowser->setOpenExternalLinks(false);
-        disassemblyBuilt = true;
     }
+    else {
+        // if error during PE scan
+        if (codeEndLoc == 0) {
+            disassembly += "File could not be disassembled. Not a 32 bit PE File?";
+            maxDisplayInstructions = 1;
+        }
+    }
+    disassemblyBuilt = true;
 }
 
 QString MainWindow::immediateFormat(QString s)
@@ -2644,8 +2668,11 @@ QString MainWindow::immediateFormat(QString s)
             s += "h";
         }
     }
-    else {
+    else if (s.size() > 0) {
         s += "h";
+    }
+    else {
+        s+= "0";
     }
     return s;
 }
@@ -2863,62 +2890,66 @@ void MainWindow::getPEinformation()
     IATLoc = 0, IATSize = 0;
 
     if (PE) {
-        // if PE, find PE header location (3C)
-        int peHeaderStartLoc = static_cast<unsigned char>(rawData[60]);
-        int peHeaderSize = 24;
+        try {
+            // if PE, find PE header location (3C)
+            int peHeaderStartLoc = static_cast<unsigned char>(rawData[60]);
+            int peHeaderSize = 24;
 
-        // get number of sections in the file
-        int sectionCount = 0;
-        sectionCount = static_cast<unsigned char>(rawData[peHeaderStartLoc + 6]);
-        sectionCount += pow(16, 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 7]);
+            // get number of sections in the file
+            int sectionCount = 0;
+            sectionCount = static_cast<unsigned char>(rawData[peHeaderStartLoc + 6]);
+            sectionCount += pow(16, 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 7]);
 
-        // get size of optional header
-        int optionalHeaderSize;
-        optionalHeaderSize = static_cast<unsigned char>(rawData[peHeaderStartLoc + 20]);
-        optionalHeaderSize += pow(16, 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 21]);
+            // get size of optional header
+            int optionalHeaderSize;
+            optionalHeaderSize = static_cast<unsigned char>(rawData[peHeaderStartLoc + 20]);
+            optionalHeaderSize += pow(16, 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 21]);
 
-        // if file has an optional header
-        if (optionalHeaderSize > 0) {
+            // if file has an optional header
+            if (optionalHeaderSize > 0) {
 
-            // find text section
-            bool textFound = false;
-            int sectionSize = 40, textLocation;
-            int sectionLocation = peHeaderStartLoc + peHeaderSize + optionalHeaderSize, sectionNumber = 0;
+                // find text section
+                bool textFound = false;
+                int sectionSize = 40, textLocation;
+                int sectionLocation = peHeaderStartLoc + peHeaderSize + optionalHeaderSize, sectionNumber = 0;
 
-            while (!textFound && sectionNumber < sectionCount) {
-                QString sectionName = "";
-                for (int i = 0; i < 5; i++) {
-                    sectionName += rawData[sectionLocation + i];
+                while (!textFound && sectionNumber < sectionCount) {
+                    QString sectionName = "";
+                    for (int i = 0; i < 5; i++) {
+                        sectionName += rawData[sectionLocation + i];
+                    }
+                    if (sectionName == ".text") {
+                        textFound = true;
+                        textLocation = sectionLocation;
+                    }
+                    else {
+                        sectionLocation += sectionSize;
+                        sectionNumber++;
+                    }
                 }
-                if (sectionName == ".text") {
-                    textFound = true;
-                    textLocation = sectionLocation;
-                }
-                else {
-                    sectionLocation += sectionSize;
-                    sectionNumber++;
-                }
-            }
 
-            // find code start and end location
-            if (textFound) {
-                // find start
+                // find code start and end location
+                if (textFound) {
+                    // find start
+                    for (int i = 0; i < 4; i++) {
+                        codeStartLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[textLocation + 20 + i]);
+                    }
+                    // find end
+                    int virtualSize = 0;
+                    for (int i = 0; i < 4; i++) {
+                        virtualSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[textLocation + 8 + i]);
+                    }
+                    codeEndLoc = virtualSize + codeStartLoc;
+                }
+
+                // find Import Address Table location and size
                 for (int i = 0; i < 4; i++) {
-                    codeStartLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[textLocation + 20 + i]);
+                    IATLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 216 + i]);
+                    IATSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 220 + i]);
                 }
-                // find end
-                int virtualSize = 0;
-                for (int i = 0; i < 4; i++) {
-                    virtualSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[textLocation + 8 + i]);
-                }
-                codeEndLoc = virtualSize + codeStartLoc;
             }
-
-            // find Import Address Table location and size
-            for (int i = 0; i < 4; i++) {
-                IATLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 216 + i]);
-                IATSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 220 + i]);
-            }
+        } catch (...) {
+            codeEndLoc = 0;
         }
     }
 }
