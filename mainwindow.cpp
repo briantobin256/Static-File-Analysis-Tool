@@ -1001,138 +1001,67 @@ void MainWindow::refreshSavedStrings()
 void MainWindow::findDLLs()
 {
     if (fileOpened) {
-        if (!stringsBuilt) {
-            findStrings();
-        }
-
-        if (!dllsBuilt) {
-            ui->DLL_List->clear();
-            QStringList dlls;
-            QStringList dllsFunctions;
-            QStringList undocumentedDLLs;
-
-            // for each string found
-            for (int i = 0; i < stringCount; i++) {
-
-                // any strings ending in ".dll" or ".DLL"
-                QString string = strings[i];
-                QStringRef subString(&string, string.length() - 4, 4);
-
-                if (subString == ".dll" || subString == ".DLL") {
-                    string = string.toUpper();
-                    dlls.append(string);
+        // temp
+        ui->DLL_List->clear();
+        if (!dllsBuilt && PE) {
+            // find all function name addresses
+            bool goodAddress = true, functionsFinished = false;
+            int addressOffset = 0, dllNameLocation;
+            QStringList functions;
+            while (!functionsFinished) {
+                int location = 0;
+                for (int i = 0; i < 4; i++) {
+                    location += pow(16, i * 2) * static_cast<unsigned char>(rawData[rdataStartLoc + i + addressOffset]);
                 }
-            }
-
-            dlls.removeDuplicates();
-
-            for (int i = 0; i < dlls.size(); i++) {
-
-                QString dllFunctionsFileName = "DLL Functions/";
-                QString dllName = dlls[i], dllFunctionsFile = dllName;
-                dllFunctionsFile = dllName.mid(0, dllName.length() - 4);
-                dllFunctionsFile.append(".txt");
-                dllFunctionsFileName.append(dllFunctionsFile);
-                dllsFunctions.append(dllName);
-                int dllListSize = dllsFunctions.size();
-
-                QFile file(dllFunctionsFileName);
-                if (file.open(QIODevice::ReadOnly)) {
-                    QTextStream in(&file);
-                    while (!in.atEnd()) {
-                        QString functionName = in.readLine();
-                        if (stringsMap[functionName]) {
-                            dllsFunctions.append("      " + functionName);
-                        }
+                if (location == 0) {
+                    if (!goodAddress) {
+                        functionsFinished = true;
                     }
-                    file.close();
-                }
-
-                if (dllListSize == dllsFunctions.size()) {
-                    undocumentedDLLs += dllsFunctions[dllsFunctions.size() - 1];
-                    dllsFunctions.removeLast();
-                }
-            }
-
-            dllsFunctions += undocumentedDLLs;
-
-            /*
-
-            //
-            // change to search for dll using search function
-            // if last dll append remaining function calls to kernel32
-            //
-
-            // for each string found
-            for (int i = 0; i < stringCount; i++) {
-
-                // any strings ending in ".dll" or ".DLL"
-                QString string = strings[i];
-                QStringRef subString(&string, string.length() - 4, 4);
-
-                // valid imported dll (will be all caps except .dll part)
-                if (subString == ".dll") {
-                    string = string.mid(0, string.length() - 4);
-                    QString tmpString = string;
-                    tmpString = tmpString.toUpper();
-
-                    if (string == tmpString || string == "kernel32") {
-                        dlls += strings[i];
-
-                        // find this dlls functions
-                        bool goodFunction = true;
-                        int j = i - 1;
-                        if (string == "kernel32" || string == "MSVCRT") {
-                            j = i + 1;
-                        }
-
-                        while (goodFunction) {
-                            QString tmp = strings[j];
-                            bool hasUpper = false, hasLower = false;
-                            if (((tmp[0] >= 65 && tmp[0] <= 90) || tmp[0] == 95) && strings[j].size() >= 5) {
-                                for (int k = 1; k < tmp.size(); k++) {
-                                    // have at least on cap and one lower to get rid of some false postitives
-                                    if (tmp[k] >= 65 && tmp[k] <= 90) {
-                                        hasUpper = true;
-                                    }
-                                    else if (tmp[k] >= 97 && tmp[k] <= 122) {
-                                        hasLower = true;
-                                    }
-                                    else if (tmp[k] != 95 && (tmp[k] < 48 || tmp[k] > 57)) {
-                                        goodFunction = false;
-                                    }
-                                }
-
-                                if (!hasUpper || !hasLower) {
-                                    goodFunction = false;
-                                }
-
-                                if (goodFunction) {
-                                    QString function = "    ";
-                                    function.append(tmp);
-                                    dlls += function;
-                                }
-                            }
-                            else {
-                                goodFunction = false;
-                            }
-                            if (string == "kernel32" || string == "MSVCRT") {
-                                j++;
-                            }
-                            else {
-                                j--;
-                            }
-                        }
+                    else {
+                        // end of a dlls functions
+                        QString dllName = getFunctionName(dllNameLocation);
+                        qDebug() << QString::number(dllNameLocation - rdataRVA + rdataStartLoc + 2, 16).toUpper();
+                        qDebug() << dllName;
+                        functions.sort();
+                        functions.prepend(dllName);
+                        dllFunctions += functions;
+                        functions.clear();
+                        goodAddress = false;
                     }
                 }
+                else {
+                    if (!goodAddress) {
+                        goodAddress = true;
+                    }
+                    QString functionName = getFunctionName(location);
+                    functions += "    " + functionName;
+                    dllNameLocation = location + functionName.size();
+                }
+                addressOffset += 4;
             }
-            */
-
-            //dlls.removeDuplicates();
-            ui->DLL_List->addItems(dllsFunctions);
             dllsBuilt = true;
+            ui->DLL_List->addItems(dllFunctions);
+            ui->dllFunctionCountValue->setText(QString::number(dllFunctions.count()));
         }
     }
+}
+
+QString MainWindow::getFunctionName(int location)
+{
+    bool terminator = false;
+    int i = 0;
+    QString functionName = "";
+    while (!terminator) {
+        char c = rawData[location - rdataRVA + rdataStartLoc + 2 + i];
+        if (static_cast<unsigned char>(c) == 0 && functionName.size() > 0) {
+            terminator = true;
+        }
+        else if (static_cast<unsigned char>(c) != 0) {
+            functionName += c;
+        }
+        i++;
+    }
+    return functionName;
 }
 
 void MainWindow::refreshHex()
@@ -1420,6 +1349,8 @@ void MainWindow::resetChecks()
     stringLength = 3;
     ui->stringsScrollBar->setValue(0);
     sorting = false;
+
+    dllFunctions.clear();
 
     hexLocationMap.clear();
     originalDataMap.clear();
@@ -2887,7 +2818,7 @@ void MainWindow::getPEinformation()
     }
     PEinfoBuilt = true;
     codeStartLoc = 0, codeEndLoc = 0;
-    IATLoc = 0, IATSize = 0;
+    rdataStartLoc = 0, rdataRVA = 0;
 
     if (PE) {
         try {
@@ -2908,12 +2839,12 @@ void MainWindow::getPEinformation()
             // if file has an optional header
             if (optionalHeaderSize > 0) {
 
-                // find text section
-                bool textFound = false;
-                int sectionSize = 40, textLocation;
+                // find text and rdata sections
+                bool textFound = false, rdataFound = false;
+                int sectionSize = 40, textLocation = 0, rdataLocation = 0;
                 int sectionLocation = peHeaderStartLoc + peHeaderSize + optionalHeaderSize, sectionNumber = 0;
 
-                while (!textFound && sectionNumber < sectionCount) {
+                while ((!textFound || !rdataFound) && sectionNumber < sectionCount) {
                     QString sectionName = "";
                     for (int i = 0; i < 5; i++) {
                         sectionName += rawData[sectionLocation + i];
@@ -2922,10 +2853,12 @@ void MainWindow::getPEinformation()
                         textFound = true;
                         textLocation = sectionLocation;
                     }
-                    else {
-                        sectionLocation += sectionSize;
-                        sectionNumber++;
+                    else if (sectionName == ".rdat") {
+                        rdataFound = true;
+                        rdataLocation = sectionLocation;
                     }
+                    sectionLocation += sectionSize;
+                    sectionNumber++;
                 }
 
                 // find code start and end location
@@ -2942,10 +2875,16 @@ void MainWindow::getPEinformation()
                     codeEndLoc = virtualSize + codeStartLoc;
                 }
 
-                // find Import Address Table location and size
-                for (int i = 0; i < 4; i++) {
-                    IATLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 216 + i]);
-                    IATSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 220 + i]);
+                // find rdata start and end location
+                if (rdataFound) {
+                    // find rdata physical start location
+                    for (int i = 0; i < 4; i++) {
+                        rdataStartLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[rdataLocation + 20 + i]);
+                    }
+                    // find rdata virtual start location
+                    for (int i = 0; i < 4; i++) {
+                        rdataRVA += pow(16, i * 2) * static_cast<unsigned char>(rawData[rdataLocation + 12 + i]);
+                    }
                 }
             }
         } catch (...) {

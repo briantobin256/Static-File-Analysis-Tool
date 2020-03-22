@@ -64,6 +64,9 @@ public:
     bool sorting;
     bool removedStrings;
 
+    // DLL things
+    QStringList dllFunctions;
+
 
     bool fileOpened;
     int fileSize;
@@ -100,10 +103,8 @@ public:
 
     bool PEinfoBuilt;
     bool PE;
-    int codeStartLoc;
-    int codeEndLoc;
-    int IATLoc;
-    int IATSize;
+    int codeStartLoc, codeEndLoc;
+    int rdataStartLoc, rdataRVA;
 
 
     // disassembly
@@ -208,6 +209,7 @@ private:
     void getDisassembly();
     QString byteToHexString(int c);
     QString immediateFormat(QString s);
+    QString getFunctionName(int location);
 
     //void searchStringList;
 
