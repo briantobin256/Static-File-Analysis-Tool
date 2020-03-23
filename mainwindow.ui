@@ -850,7 +850,7 @@
      <widget class="QLabel" name="dllFunctionCountValue">
       <property name="geometry">
        <rect>
-        <x>190</x>
+        <x>540</x>
         <y>720</y>
         <width>101</width>
         <height>20</height>
@@ -863,7 +863,7 @@
      <widget class="QLabel" name="dllFunctionCountLabel">
       <property name="geometry">
        <rect>
-        <x>50</x>
+        <x>410</x>
         <y>720</y>
         <width>131</width>
         <height>20</height>
@@ -871,6 +871,32 @@
       </property>
       <property name="text">
        <string>Function Count:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="dllCountLabel">
+      <property name="geometry">
+       <rect>
+        <x>60</x>
+        <y>720</y>
+        <width>81</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>DLL Count:</string>
+      </property>
+     </widget>
+     <widget class="QLabel" name="dllCountValue">
+      <property name="geometry">
+       <rect>
+        <x>170</x>
+        <y>720</y>
+        <width>151</width>
+        <height>20</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string/>
       </property>
      </widget>
     </widget>

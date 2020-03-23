@@ -105,6 +105,7 @@ public:
     bool PE;
     int codeStartLoc, codeEndLoc;
     int rdataStartLoc, rdataRVA;
+    int idataStartLoc, idataRVA;
 
 
     // disassembly
@@ -173,47 +174,64 @@ private slots:
 
     void on_disassemblyBrowser_anchorClicked(const QUrl &arg1);
 
+    void on_dllScrollBar_valueChanged();
+
 private:
     Ui::MainWindow *ui;
     CustomDialog *dialogBox;
+
+    // general ui things
+    void refreshWindow();
+    void refreshChecklist();
+    void resetChecks();
+    void MainWindow::closeEvent (QCloseEvent *event);
+    virtual void wheelEvent(QWheelEvent *event);
+
+    // hashing
     QString generateHash(char *data, int size);
     QString generateFileHash(QString fileName);
+
+    // file
     void open(QFile *f);
+    void saveChanges();
+    void undoChanges();
+    void getPEinformation();
+
+    // packing
     bool isPacked();
     bool pack();
     bool unpack();
-    void refreshHex();
+    void getEntropy();
+    void buildEntropyGraph();
+    double chunkEntropy(int offset, int chunkSize);
+
+    // strings
     void findStrings();
+    void saveDisplayedStrings();
+    void removeSelected();
     void refreshStrings();
     void refreshSavedStrings();
-    void saveDisplayedStrings();
-    void findDLLs();
-    void refreshChecklist();
-    void refreshWindow();
-    void resetChecks();
-    void saveChanges();
-    void undoChanges();
-    void MainWindow::closeEvent (QCloseEvent *event);
-    void getEntropy();
-    double chunkEntropy(int offset, int chunkSize);
-    void buildEntropyGraph();
     void stringToHexLocation(QListWidgetItem *item);
-    void removeSelected();
+
+    // dlls
+    void findDLLs();
+    void refreshDLLs();
+    QString getFunctionName(int location, int dataSectionRVA, int dataStartLoc);
+
+    // hex
+    void refreshHex();
+    QString byteToHexString(int c);
+
+    // disassembly
+    void getDisassembly();
     void refreshDisassembly();
     QString registerName(int reg, int operandSize);
     QString segmentRegisterName(int reg);
     QString getSpecialByteInstruction(int specialByte, int reg);
     QString getExtendedByteInstruction(int extendedByte, int reg);
     int getOperandSize(unsigned char byte, bool operandSizeModifier);
-    void getPEinformation();
-    void getDisassembly();
-    QString byteToHexString(int c);
     QString immediateFormat(QString s);
-    QString getFunctionName(int location);
 
     //void searchStringList;
-
-
-    virtual void wheelEvent(QWheelEvent *event);
 };
 #endif // MAINWINDOW_H
