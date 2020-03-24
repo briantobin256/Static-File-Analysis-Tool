@@ -101,11 +101,12 @@ public:
     bool entropyGraphBuilt;
 
 
-    bool PEinfoBuilt;
-    bool PE;
+    bool PE, PEinfoBuilt;
     int codeStartLoc, codeEndLoc;
     int rdataStartLoc, rdataRVA;
     int idataStartLoc, idataRVA;
+    int IDTLoc, IDTSize;
+    int IATLoc, IATSize;
 
 
     // disassembly

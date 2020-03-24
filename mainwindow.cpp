@@ -32,7 +32,7 @@ MainWindow::~MainWindow()
 void MainWindow::on_actionOpen_triggered()
 {
     saveChanges();
-    QFile file(QFileDialog::getOpenFileName(this, "Select a file to analyse", "D:/Downloads"));
+    QFile file(QFileDialog::getOpenFileName(this, "Select a file to analyse", "C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection")); // C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection  D:/Downloads
     open(&file);
     file.close();
 }
@@ -1013,155 +1013,133 @@ void MainWindow::findDLLs()
         ui->DLL_List->clear();
         if (!dllsBuilt && PE && (rdataStartLoc > 0 || idataStartLoc > 0)) {
 
-            // if file has an idata section, use it over rdata
-            int functionNamePointerLoc = 0, functionNameLoc = 0, loc = 0, dataSectionRVA = 0, dataStartLoc = 0, dllNamePointerLoc = 0, dllCount = 0, functionCount = 0;
-            if (idataStartLoc > 0) {
-                // idata first 4 bytes is pointer to start of function name pointers
-                for (int i = 0; i < 4; i++) {
-                    functionNamePointerLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[idataStartLoc + i]);
+            int dllNamePointerLoc = 0, functionNamePointerLoc = 0, dataSectionRVA = 0, dataStartLoc = 0, dllCount = 0, functionCount = 0;
+
+            // if Import Directory Table is found
+            if (IDTLoc > 0) {
+                dllNamePointerLoc = IDTLoc + 12;
+            }
+            else {
+                // if idata section exists
+                if (idataStartLoc > 0) {
+                    dllNamePointerLoc = idataStartLoc;
                 }
-                functionNamePointerLoc = functionNamePointerLoc - idataRVA + idataStartLoc;
-                dllNamePointerLoc = idataStartLoc + 12;// first pointer to dll names
-                loc = idataStartLoc;
+                else {
+                    dllNamePointerLoc = rdataStartLoc;
+                }
+            }
+
+            // if Import Address Table is found
+            if (IATLoc > 0) {
+                functionNamePointerLoc = IATLoc;
+            }
+            else {
+                // if Import Directory Table is found
+                if (IDTLoc > 0) {
+                    functionNamePointerLoc = IDTLoc + IDTSize;
+                }
+            }
+
+            // set current section params
+            if (idataStartLoc > 0) {
                 dataSectionRVA = idataRVA;
                 dataStartLoc = idataStartLoc;
             }
             else {
-                // rdata starts at function name pointers
-                functionNamePointerLoc = rdataStartLoc;
-qDebug() << "functionNamePointerLoc" << QString::number(functionNamePointerLoc, 16).toUpper();
-                loc = rdataStartLoc;
                 dataSectionRVA = rdataRVA;
                 dataStartLoc = rdataStartLoc;
             }
 
-            // get first function name location to stop duplicate function names
-            int firstFunctionNameRVA = 0;
-            for (int i = 0; i < 4; i++) {
-                firstFunctionNameRVA += pow(16, i * 2) * static_cast<unsigned char>(rawData[functionNamePointerLoc + i]);
-            }
-            functionNameLoc = firstFunctionNameRVA - dataSectionRVA + dataStartLoc;
 
-            if (functionNamePointerLoc < fileSize) {
-qDebug() << "dllNamePointerLoc" << QString::number(dllNamePointerLoc, 16).toUpper();
+            //
+            // FIND ALL DLL NAMES
+            //
 
-                //
-                // GET DLL NAME POINTER IF NO IDATA SECTION
-                //
-
-                if (idataStartLoc == 0) {
-                    // from function name start, go back until find first FF FF FF
-                    bool found = false;
-                    int i = 1;
-                    while (!found && i < functionNameLoc) {
-                        if (static_cast<unsigned char>(rawData[functionNameLoc - i]) == 255) {
-                            if (static_cast<unsigned char>(rawData[functionNameLoc - i - 1]) == 255) {
-                                if (static_cast<unsigned char>(rawData[functionNameLoc - i - 2]) == 255) {
-                                    found = true;
-                                    dllNamePointerLoc = functionNameLoc - i + 21;
-                                }
-                            }
-                        }
-                        i++;
-                    }
-                }
-
-                //
-                // FIND ALL DLL NAMES
-                //
-
-qDebug() << "dllNamePointerLoc" << QString::number(dllNamePointerLoc, 16).toUpper();
-                QStringList dllNames;
-                if (dllNamePointerLoc > 0) {
-                    bool goodName = true;
-                    int addressOffset = 0;
-                    while (goodName) {
-                        int location = 0;
-                        for (int i = 0; i < 4; i++) {
-                            location += pow(16, i * 2) * static_cast<unsigned char>(rawData[dllNamePointerLoc + i + addressOffset]);
-                        }
-                        if (location != 0) {
-                            dllNames += getFunctionName(location - 2, dataSectionRVA, dataStartLoc);
-                            dllCount++;
-                        }
-                        else {
-                            goodName = false;
-                        }
-                        addressOffset += 20;
-                    }
-                    dllFunctions += dllNames;
-                }
-qDebug() << "firstFunctionNameRVA" << QString::number(firstFunctionNameRVA, 16).toUpper();
-                //
-                // FIND ALL FUNCTION NAMES
-                //
-
-                QStringList functions;
-                bool goodAddress = true, functionsFinished = false;
-                int addressOffset = 0, previousLocation = functionNameLoc + dataSectionRVA - dataStartLoc;
-
-                while (!functionsFinished && addressOffset < dataSectionRVA) {
-                    qint64 location = 0;
+            QStringList dllNames;
+            if (dllNamePointerLoc > 0) {
+                bool goodName = true;
+                int addressOffset = 0;
+                while (goodName) {
+                    int location = 0;
                     for (int i = 0; i < 4; i++) {
-                        location += pow(16, i * 2) * static_cast<unsigned char>(rawData[functionNamePointerLoc + i + addressOffset]);
+                        location += pow(16, i * 2) * static_cast<unsigned char>(rawData[dllNamePointerLoc + i + addressOffset]);
                     }
-                    qDebug() << location << previousLocation;
-                    // standard terminators 00000000 OR FFFFFFFF or no terminator
-                    if (location == 0 || location == 4294967295) {
-                        if (!goodAddress) {
-                            functionsFinished = true;
-                        }
-                        else {
-                            // end of a dlls functions
-                            functions.sort();
-                            functions.prepend("---------------------------------");
-                            dllFunctions += functions;
-                            functions.clear();
-                            goodAddress = false;
-                        }
-                    }
-                    // sometimes function names are repeated in the same sequence more than once
-                    else if ((location == firstFunctionNameRVA || location - previousLocation > 10000) && addressOffset > 0) {
-                        functionsFinished = true;
-                        qDebug() << "killed";
+                    if (location != 0) {
+                        dllNames += getFunctionName(location - 2, dataSectionRVA, dataStartLoc);
+                        dllCount++;
                     }
                     else {
-                        QString functionName = "";
-                        if (!goodAddress) {
-                            goodAddress = true;
-                        }
-                        if (location > 2147483647) {
-                            QString ordinal = QString::number(location - 2147483648, 16).toUpper();
-                            for (int i = ordinal.size(); i < 8; i++) {
-                                ordinal.prepend("0");
-                            }
-                            functionName = "Ordinal: " + ordinal;
-                        }
-                        else {
-                            functionName = getFunctionName(location, dataSectionRVA, dataStartLoc);
-                        }
-                        qDebug() << QString::number(functionNamePointerLoc + addressOffset, 16).toUpper() << QString::number(location, 16).toUpper()<< QString::number(location - dataSectionRVA + dataStartLoc + 2, 16).toUpper() << functionName;
-                        functions += "    " + functionName;
-                        functionCount++;
-                        previousLocation = location;
+                        goodName = false;
                     }
-                    addressOffset += 4;
+                    addressOffset += 20;
                 }
+                dllFunctions += dllNames;
+            }
+
+            //
+            // FIND ALL FUNCTION NAMES
+            //
+
+            QStringList functions;
+            bool functionsFinished = false;
+            int addressOffset = 0, dllsCompletedCount = 0;
+
+            while (!functionsFinished) {
+                qint64 location = 0;
+                for (int i = 0; i < 4; i++) {
+                    location += pow(16, i * 2) * static_cast<unsigned char>(rawData[functionNamePointerLoc + i + addressOffset]);
+                }
+                // end of a specific dlls functions
+                if (location == 0) {
+                    functions.sort();
+                    functions.prepend("---------------------------------");
+                    dllFunctions += functions;
+                    functions.clear();
+                    dllsCompletedCount++;
+                    if (dllsCompletedCount == dllCount) {
+                        functionsFinished = true;
+                        dllFunctions += "---------------------------------";
+                    }
+                }
+                else {
+                    QString functionName = "";
+                    // if ordinal function
+                    if (location > 2147483647) {
+                        QString ordinal = QString::number(location - 2147483648, 16).toUpper();
+                        for (int i = ordinal.size(); i < 8; i++) {
+                            ordinal.prepend("0");
+                        }
+                        functionName = "Ordinal: " + ordinal;
+                    }
+                    else {
+                        functionName = getFunctionName(location, dataSectionRVA, dataStartLoc);
+                    }
+                    functions += functionName;
+                    functionCount++;
+                }
+                addressOffset += 4;
             }
 
             if (dllFunctions.count() == 0) {
-                dllFunctions += "There was an error when finding dll names and fuinction calls.";
+                dllFunctions += "There was an error when finding dll names and function calls.";
             }
             else {
-                dllFunctions += "---------------------------------";
                 if (dllFunctions.count() - maxDisplayStrings > 0) {
                     ui->dllScrollBar->setMaximum(dllFunctions.count() - maxDisplayStrings);
                 }
             }
             ui->dllCountValue->setText(QString::number(dllCount));
             ui->dllFunctionCountValue->setText(QString::number(functionCount));
-            dllsBuilt = true;
         }
+        else {
+            if (!PE) {
+                dllFunctions += "This file is not a PE file.\nDLL names and function calls could not be found.";
+            }
+            else {
+                dllFunctions += "This file is a PE file.\nHowever, idata or rdata section could not be found.";
+            }
+        }
+        dllsBuilt = true;
     }
 }
 
@@ -2973,10 +2951,13 @@ void MainWindow::getPEinformation()
     else {
         PE = false;
     }
+
     PEinfoBuilt = true;
     codeStartLoc = 0, codeEndLoc = 0;
     rdataStartLoc = 0, rdataRVA = 0;
     idataStartLoc = 0, idataRVA = 0;
+    IDTLoc = 0, IDTSize = 0;
+    IATLoc = 0, IATSize = 0;
 
     if (PE) {
         try {
@@ -3000,7 +2981,7 @@ void MainWindow::getPEinformation()
             // if file has an optional header
             if (optionalHeaderSize > 0) {
 
-                // find text and rdata sections
+                // find text, idata and rdata sections
                 bool textFound = false, rdataFound = false, idataFound = false;
                 int sectionSize = 40, textLocation = 0, rdataLocation = 0, idataLocation = 0;
                 int sectionLocation = peHeaderStartLoc + peHeaderSize + optionalHeaderSize, sectionNumber = 0;
@@ -3040,7 +3021,7 @@ void MainWindow::getPEinformation()
                     codeEndLoc = virtualSize + codeStartLoc;
                 }
 
-                // find idata start and end location, if it exists
+                // find idata start and end location
                 if (idataFound) {
                     // find idata physical start location
                     for (int i = 0; i < 4; i++) {
@@ -3063,12 +3044,42 @@ void MainWindow::getPEinformation()
                         rdataRVA += pow(16, i * 2) * static_cast<unsigned char>(rawData[rdataLocation + 12 + i]);
                     }
                 }
-                /*
-                qDebug() << "idataStartLoc" << QString::number(idataStartLoc, 16).toUpper();
-                qDebug() << "idataRVA" << QString::number(idataRVA, 16).toUpper();
-                qDebug() << "rdataStartLoc" << QString::number(rdataStartLoc, 16).toUpper();
-                qDebug() << "rdataRVA" << QString::number(rdataRVA, 16).toUpper();
-                */
+
+                int sectionLoc = 0, sectionRVA = 0;
+                if (idataFound) {
+                    sectionLoc = idataStartLoc;
+                    sectionRVA = idataRVA;
+                }
+                else if (rdataFound) {
+                    sectionLoc = rdataStartLoc;
+                    sectionRVA = rdataRVA;
+                }
+
+                if (idataFound || rdataFound) {
+                    // find import directory table location and size
+                    int virtualSize = 0;
+                    for (int i = 0; i < 4; i++) {
+                        virtualSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 128 + i]);
+                    }
+                    if (virtualSize > 0) {
+                        IDTLoc = virtualSize + sectionLoc - sectionRVA;
+                    }
+                    for (int i = 0; i < 4; i++) {
+                        IDTSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 132 + i]);
+                    }
+
+                    // find import address table location and size
+                    virtualSize = 0;
+                    for (int i = 0; i < 4; i++) {
+                        virtualSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 216 + i]);
+                    }
+                    if (virtualSize > 0) {
+                        IATLoc = virtualSize + sectionLoc - sectionRVA;
+                    }
+                    for (int i = 0; i < 4; i++) {
+                        IATSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 220 + i]);
+                    }
+                }
             }
         } catch (...) {
             codeEndLoc = 0;
