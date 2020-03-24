@@ -10,6 +10,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->stackedWidget->setCurrentIndex(0);
 
     basicWindowName = "Static File Analysis Tool";
+    maxDisplayStrings = 24;
 
     fileOpened = false;
     resetChecks();
@@ -905,6 +906,7 @@ void MainWindow::findStrings()
             }
         }
         stringsBuilt = true;
+        ui->stringCountValue->setText(QString::number(stringCount));
     }
 }
 
@@ -952,7 +954,6 @@ void MainWindow::refreshStrings()
         display.append(" / ");
         display.append(maxPage);
         ui->stringsPageNumberValue->setText(display);
-        ui->stringCountValue->setText(QString::number(stringCount));
     }
 }
 
@@ -1034,8 +1035,8 @@ qDebug() << "functionNamePointerLoc" << QString::number(functionNamePointerLoc, 
                 dataStartLoc = rdataStartLoc;
             }
 
-            int firstFunctionNameRVA = 0;
             // get first function name location to stop duplicate function names
+            int firstFunctionNameRVA = 0;
             for (int i = 0; i < 4; i++) {
                 firstFunctionNameRVA += pow(16, i * 2) * static_cast<unsigned char>(rawData[functionNamePointerLoc + i]);
             }
@@ -1043,7 +1044,11 @@ qDebug() << "functionNamePointerLoc" << QString::number(functionNamePointerLoc, 
 
             if (functionNamePointerLoc < fileSize) {
 qDebug() << "dllNamePointerLoc" << QString::number(dllNamePointerLoc, 16).toUpper();
-                // get dll name pointer loc if no idata section
+
+                //
+                // GET DLL NAME POINTER IF NO IDATA SECTION
+                //
+
                 if (idataStartLoc == 0) {
                     // from function name start, go back until find first FF FF FF
                     bool found = false;
@@ -1060,8 +1065,12 @@ qDebug() << "dllNamePointerLoc" << QString::number(dllNamePointerLoc, 16).toUppe
                         i++;
                     }
                 }
+
+                //
+                // FIND ALL DLL NAMES
+                //
+
 qDebug() << "dllNamePointerLoc" << QString::number(dllNamePointerLoc, 16).toUpper();
-                // if location found, get dll names
                 QStringList dllNames;
                 if (dllNamePointerLoc > 0) {
                     bool goodName = true;
@@ -1082,55 +1091,76 @@ qDebug() << "dllNamePointerLoc" << QString::number(dllNamePointerLoc, 16).toUppe
                     }
                     dllFunctions += dllNames;
                 }
+qDebug() << "firstFunctionNameRVA" << QString::number(firstFunctionNameRVA, 16).toUpper();
+                //
+                // FIND ALL FUNCTION NAMES
+                //
 
-                // find all function names
                 QStringList functions;
                 bool goodAddress = true, functionsFinished = false;
-                int addressOffset = 0;
+                int addressOffset = 0, previousLocation = functionNameLoc + dataSectionRVA - dataStartLoc;
 
-
-qDebug() << "firstFunctionNameRVA" << QString::number(firstFunctionNameRVA, 16).toUpper();
                 while (!functionsFinished && addressOffset < dataSectionRVA) {
-                    int location = 0;
+                    qint64 location = 0;
                     for (int i = 0; i < 4; i++) {
                         location += pow(16, i * 2) * static_cast<unsigned char>(rawData[functionNamePointerLoc + i + addressOffset]);
                     }
-                    //qDebug() << addressOffset<<location;
-                    if (location == 0) {
+                    qDebug() << location << previousLocation;
+                    // standard terminators 00000000 OR FFFFFFFF or no terminator
+                    if (location == 0 || location == 4294967295) {
                         if (!goodAddress) {
                             functionsFinished = true;
                         }
                         else {
                             // end of a dlls functions
                             functions.sort();
-                            functions += "---------------------------------";
+                            functions.prepend("---------------------------------");
                             dllFunctions += functions;
                             functions.clear();
                             goodAddress = false;
                         }
                     }
-                    else if (location == firstFunctionNameRVA && addressOffset > 0) {
+                    // sometimes function names are repeated in the same sequence more than once
+                    else if ((location == firstFunctionNameRVA || location - previousLocation > 10000) && addressOffset > 0) {
                         functionsFinished = true;
                         qDebug() << "killed";
                     }
                     else {
+                        QString functionName = "";
                         if (!goodAddress) {
                             goodAddress = true;
                         }
-                        QString functionName = getFunctionName(location, dataSectionRVA, dataStartLoc);
+                        if (location > 2147483647) {
+                            QString ordinal = QString::number(location - 2147483648, 16).toUpper();
+                            for (int i = ordinal.size(); i < 8; i++) {
+                                ordinal.prepend("0");
+                            }
+                            functionName = "Ordinal: " + ordinal;
+                        }
+                        else {
+                            functionName = getFunctionName(location, dataSectionRVA, dataStartLoc);
+                        }
+                        qDebug() << QString::number(functionNamePointerLoc + addressOffset, 16).toUpper() << QString::number(location, 16).toUpper()<< QString::number(location - dataSectionRVA + dataStartLoc + 2, 16).toUpper() << functionName;
                         functions += "    " + functionName;
                         functionCount++;
+                        previousLocation = location;
                     }
                     addressOffset += 4;
                 }
             }
 
-            maxDisplayStrings = 24; // temp
-
-            dllsBuilt = true;
+            if (dllFunctions.count() == 0) {
+                dllFunctions += "There was an error when finding dll names and fuinction calls.";
+            }
+            else {
+                dllFunctions += "---------------------------------";
+                if (dllFunctions.count() - maxDisplayStrings > 0) {
+                    ui->dllScrollBar->setMaximum(dllFunctions.count() - maxDisplayStrings);
+                }
+            }
             ui->dllCountValue->setText(QString::number(dllCount));
             ui->dllFunctionCountValue->setText(QString::number(functionCount));
-            ui->dllScrollBar->setMaximum(dllFunctions.count() - maxDisplayStrings);
+            dllsBuilt = true;
         }
     }
 }
@@ -1166,11 +1196,14 @@ void MainWindow::refreshDLLs()
 
         ui->DLL_List->clear();
 
-        int dllOffset = ui->dllScrollBar->value();
+        int dllOffset = ui->dllScrollBar->value(), maxDisplayItems = maxDisplayStrings;
+        if (dllFunctions.count() < maxDisplayStrings) {
+            maxDisplayItems = dllFunctions.count();
+        }
 
         // build display
         QStringList displayDLLs;
-        for (int i = 0; i < maxDisplayStrings; i++) {
+        for (int i = 0; i < maxDisplayItems; i++) {
             displayDLLs += dllFunctions[dllOffset + i];
         }
 
@@ -1438,6 +1471,7 @@ void MainWindow::refreshWindow()
 void MainWindow::resetChecks()
 {
     reseting = true;
+
     backupBuilt = false;
     packChecked = false;
     packed = false;
@@ -1464,8 +1498,13 @@ void MainWindow::resetChecks()
     ui->stringsScrollBar->setValue(0);
     sorting = false;
 
+    // dlls
     dllFunctions.clear();
+    ui->dllCountValue->setText(QString::number(0));
+    ui->dllFunctionCountValue->setText(QString::number(0));
+    ui->dllScrollBar->setMaximum(0);
 
+    // hex
     hexLocationMap.clear();
     originalDataMap.clear();
     changedDataMap.clear();
@@ -1474,6 +1513,7 @@ void MainWindow::resetChecks()
     entropy = 0;
     entropyGraphBuilt = false;
 
+    // disassembly
     disassemblyBuilt = false;
     disassembly.clear();
     ui->disassemblyScrollBar->setValue(0);
@@ -3023,10 +3063,12 @@ void MainWindow::getPEinformation()
                         rdataRVA += pow(16, i * 2) * static_cast<unsigned char>(rawData[rdataLocation + 12 + i]);
                     }
                 }
-                //qDebug() << "idataStartLoc" << QString::number(idataStartLoc, 16).toUpper();
-                //qDebug() << "idataRVA" << QString::number(idataRVA, 16).toUpper();
-                //qDebug() << "rdataStartLoc" << QString::number(rdataStartLoc, 16).toUpper();
-                //qDebug() << "rdataRVA" << QString::number(rdataRVA, 16).toUpper();
+                /*
+                qDebug() << "idataStartLoc" << QString::number(idataStartLoc, 16).toUpper();
+                qDebug() << "idataRVA" << QString::number(idataRVA, 16).toUpper();
+                qDebug() << "rdataStartLoc" << QString::number(rdataStartLoc, 16).toUpper();
+                qDebug() << "rdataRVA" << QString::number(rdataRVA, 16).toUpper();
+                */
             }
         } catch (...) {
             codeEndLoc = 0;
