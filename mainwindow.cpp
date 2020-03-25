@@ -23,7 +23,7 @@ MainWindow::MainWindow(QWidget *parent)
     QFile file("D:/Downloads/strings.exe");
     open(&file);
     file.close();
-    ui->stackedWidget->setCurrentIndex(8);
+    ui->stackedWidget->setCurrentIndex(4);
 
     refreshWindow();
 }
@@ -1261,6 +1261,11 @@ void MainWindow::resetChecks()
     originalDataMap.clear();
     changedDataMap.clear();
     ui->hexScrollBar->setValue(0);
+    previousPosition = 0;
+    byteDisplaySize = 0;
+    highlighting = false;
+
+    // entropy
     entropy = 0;
     entropyGraphBuilt = false;
 
@@ -1485,7 +1490,7 @@ void MainWindow::buildEntropyGraph()
 void MainWindow::stringToHexLocation(QListWidgetItem *item)
 {
     bool itemIndexFound = false;
-    int i = 0;
+    int i = 0; // string location on screen
 
     // if from find strings
     if (ui->stackedWidget->currentIndex() == 1) {
@@ -1510,10 +1515,10 @@ void MainWindow::stringToHexLocation(QListWidgetItem *item)
                     j++;
                 }
             }
-            ui->hexScrollBar->setValue(hexLocationMap[j] / maxCols);
+            ui->hexScrollBar->setValue(hexLocationMap[j] / hexDisplayCols);
         }
         else {
-            ui->hexScrollBar->setValue(hexLocationMap[stringOffset + i] / maxCols);
+            ui->hexScrollBar->setValue(hexLocationMap[stringOffset + i] / hexDisplayCols);
         }
     }
     // if from saved strings
@@ -1539,10 +1544,10 @@ void MainWindow::stringToHexLocation(QListWidgetItem *item)
                     j++;
                 }
             }
-            ui->hexScrollBar->setValue(hexLocationMap[j] / maxCols);
+            ui->hexScrollBar->setValue(hexLocationMap[j] / hexDisplayCols);
         }
         else {
-            ui->hexScrollBar->setValue(hexLocationMap[savedStringLocationMap[i]] / maxCols);
+            ui->hexScrollBar->setValue(hexLocationMap[savedStringLocationMap[i]] / hexDisplayCols);
         }
     }
 }
@@ -1576,6 +1581,9 @@ void MainWindow::refreshDisassembly()
         for (int i = 0; i < maxDisplayInstructions; i++) {
             displayInstructions += disassembly[instructionOffset + i];
         }
+
+        // remove last <br>
+        displayInstructions.remove(displayInstructions.size() - 4, 4);
 
         // display things
         QString currentPage = QString::number(ui->disassemblyScrollBar->value() + 1);
@@ -2472,7 +2480,7 @@ void MainWindow::getDisassembly()
             instructionIterator++;
         }
 
-        maxDisplayInstructions = 40;
+        maxDisplayInstructions = 41;
         ui->disassemblyScrollBar->setMaximum(disassembly.count() - maxDisplayInstructions);
         ui->disassemblyBrowser->setOpenExternalLinks(false);
     }
@@ -2870,7 +2878,7 @@ void MainWindow::refreshHex()
 {
     if (fileOpened) {
         QString offset = "", bytes = "", text = "";
-        bool lastRowDisplayed = false;
+        bool lastRowDisplayed = false, hasFont = false;
         int maxDisplayRows = hexDisplayRows, maxDisplayCols = hexDisplayCols;
 
         // if last row will be displayed
@@ -2916,6 +2924,9 @@ void MainWindow::refreshHex()
                     else if (uc == '>') {
                         rowText += "&#62;";
                     }
+                    else if (uc == ' ') {
+                        rowText += "&nbsp;";
+                    }
                     else {
                         rowText += c;
                     }
@@ -2925,18 +2936,36 @@ void MainWindow::refreshHex()
                 }
 
                 // convert char to hex byte
-                rowBytes += " " + byteToHexString(uc);
+                if (uc == 0) {
+                    if (!hasFont) {
+                        rowBytes += "<font color='red'>";
+                    }
+                    rowBytes += " " + byteToHexString(uc);
+                    hasFont = true;
+                }
+                else {
+                    if (hasFont) {
+                        rowBytes += "</font>";
+                        hasFont = false;
+                    }
+                    rowBytes += " " + byteToHexString(uc);
+                }
+
             }
 
             // append row data to display
-            offset += rowOffset + "<br>";
+            offset += rowOffset;
             bytes += rowBytes + "<br>";
             text += rowText + "<br>";
         }
 
-        ui->hexOffsetDisplay->setText(offset.remove(offset.size() - 4, 4));
+        ui->hexOffsetDisplay->setTextColor(QColor(qBlue(255)));
+        ui->hexOffsetDisplay->setText(offset);//.remove(offset.size() - 4, 4));
+        //ui->hexOffsetDisplay->setTextColor(QColor(qBlue(255)));
         ui->hexByteDisplay->setText(bytes.remove(bytes.size() - 4, 4));
         ui->hexTextDisplay->setText(text.remove(text.size() - 4, 4));
+
+        byteDisplaySize = ui->hexByteDisplay->toHtml().size();
     }
 }
 
@@ -2945,13 +2974,27 @@ void MainWindow::setHexValues()
     hexDisplayRows = 31;
     hexDisplayCols = 16;
 
+    // font
+    QFont hexFont;
     hexFont.setPixelSize(20);
-    hexFont.setFamily("courier");
+    hexFont.setFamily("Courier");
     ui->hexOffsetDisplay->setFont(hexFont);
     ui->hexByteDisplay->setFont(hexFont);
     ui->hexTextDisplay->setFont(hexFont);
     ui->hexTopOffsetDisplay->setFont(hexFont);
+    ui->hexTopOffsetDisplay->setTextColor(QColor(qBlue(255)));
     ui->hexTopOffsetDisplay->setText("Offset(h) 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F    Decoded Text");
+
+    // borders
+    ui->hexTopOffsetDisplay->setFrameStyle(QFrame::NoFrame);
+    ui->hexOffsetDisplay->setFrameStyle(QFrame::NoFrame);
+    ui->hexByteDisplay->setFrameStyle(QFrame::NoFrame);
+    ui->hexTextDisplay->setFrameStyle(QFrame::NoFrame);
+    ui->hexBackground->setFrameStyle(QFrame::NoFrame);
+
+    // set editing parameters
+    ui->hexByteDisplay->setOverwriteMode(true);
+    ui->hexTextDisplay->setOverwriteMode(true);
 
     // set scroll bar maximum
     if (fileSize / (hexDisplayRows * hexDisplayCols) > 0) {
@@ -3100,3 +3143,70 @@ else {
     ui->hexTable->clearContents();
 }
 refreshHex();*/
+
+void MainWindow::on_hexByteDisplay_cursorPositionChanged()
+{
+    int newPosition = ui->hexByteDisplay->textCursor().position();
+    if (newPosition % 3 == 2 && !highlighting) {
+        QTextCursor c(ui->hexByteDisplay->textCursor());
+        // if moving from left
+        if (newPosition > previousPosition) {
+            c.setPosition(newPosition + 1);
+            previousPosition = newPosition + 1;
+        }
+        // if moving from right
+        else if (newPosition < previousPosition) {
+            c.setPosition(newPosition - 1);
+            previousPosition = newPosition - 1;
+        }
+        ui->hexByteDisplay->setTextCursor(c);
+    }
+
+}
+
+void MainWindow::on_hexByteDisplay_copyAvailable(bool b)
+{
+    if (b) {
+        highlighting = true;
+    }
+    else {
+        highlighting = false;
+        ui->hexByteDisplay->undo();
+        //qDebug()  << "undone";
+        on_hexByteDisplay_cursorPositionChanged();
+
+    }
+}
+
+void MainWindow::on_hexByteDisplay_textChanged()
+{
+    //qDebug() << e;
+    //QFile file(QFileDialog::getOpenFileName(this, "Select a file to analyse", "D:/Downloads"));
+
+    if (ui->hexByteDisplay->toHtml().size() != byteDisplaySize) {
+        //ui->hexByteDisplay->undo();
+        //qDebug() << "undone";
+    }
+}
+
+void MainWindow::on_hexByteDisplay_selectionChanged()
+{
+    //qDebug() << ui->hexByteDisplay->toHtml().size();
+    //qDebug() << byteDisplaySize;
+}
+
+void MainWindow::keyPressEvent(QKeyEvent *event)
+{
+    // if hex display
+    if (ui->stackedWidget->currentIndex() == 4) {
+
+        // if cursor is in focus
+
+            // if char (0 - 9, a - f and A - F)
+            //qDebug() << event->text();
+
+            // else if backspace
+
+            // else if keys
+    }
+}

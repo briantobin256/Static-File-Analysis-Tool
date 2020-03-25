@@ -575,6 +575,12 @@
         <height>680</height>
        </size>
       </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
      </widget>
      <widget class="QLineEdit" name="searchString">
       <property name="geometry">
@@ -671,10 +677,10 @@
        <enum>Qt::NoFocus</enum>
       </property>
       <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAsNeeded</enum>
+       <enum>Qt::ScrollBarAlwaysOff</enum>
       </property>
       <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAsNeeded</enum>
+       <enum>Qt::ScrollBarAlwaysOff</enum>
       </property>
       <property name="autoScroll">
        <bool>true</bool>
@@ -904,22 +910,22 @@
      <widget class="QScrollBar" name="hexScrollBar">
       <property name="geometry">
        <rect>
-        <x>955</x>
+        <x>945</x>
         <y>15</y>
         <width>25</width>
-        <height>675</height>
+        <height>730</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
         <width>25</width>
-        <height>675</height>
+        <height>700</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
         <width>25</width>
-        <height>675</height>
+        <height>735</height>
        </size>
       </property>
       <property name="maximum">
@@ -936,9 +942,9 @@
       <property name="geometry">
        <rect>
         <x>15</x>
-        <y>60</y>
+        <y>50</y>
         <width>110</width>
-        <height>630</height>
+        <height>690</height>
        </rect>
       </property>
       <property name="verticalScrollBarPolicy">
@@ -982,9 +988,9 @@ p, li { white-space: pre-wrap; }
       <property name="geometry">
        <rect>
         <x>135</x>
-        <y>60</y>
+        <y>50</y>
         <width>580</width>
-        <height>630</height>
+        <height>690</height>
        </rect>
       </property>
       <property name="verticalScrollBarPolicy">
@@ -1005,9 +1011,9 @@ p, li { white-space: pre-wrap; }
       <property name="geometry">
        <rect>
         <x>725</x>
-        <y>60</y>
+        <y>50</y>
         <width>210</width>
-        <height>630</height>
+        <height>690</height>
        </rect>
       </property>
       <property name="verticalScrollBarPolicy">
@@ -1024,6 +1030,22 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
+     <widget class="QListWidget" name="hexBackground">
+      <property name="geometry">
+       <rect>
+        <x>10</x>
+        <y>10</y>
+        <width>970</width>
+        <height>740</height>
+       </rect>
+      </property>
+     </widget>
+     <zorder>hexBackground</zorder>
+     <zorder>hexScrollBar</zorder>
+     <zorder>hexOffsetDisplay</zorder>
+     <zorder>hexTopOffsetDisplay</zorder>
+     <zorder>hexByteDisplay</zorder>
+     <zorder>hexTextDisplay</zorder>
     </widget>
     <widget class="QWidget" name="page_5_Entropy">
      <widget class="QScrollArea" name="scrollArea">
@@ -1328,20 +1350,26 @@ p, li { white-space: pre-wrap; }
         <x>10</x>
         <y>10</y>
         <width>940</width>
-        <height>680</height>
+        <height>670</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
         <width>940</width>
-        <height>680</height>
+        <height>670</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
         <width>940</width>
-        <height>680</height>
+        <height>670</height>
        </size>
+      </property>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
       </property>
      </widget>
      <widget class="QScrollBar" name="disassemblyScrollBar">
@@ -1350,19 +1378,19 @@ p, li { white-space: pre-wrap; }
         <x>960</x>
         <y>10</y>
         <width>25</width>
-        <height>680</height>
+        <height>670</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
         <width>25</width>
-        <height>680</height>
+        <height>670</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
         <width>25</width>
-        <height>680</height>
+        <height>670</height>
        </size>
       </property>
       <property name="maximum">
@@ -1470,11 +1498,6 @@ p, li { white-space: pre-wrap; }
     <string>Open</string>
    </property>
   </action>
-  <action name="actionOpen_From_Backups">
-   <property name="text">
-    <string>Open From Backups</string>
-   </property>
-  </action>
   <action name="actionGenerate_Hash">
    <property name="text">
     <string>Generate Hash</string>
@@ -1531,21 +1554,6 @@ p, li { white-space: pre-wrap; }
   <action name="actionHex">
    <property name="text">
     <string>Hex</string>
-   </property>
-  </action>
-  <action name="actionEntropy">
-   <property name="text">
-    <string>Entropy</string>
-   </property>
-  </action>
-  <action name="actionWebsite">
-   <property name="text">
-    <string>Visit Website</string>
-   </property>
-  </action>
-  <action name="actionUpload_File">
-   <property name="text">
-    <string>Upload File</string>
    </property>
   </action>
   <action name="actionChecklistMain">

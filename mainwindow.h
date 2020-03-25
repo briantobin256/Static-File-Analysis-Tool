@@ -74,18 +74,15 @@ public:
     double entropy;
 
     //hex things
-    int dataStartPoint;
-    int maxRows;
-    int maxCols;
-    //int displayRows;
-    //int displayCols;
     bool dataChanged;
     QMap<int, char> originalDataMap;
     QMap<int, bool> changedDataMap;
     // new
-    QFont hexFont;
     int hexDisplayRows;
     int hexDisplayCols;
+    int previousPosition;
+    bool highlighting;
+    int byteDisplaySize;
 
     bool stringsSorted;
     bool backupBuilt;
@@ -179,6 +176,14 @@ private slots:
 
     void on_dllScrollBar_valueChanged();
 
+    void on_hexByteDisplay_cursorPositionChanged();
+
+    void on_hexByteDisplay_copyAvailable(bool b);
+
+    void on_hexByteDisplay_textChanged();
+
+    void on_hexByteDisplay_selectionChanged();
+
 private:
     Ui::MainWindow *ui;
     CustomDialog *dialogBox;
@@ -189,6 +194,7 @@ private:
     void resetChecks();
     void MainWindow::closeEvent (QCloseEvent *event);
     virtual void wheelEvent(QWheelEvent *event);
+    virtual void keyPressEvent(QKeyEvent *event);
 
     // hashing
     QString generateHash(char *data, int size);
