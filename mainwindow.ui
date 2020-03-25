@@ -490,7 +490,7 @@
      </palette>
     </property>
     <property name="currentIndex">
-     <number>3</number>
+     <number>4</number>
     </property>
     <widget class="QWidget" name="page_0_Main_Window"/>
     <widget class="QWidget" name="page_1_Find_Strings">
@@ -900,251 +900,27 @@
       </property>
      </widget>
     </widget>
-    <widget class="QWidget" name="page_4_Hex_Mode">
-     <widget class="QTableWidget" name="hexTable">
-      <property name="enabled">
-       <bool>true</bool>
-      </property>
+    <widget class="QWidget" name="page_4_Hex">
+     <widget class="QScrollBar" name="hexScrollBar">
       <property name="geometry">
        <rect>
-        <x>10</x>
-        <y>10</y>
-        <width>928</width>
-        <height>680</height>
+        <x>955</x>
+        <y>15</y>
+        <width>25</width>
+        <height>675</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
-        <width>928</width>
-        <height>680</height>
+        <width>25</width>
+        <height>675</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>928</width>
-        <height>680</height>
+        <width>25</width>
+        <height>675</height>
        </size>
-      </property>
-      <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <property name="sizeAdjustPolicy">
-       <enum>QAbstractScrollArea::AdjustIgnored</enum>
-      </property>
-      <property name="autoScroll">
-       <bool>true</bool>
-      </property>
-      <property name="editTriggers">
-       <set>QAbstractItemView::DoubleClicked</set>
-      </property>
-      <property name="showGrid">
-       <bool>true</bool>
-      </property>
-      <property name="gridStyle">
-       <enum>Qt::DashLine</enum>
-      </property>
-      <attribute name="horizontalHeaderMinimumSectionSize">
-       <number>10</number>
-      </attribute>
-      <attribute name="horizontalHeaderDefaultSectionSize">
-       <number>40</number>
-      </attribute>
-      <attribute name="verticalHeaderMinimumSectionSize">
-       <number>40</number>
-      </attribute>
-      <attribute name="verticalHeaderDefaultSectionSize">
-       <number>40</number>
-      </attribute>
-      <row>
-       <property name="text">
-        <string>00000000</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>00000010</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>00000020</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>00000030</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>00000040</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>00000050</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>00000060</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>00000070</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>00000080</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>00000090</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>000000A0</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>000000B0</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>000000C0</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>000000D0</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>000000E0</string>
-       </property>
-      </row>
-      <row>
-       <property name="text">
-        <string>000000F0</string>
-       </property>
-      </row>
-      <column>
-       <property name="text">
-        <string>00</string>
-       </property>
-       <property name="font">
-        <font>
-         <pointsize>8</pointsize>
-        </font>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>01</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>02</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>03</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>04</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>05</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>06</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>07</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>08</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>09</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>0A</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>0B</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>0C</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>0D</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>0E</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>0F</string>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string/>
-       </property>
-      </column>
-      <column>
-       <property name="text">
-        <string>Decoded Text</string>
-       </property>
-       <property name="textAlignment">
-        <set>AlignCenter</set>
-       </property>
-      </column>
-     </widget>
-     <widget class="QScrollBar" name="hexScrollBar">
-      <property name="geometry">
-       <rect>
-        <x>960</x>
-        <y>20</y>
-        <width>21</width>
-        <height>671</height>
-       </rect>
       </property>
       <property name="maximum">
        <number>0</number>
@@ -1156,56 +932,96 @@
        <enum>Qt::Vertical</enum>
       </property>
      </widget>
-     <widget class="QLabel" name="hexCurrentRow">
+     <widget class="QTextBrowser" name="hexOffsetDisplay">
       <property name="geometry">
        <rect>
-        <x>20</x>
-        <y>720</y>
-        <width>101</width>
-        <height>20</height>
+        <x>15</x>
+        <y>60</y>
+        <width>110</width>
+        <height>630</height>
        </rect>
       </property>
-      <property name="text">
-       <string>Current Row:</string>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="html">
+       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
-     <widget class="QLabel" name="hexMaxRowLabel">
+     <widget class="QTextBrowser" name="hexTopOffsetDisplay">
       <property name="geometry">
        <rect>
-        <x>260</x>
-        <y>720</y>
-        <width>81</width>
-        <height>20</height>
+        <x>15</x>
+        <y>15</y>
+        <width>920</width>
+        <height>30</height>
        </rect>
       </property>
-      <property name="text">
-       <string>Max Row:</string>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="html">
+       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'courier'; font-size:20px;&quot;&gt;Offset(h) 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F    Decoded Text&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
-     <widget class="QLabel" name="hexCurrentRowValue">
+     <widget class="QTextEdit" name="hexByteDisplay">
       <property name="geometry">
        <rect>
-        <x>130</x>
-        <y>720</y>
-        <width>101</width>
-        <height>20</height>
+        <x>135</x>
+        <y>60</y>
+        <width>580</width>
+        <height>630</height>
        </rect>
       </property>
-      <property name="text">
-       <string/>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="html">
+       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
-     <widget class="QLabel" name="hexMaxRowValue">
+     <widget class="QTextEdit" name="hexTextDisplay">
       <property name="geometry">
        <rect>
-        <x>350</x>
-        <y>720</y>
-        <width>81</width>
-        <height>20</height>
+        <x>725</x>
+        <y>60</y>
+        <width>210</width>
+        <height>630</height>
        </rect>
       </property>
-      <property name="text">
-       <string/>
+      <property name="verticalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="horizontalScrollBarPolicy">
+       <enum>Qt::ScrollBarAlwaysOff</enum>
+      </property>
+      <property name="html">
+       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
     </widget>

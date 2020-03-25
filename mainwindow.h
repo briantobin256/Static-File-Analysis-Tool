@@ -77,11 +77,15 @@ public:
     int dataStartPoint;
     int maxRows;
     int maxCols;
-    int displayRows;
-    int displayCols;
+    //int displayRows;
+    //int displayCols;
     bool dataChanged;
     QMap<int, char> originalDataMap;
     QMap<int, bool> changedDataMap;
+    // new
+    QFont hexFont;
+    int hexDisplayRows;
+    int hexDisplayCols;
 
     bool stringsSorted;
     bool backupBuilt;
@@ -153,8 +157,6 @@ private slots:
 
     void on_savedStringList_itemDoubleClicked(QListWidgetItem *item);
 
-    void on_hexTable_itemChanged(QTableWidgetItem *item);
-
     void on_actionUndo_All_Changes_triggered();
 
     void on_actionExit_triggered();
@@ -222,6 +224,8 @@ private:
     // hex
     void refreshHex();
     QString byteToHexString(int c);
+    void setHexValues();
+
 
     // disassembly
     void getDisassembly();
