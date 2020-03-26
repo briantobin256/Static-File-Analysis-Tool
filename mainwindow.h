@@ -35,6 +35,9 @@ public:
     ~MainWindow();
 
     char *rawData;
+    bool fileOpened;
+    int fileSize;
+    double entropy;
 
     QString basicWindowName;
     QString extendedWindowName;
@@ -63,30 +66,29 @@ public:
     int stringLength;
     bool sorting;
     bool removedStrings;
+    bool stringsSorted;
+    bool firstStringsRefresh;
 
     // DLL things
     QStringList dllFunctions;
 
-
-    bool fileOpened;
-    int fileSize;
-
-    double entropy;
-
     //hex things
-    bool dataChanged;
-    QMap<int, char> originalDataMap;
-    QMap<int, bool> changedDataMap;
-    // new
     int hexDisplayRows;
     int hexDisplayCols;
     int previousPosition;
-    bool highlighting;
     int byteDisplaySize;
+    int cursorLocation;
+    bool nextPage;
+    bool secondTime;
+    bool editing;
+    bool refreshing;
+    bool dataChanged;
+    QMap<int, char> originalDataMap;
+    QMap<int, bool> changedDataMap;
 
-    bool stringsSorted;
+
+    // initial builds
     bool backupBuilt;
-    bool firstStringsRefresh;
     bool hashBuilt;
     bool packChecked;
     bool packed;
@@ -102,6 +104,7 @@ public:
     bool entropyGraphBuilt;
 
 
+    // PE things
     bool PE, PEinfoBuilt;
     int codeStartLoc, codeEndLoc;
     int rdataStartLoc, rdataRVA;
@@ -114,7 +117,6 @@ public:
     bool disassemblyBuilt;
     int maxDisplayInstructions;
     QStringList disassembly;
-    //int disassemblyOffset;
     QMap<int, int>opTypeMap;
     QMap<int, QString>opcodeMap;
     QMap<QString, int> locOffsetMap;
@@ -178,11 +180,11 @@ private slots:
 
     void on_hexByteDisplay_cursorPositionChanged();
 
-    void on_hexByteDisplay_copyAvailable(bool b);
-
     void on_hexByteDisplay_textChanged();
 
-    void on_hexByteDisplay_selectionChanged();
+    void on_hexTextDisplay_textChanged();
+
+    void on_hexTextDisplay_cursorPositionChanged();
 
 private:
     Ui::MainWindow *ui;
@@ -194,7 +196,6 @@ private:
     void resetChecks();
     void MainWindow::closeEvent (QCloseEvent *event);
     virtual void wheelEvent(QWheelEvent *event);
-    virtual void keyPressEvent(QKeyEvent *event);
 
     // hashing
     QString generateHash(char *data, int size);
@@ -231,6 +232,7 @@ private:
     void refreshHex();
     QString byteToHexString(int c);
     void setHexValues();
+    void moveCursor(int direction);
 
 
     // disassembly

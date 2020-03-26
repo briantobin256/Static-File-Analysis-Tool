@@ -6,19 +6,19 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1000</width>
+    <width>985</width>
     <height>820</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
-    <width>1000</width>
+    <width>985</width>
     <height>820</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
-    <width>1000</width>
+    <width>1500</width>
     <height>820</height>
    </size>
   </property>
@@ -31,19 +31,19 @@
      <rect>
       <x>0</x>
       <y>0</y>
-      <width>1000</width>
+      <width>985</width>
       <height>770</height>
      </rect>
     </property>
     <property name="minimumSize">
      <size>
-      <width>1000</width>
+      <width>985</width>
       <height>770</height>
      </size>
     </property>
     <property name="maximumSize">
      <size>
-      <width>1000</width>
+      <width>985</width>
       <height>770</height>
      </size>
     </property>
@@ -526,7 +526,7 @@
      <widget class="QScrollBar" name="stringsScrollBar">
       <property name="geometry">
        <rect>
-        <x>960</x>
+        <x>945</x>
         <y>10</y>
         <width>25</width>
         <height>680</height>
@@ -559,19 +559,19 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>940</width>
+        <width>925</width>
         <height>680</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
-        <width>940</width>
+        <width>925</width>
         <height>680</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>940</width>
+        <width>925</width>
         <height>680</height>
        </size>
       </property>
@@ -651,7 +651,7 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>940</width>
+        <width>925</width>
         <height>680</height>
        </rect>
       </property>
@@ -663,13 +663,13 @@
       </property>
       <property name="minimumSize">
        <size>
-        <width>940</width>
+        <width>925</width>
         <height>680</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>940</width>
+        <width>925</width>
         <height>680</height>
        </size>
       </property>
@@ -740,7 +740,7 @@
      <widget class="QScrollBar" name="savedStringsScrollBar">
       <property name="geometry">
        <rect>
-        <x>960</x>
+        <x>945</x>
         <y>10</y>
         <width>25</width>
         <height>680</height>
@@ -775,7 +775,7 @@
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>940</width>
+        <width>925</width>
         <height>680</height>
        </rect>
       </property>
@@ -787,13 +787,13 @@
       </property>
       <property name="minimumSize">
        <size>
-        <width>940</width>
+        <width>925</width>
         <height>680</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>940</width>
+        <width>925</width>
         <height>680</height>
        </size>
       </property>
@@ -825,7 +825,7 @@
      <widget class="QScrollBar" name="dllScrollBar">
       <property name="geometry">
        <rect>
-        <x>960</x>
+        <x>945</x>
         <y>10</y>
         <width>25</width>
         <height>680</height>
@@ -913,7 +913,7 @@
         <x>945</x>
         <y>15</y>
         <width>25</width>
-        <height>730</height>
+        <height>735</height>
        </rect>
       </property>
       <property name="minimumSize">
@@ -944,7 +944,7 @@
         <x>15</x>
         <y>50</y>
         <width>110</width>
-        <height>690</height>
+        <height>700</height>
        </rect>
       </property>
       <property name="verticalScrollBarPolicy">
@@ -984,13 +984,13 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;span style=&quot; font-family:'courier'; font-size:20px;&quot;&gt;Offset(h) 00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F    Decoded Text&lt;/span&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
-     <widget class="QTextEdit" name="hexByteDisplay">
+     <widget class="QPlainTextEdit" name="hexByteDisplay">
       <property name="geometry">
        <rect>
         <x>135</x>
         <y>50</y>
         <width>580</width>
-        <height>690</height>
+        <height>700</height>
        </rect>
       </property>
       <property name="verticalScrollBarPolicy">
@@ -999,13 +999,6 @@ p, li { white-space: pre-wrap; }
       <property name="horizontalScrollBarPolicy">
        <enum>Qt::ScrollBarAlwaysOff</enum>
       </property>
-      <property name="html">
-       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
-&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
-p, li { white-space: pre-wrap; }
-&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
-&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-      </property>
      </widget>
      <widget class="QTextEdit" name="hexTextDisplay">
       <property name="geometry">
@@ -1013,7 +1006,7 @@ p, li { white-space: pre-wrap; }
         <x>725</x>
         <y>50</y>
         <width>210</width>
-        <height>690</height>
+        <height>700</height>
        </rect>
       </property>
       <property name="verticalScrollBarPolicy">
@@ -1035,8 +1028,8 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>970</width>
-        <height>740</height>
+        <width>965</width>
+        <height>745</height>
        </rect>
       </property>
      </widget>
@@ -1349,19 +1342,19 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>940</width>
+        <width>925</width>
         <height>670</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
-        <width>940</width>
+        <width>925</width>
         <height>670</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>940</width>
+        <width>925</width>
         <height>670</height>
        </size>
       </property>
@@ -1375,7 +1368,7 @@ p, li { white-space: pre-wrap; }
      <widget class="QScrollBar" name="disassemblyScrollBar">
       <property name="geometry">
        <rect>
-        <x>960</x>
+        <x>945</x>
         <y>10</y>
         <width>25</width>
         <height>670</height>
@@ -1406,8 +1399,8 @@ p, li { white-space: pre-wrap; }
      <widget class="QLabel" name="disassemblyPageNumberLabel">
       <property name="geometry">
        <rect>
-        <x>150</x>
-        <y>720</y>
+        <x>30</x>
+        <y>710</y>
         <width>69</width>
         <height>20</height>
        </rect>
@@ -1419,8 +1412,8 @@ p, li { white-space: pre-wrap; }
      <widget class="QLabel" name="disassemblyPageNumberValue">
       <property name="geometry">
        <rect>
-        <x>230</x>
-        <y>720</y>
+        <x>110</x>
+        <y>710</y>
         <width>191</width>
         <height>20</height>
        </rect>
@@ -1438,7 +1431,7 @@ p, li { white-space: pre-wrap; }
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1000</width>
+     <width>985</width>
      <height>31</height>
     </rect>
    </property>

@@ -289,7 +289,6 @@ void MainWindow::on_actionSaved_Strings_triggered()
 {
     ui->stackedWidget->setCurrentIndex(2);
     refreshWindow();
-
 }
 
 void MainWindow::on_actionDLL_s_triggered()
@@ -1263,7 +1262,11 @@ void MainWindow::resetChecks()
     ui->hexScrollBar->setValue(0);
     previousPosition = 0;
     byteDisplaySize = 0;
-    highlighting = false;
+    editing = false;
+    refreshing = false;
+    nextPage = false;
+    secondTime = false;
+    cursorLocation = 0;
 
     // entropy
     entropy = 0;
@@ -2878,7 +2881,7 @@ void MainWindow::refreshHex()
 {
     if (fileOpened) {
         QString offset = "", bytes = "", text = "";
-        bool lastRowDisplayed = false, hasFont = false;
+        bool lastRowDisplayed = false;
         int maxDisplayRows = hexDisplayRows, maxDisplayCols = hexDisplayCols;
 
         // if last row will be displayed
@@ -2936,36 +2939,33 @@ void MainWindow::refreshHex()
                 }
 
                 // convert char to hex byte
-                if (uc == 0) {
-                    if (!hasFont) {
-                        rowBytes += "<font color='red'>";
-                    }
-                    rowBytes += " " + byteToHexString(uc);
-                    hasFont = true;
-                }
-                else {
-                    if (hasFont) {
-                        rowBytes += "</font>";
-                        hasFont = false;
-                    }
-                    rowBytes += " " + byteToHexString(uc);
-                }
-
+                rowBytes += " " + byteToHexString(uc);
             }
 
             // append row data to display
             offset += rowOffset;
-            bytes += rowBytes + "<br>";
+            bytes += rowBytes;
             text += rowText + "<br>";
         }
+
+        // remove first space
+        bytes.remove(0, 1);
+
+        refreshing = true;
 
         ui->hexOffsetDisplay->setTextColor(QColor(qBlue(255)));
         ui->hexOffsetDisplay->setText(offset);//.remove(offset.size() - 4, 4));
         //ui->hexOffsetDisplay->setTextColor(QColor(qBlue(255)));
-        ui->hexByteDisplay->setText(bytes.remove(bytes.size() - 4, 4));
+        ui->hexByteDisplay->setPlainText(bytes);
         ui->hexTextDisplay->setText(text.remove(text.size() - 4, 4));
 
-        byteDisplaySize = ui->hexByteDisplay->toHtml().size();
+        QTextCursor c(ui->hexByteDisplay->textCursor());
+        c.setPosition(cursorLocation);
+        ui->hexByteDisplay->setTextCursor(c);
+
+        byteDisplaySize = ui->hexByteDisplay->toPlainText().size();
+
+        refreshing = false;
     }
 }
 
@@ -3022,191 +3022,184 @@ void MainWindow::setHexValues()
     }
 }
 
-// edit hex bytes
-
-/*
-if (fileOpened) {
-    int row =  item->row(), col =  item->column();
-
-    // check if cell is within displayrows and displaycols
-    if (row < maxRows && col < maxCols) {
-        bool inScope = true;
-        // if out of current file scope
-        if (ui->hexScrollBar->value() == ui->hexScrollBar->maximum()) {
-            if (row >= displayRows) {
-                inScope = false;
-            }
-            else if (row == displayRows - 1) {
-                if (col >= displayCols) {
-                    inScope = false;
-                }
-            }
-        }
-
-        if(inScope) {
-            ui->hexTable->blockSignals(true);
-            QTableWidgetItem *hex;
-            QString hexText = "00";
-            QString text = item->text();
-
-            // check if entered value is valid
-            bool good = true;
-            if (text.size() == 1 || text.size() == 2) {
-                for (int i = 0; i < text.size(); i++) {
-                    // if number or upper case char
-                    if ((text[i].unicode() >= 48 && text[i].unicode() <= 57) || (text[i].unicode() >= 65 && text[i].unicode() <= 70)) {
-                        if (text.size() == 1) {
-                            hexText[1] = text[i];
-                        }
-                        else {
-                            hexText[i] = text[i];
-                        }
-                    }
-                    // if lower case char
-                    else if (text[i].unicode() >= 97 && text[i].unicode() <= 102) {
-                        if (text.size() == 1) {
-                            hexText[1] = text[0].unicode() - 32;
-                        }
-                        else {
-                            hexText[i] = text[i].unicode() - 32;
-                        }
-                    }
-                    else {
-                        good = false;
-                    }
-                }
-            }
-            else {
-                good = false;
-            }
-
-            if (!good) {
-                char c = rawData[(dataStartPoint * maxCols) + col + (row * maxCols)];
-                unsigned char uc = static_cast<unsigned char>(c);
-                // convert char to hex
-                int temp, i = 1;
-                while(uc != 0) {
-                    temp = uc % 16;
-                    // to convert integer into character
-                    if(temp < 10)
-                    {
-                        temp += 48;
-                    }
-                    else
-                    {
-                        temp += 55;
-                    }
-                    hexText[i] = temp;
-                    i--;
-                    uc = uc / 16;
-                }
-            }
-
-            hex = new QTableWidgetItem(hexText);
-            hex->setTextAlignment(Qt::AlignCenter);
-            ui->hexTable->setItem(row, col, hex);
-
-            // hex to dec
-            int charDec1 = hexText[0].unicode(), charDec2 = hexText[1].unicode();
-            if (charDec1 > 57) {
-                charDec1 = charDec1 - 55;
-            }
-            else {
-                charDec1 = charDec1 - 48;
-            }
-            if (charDec2 > 57) {
-                charDec2 = charDec2 - 55;
-            }
-            else {
-                charDec2 = charDec2 - 48;
-            }
-            int fullDec = charDec1 * 16 + charDec2;
-
-            int location = (dataStartPoint * maxCols) + col + (row * maxCols);
-            if (!changedDataMap[location]) {
-                originalDataMap[location] = rawData[location];
-                changedDataMap[location] = true;
-            }
-
-            rawData[location] = fullDec;
-            dataChanged = true;
-        }
-        else {
-            ui->hexTable->clearContents();
-        }
-    }
-    else {
-        ui->hexTable->clearContents();
-    }
-}
-else {
-    ui->hexTable->clearContents();
-}
-refreshHex();*/
-
 void MainWindow::on_hexByteDisplay_cursorPositionChanged()
 {
-    int newPosition = ui->hexByteDisplay->textCursor().position();
-    if (newPosition % 3 == 2 && !highlighting) {
-        QTextCursor c(ui->hexByteDisplay->textCursor());
-        // if moving from left
-        if (newPosition > previousPosition) {
-            c.setPosition(newPosition + 1);
-            previousPosition = newPosition + 1;
-        }
-        // if moving from right
-        else if (newPosition < previousPosition) {
-            c.setPosition(newPosition - 1);
-            previousPosition = newPosition - 1;
-        }
-        ui->hexByteDisplay->setTextCursor(c);
-    }
+    if (!refreshing) {
 
+        int newPosition = ui->hexByteDisplay->textCursor().position();
+
+        // if any text is deleted
+        if (newPosition < previousPosition && byteDisplaySize != ui->hexByteDisplay->toPlainText().size()){
+            ui->hexByteDisplay->undo();
+        }
+
+        // if moving right
+        if (newPosition > previousPosition) {
+            moveCursor(1);
+        }
+        // if moving left
+        else if (newPosition < previousPosition) {
+            moveCursor(-1);
+        }
+    }
 }
 
-void MainWindow::on_hexByteDisplay_copyAvailable(bool b)
+void MainWindow::moveCursor(int direction)
 {
-    if (b) {
-        highlighting = true;
+    QTextCursor c(ui->hexByteDisplay->textCursor());
+    int newPosition = c.position();
+    previousPosition = newPosition;
+    if ((newPosition % 3 == 2) && newPosition < ui->hexByteDisplay->toPlainText().size()) {
+        // left
+        if (direction > 0) {
+            previousPosition++;
+        }
+        // right
+        else {
+            previousPosition--;
+        }
     }
-    else {
-        highlighting = false;
-        ui->hexByteDisplay->undo();
-        //qDebug()  << "undone";
-        on_hexByteDisplay_cursorPositionChanged();
-
+    if (previousPosition > byteDisplaySize - 1) {
+        previousPosition = byteDisplaySize - 1;
     }
+    c.setPosition(previousPosition);
+    refreshing = true;
+    ui->hexByteDisplay->setTextCursor(c);
+    refreshing = false;
 }
 
 void MainWindow::on_hexByteDisplay_textChanged()
 {
-    //qDebug() << e;
-    //QFile file(QFileDialog::getOpenFileName(this, "Select a file to analyse", "D:/Downloads"));
+    if (!refreshing) {
 
-    if (ui->hexByteDisplay->toHtml().size() != byteDisplaySize) {
-        //ui->hexByteDisplay->undo();
-        //qDebug() << "undone";
+        int newPosition = ui->hexByteDisplay->textCursor().position();
+//qDebug() << editing;
+        // if cursor postion is the same but total size is down 1
+        if (newPosition == previousPosition && ui->hexByteDisplay->toPlainText().size() == byteDisplaySize - 1) {
+            editing = true;
+        }
+        else if (editing) {
+
+            int cursorPosition = 0;
+
+            if (newPosition % 3 == 1) {
+                cursorPosition = newPosition - 1;
+            }
+            else {
+                cursorPosition = newPosition - 2;
+            }
+
+            if (newPosition == ui->hexByteDisplay->toPlainText().size() - 1) {
+                cursorPosition++;
+            }
+
+            QString bytes = ui->hexByteDisplay->toPlainText();
+            unsigned char c = bytes.at(cursorPosition).unicode();
+
+            // if lower case a - f, change to upper case
+            if (c >= 97 && c <= 102) {
+                c -= 32;
+                refreshing = true;
+                bytes.replace(cursorPosition, 1, c);
+                ui->hexByteDisplay->setPlainText(bytes);
+                QTextCursor c(ui->hexByteDisplay->textCursor());
+                c.setPosition(newPosition);
+                ui->hexByteDisplay->setTextCursor(c);
+                refreshing = false;
+            }
+            // if not between 0 - 9 or A - F
+            else if ((c < 48 || c > 57) && (c < 65 || c > 70)) {
+                refreshing = true;
+                ui->hexByteDisplay->undo();
+                ui->hexByteDisplay->undo();
+                moveCursor(-1);
+                refreshing = false;
+            }
+            else {
+                int byteLocation = 0, pageOffset = ui->hexScrollBar->value() * hexDisplayCols, currentPageByte = 0, page = ui->hexScrollBar->value();
+//qDebug() << "yes";
+                if (cursorPosition == ui->hexByteDisplay->toPlainText().size() - 1) {
+                    if (page == ui->hexScrollBar->maximum()) {
+                        cursorLocation = cursorPosition;
+                    }
+                    else {
+                        if (secondTime) {
+                            secondTime = false;
+                            nextPage = true;
+                            cursorLocation = cursorPosition - (hexDisplayCols * 3 - 2);
+                        }
+                        else {
+                            secondTime = true;
+                            cursorLocation = cursorPosition;
+                        }
+                    }
+                    cursorPosition--;
+                }
+                else if (cursorPosition > 0) {
+                    // if pointing to second char of byte
+                    if (cursorPosition % 3 == 1) {
+                        cursorLocation = cursorPosition + 2;
+                        cursorPosition--;
+                    }
+                    else {
+                        cursorLocation = cursorPosition + 1;
+                    }
+                }
+                else {
+                    cursorLocation = 1;
+                }
+
+                QString byteHex = bytes.at(cursorPosition);
+                byteHex += bytes.at(cursorPosition+1);
+
+                // hex string to dec
+                int charDec1 = byteHex[0].unicode(), charDec2 = byteHex[1].unicode();
+                if (charDec1 > 57) {
+                    charDec1 = charDec1 - 55;
+                }
+                else {
+                    charDec1 = charDec1 - 48;
+                }
+                if (charDec2 > 57) {
+                    charDec2 = charDec2 - 55;
+                }
+                else {
+                    charDec2 = charDec2 - 48;
+                }
+                unsigned char byte = charDec1 * 16 + charDec2;
+
+                currentPageByte = cursorPosition / 3;
+                byteLocation =  currentPageByte + pageOffset;
+                changedDataMap[byteLocation] = true;
+                originalDataMap[byteLocation] = rawData[byteLocation];
+                rawData[byteLocation] = byte;
+                dataChanged = true;
+                if (nextPage){
+                    ui->hexScrollBar->setValue(page + 1);
+                    nextPage = false;
+                }
+                else {
+                    refreshHex();
+                }
+            }
+            editing = false;
+        }
+        else {
+            ui->hexByteDisplay->undo();
+        }
     }
 }
 
-void MainWindow::on_hexByteDisplay_selectionChanged()
+void MainWindow::on_hexTextDisplay_textChanged()
 {
-    //qDebug() << ui->hexByteDisplay->toHtml().size();
-    //qDebug() << byteDisplaySize;
+    //qDebug() << "text changed";
+    //qDebug() << "size" << ui->hexTextDisplay->toPlainText().size();
+    //qDebug() << ui->hexTextDisplay->textCursor().position();
+    //qDebug() << ui->hexTextDisplay->toPlainText().at(ui->hexTextDisplay->textCursor().position()).unicode();
 }
 
-void MainWindow::keyPressEvent(QKeyEvent *event)
+void MainWindow::on_hexTextDisplay_cursorPositionChanged()
 {
-    // if hex display
-    if (ui->stackedWidget->currentIndex() == 4) {
-
-        // if cursor is in focus
-
-            // if char (0 - 9, a - f and A - F)
-            //qDebug() << event->text();
-
-            // else if backspace
-
-            // else if keys
-    }
+    //qDebug() << "cursorc hanfged";
+    //qDebug() << ui->hexTextDisplay->textCursor().position();
 }
