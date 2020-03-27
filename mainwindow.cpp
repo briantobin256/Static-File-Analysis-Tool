@@ -2951,14 +2951,20 @@ void MainWindow::refreshHex()
         // remove first space
         bytes.remove(0, 1);
 
+        // remove last line break
+        text.remove(text.size() - 4, 4);
+
+        // text colour
+        text.prepend("<font color='brown'>");
+
         refreshing = true;
 
         ui->hexOffsetDisplay->setTextColor(QColor(qBlue(255)));
-        ui->hexOffsetDisplay->setText(offset);//.remove(offset.size() - 4, 4));
-        //ui->hexOffsetDisplay->setTextColor(QColor(qBlue(255)));
+        ui->hexOffsetDisplay->setText(offset);
         ui->hexByteDisplay->setPlainText(bytes);
-        ui->hexTextDisplay->setText(text.remove(text.size() - 4, 4));
+        ui->hexTextDisplay->setText(text);
 
+        // set cursor
         QTextCursor c(ui->hexByteDisplay->textCursor());
         c.setPosition(cursorLocation);
         ui->hexByteDisplay->setTextCursor(c);
@@ -3073,7 +3079,7 @@ void MainWindow::on_hexByteDisplay_textChanged()
     if (!refreshing) {
 
         int newPosition = ui->hexByteDisplay->textCursor().position();
-//qDebug() << editing;
+
         // if cursor postion is the same but total size is down 1
         if (newPosition == previousPosition && ui->hexByteDisplay->toPlainText().size() == byteDisplaySize - 1) {
             editing = true;
@@ -3117,7 +3123,7 @@ void MainWindow::on_hexByteDisplay_textChanged()
             }
             else {
                 int byteLocation = 0, pageOffset = ui->hexScrollBar->value() * hexDisplayCols, currentPageByte = 0, page = ui->hexScrollBar->value();
-//qDebug() << "yes";
+
                 if (cursorPosition == ui->hexByteDisplay->toPlainText().size() - 1) {
                     if (page == ui->hexScrollBar->maximum()) {
                         cursorLocation = cursorPosition;
@@ -3127,6 +3133,7 @@ void MainWindow::on_hexByteDisplay_textChanged()
                             secondTime = false;
                             nextPage = true;
                             cursorLocation = cursorPosition - (hexDisplayCols * 3 - 2);
+                            previousPosition = cursorLocation;
                         }
                         else {
                             secondTime = true;
@@ -3188,18 +3195,4 @@ void MainWindow::on_hexByteDisplay_textChanged()
             ui->hexByteDisplay->undo();
         }
     }
-}
-
-void MainWindow::on_hexTextDisplay_textChanged()
-{
-    //qDebug() << "text changed";
-    //qDebug() << "size" << ui->hexTextDisplay->toPlainText().size();
-    //qDebug() << ui->hexTextDisplay->textCursor().position();
-    //qDebug() << ui->hexTextDisplay->toPlainText().at(ui->hexTextDisplay->textCursor().position()).unicode();
-}
-
-void MainWindow::on_hexTextDisplay_cursorPositionChanged()
-{
-    //qDebug() << "cursorc hanfged";
-    //qDebug() << ui->hexTextDisplay->textCursor().position();
 }

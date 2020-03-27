@@ -182,10 +182,6 @@ private slots:
 
     void on_hexByteDisplay_textChanged();
 
-    void on_hexTextDisplay_textChanged();
-
-    void on_hexTextDisplay_cursorPositionChanged();
-
 private:
     Ui::MainWindow *ui;
     CustomDialog *dialogBox;
