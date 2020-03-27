@@ -19,13 +19,130 @@ MainWindow::MainWindow(QWidget *parent)
     fileHash = "";
     backupLoc = "";
 
+    // strings context menu
+    ui->stringList->setContextMenuPolicy(Qt::CustomContextMenu);
+    connect(ui->stringList, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(showContextMenu(QPoint)));
+
     // tmp
     QFile file("D:/Downloads/strings.exe");
     open(&file);
     file.close();
-    ui->stackedWidget->setCurrentIndex(4);
+    ui->stackedWidget->setCurrentIndex(1);
 
     refreshWindow();
+}
+
+void MainWindow::showContextMenu(const QPoint &point)
+{
+    // Handle global position
+    QPoint globalPos = ui->stringList->mapToGlobal(point);
+
+    // context menu actions
+    QMenu myMenu;
+    myMenu.addAction("Copy Highlighted",  this, SLOT(copyHighlightedItemsText()));
+    myMenu.addAction("Check Highlighted",  this, SLOT(checkHighlighted()));
+    myMenu.addAction("Highlight All",  this, SLOT(highlightAll()));
+    myMenu.addSeparator();
+    myMenu.addAction("find first highlighted in hex editor", this, SLOT(stringToHexLocation()));
+
+    myMenu.exec(globalPos);
+}
+
+void MainWindow::copyHighlightedItemsText()
+{
+    // copy all selected text
+    QString text = "";
+    for (int i = 0; i < maxDisplayStrings; i++) {
+        if (ui->stringList->item(i)->isSelected()) {
+            text += ui->stringList->item(i)->text() + "\n";
+        }
+    }
+    text.remove(text.size() - 2, 2);
+    QApplication::clipboard()->setText(text);
+}
+
+void MainWindow::checkHighlighted()
+{
+    for (int i = 0; i < maxDisplayStrings; i++) {
+        if (ui->stringList->item(i)->isSelected()) {
+            ui->stringList->item(i)->setCheckState(Qt::CheckState::Checked);
+        }
+    }
+}
+
+void MainWindow::highlightAll()
+{
+    for (int i = 0; i < maxDisplayStrings; i++) {
+        ui->stringList->item(i)->setSelected(true);
+    }
+}
+
+void MainWindow::stringToHexLocation()
+{
+    bool itemIndexFound = false;
+    int i = 0; // string location on screen
+
+    // if from find strings
+    if (ui->stackedWidget->currentIndex() == 1) {
+        ui->stackedWidget->setCurrentIndex(4);
+        refreshWindow();
+        while (!itemIndexFound && i < maxDisplayStrings) {
+            if (ui->stringList->item(i)->isSelected()) {
+                itemIndexFound = true;
+            }
+            else {
+                i++;
+            }
+        }
+        if (stringsSorted) {
+            bool locFound = false;
+            int j = 0;
+            while (!locFound && j < stringCount) {
+                if (swapStringMap[j] == stringOffset + i) {
+                    locFound = true;
+                }
+                else {
+                    j++;
+                }
+            }
+            ui->hexScrollBar->setValue(hexLocationMap[j] / hexDisplayCols);
+        }
+        else {
+            ui->hexScrollBar->setValue(hexLocationMap[stringOffset + i] / hexDisplayCols);
+        }
+        // highlight in hex
+    }
+    // if from saved strings
+    else if (ui->stackedWidget->currentIndex() == 2) {
+        ui->stackedWidget->setCurrentIndex(4);
+        refreshWindow();
+        while (!itemIndexFound && i < ui->savedStringList->count()) {
+            if (ui->savedStringList->item(i)->isSelected()) {
+                itemIndexFound = true;
+            }
+            else {
+                i++;
+            }
+        }
+        if (stringsSorted) {
+            bool locFound = false;
+            int j = 0;
+            while (!locFound && j < stringCount) {
+                if (swapStringMap[j] == savedStringLocationMap[i]) {
+                    locFound = true;
+                }
+                else {
+                    j++;
+                }
+            }
+            ui->hexScrollBar->setValue(hexLocationMap[j] / hexDisplayCols);
+        }
+        else {
+            ui->hexScrollBar->setValue(hexLocationMap[savedStringLocationMap[i]] / hexDisplayCols);
+        }
+
+        // highlight in hex
+    }
 }
 
 MainWindow::~MainWindow()
@@ -351,13 +468,29 @@ void MainWindow::on_disassemblyScrollBar_valueChanged()
 
 void MainWindow::on_stringList_itemDoubleClicked(QListWidgetItem *item)
 {
-    stringToHexLocation(item);
+    // check item
+    bool itemIndexFound = false;
+    int i = 0;
+    while (!itemIndexFound && i < maxDisplayStrings) {
+        if (ui->stringList->item(i) == item) {
+            itemIndexFound = true;
+            if (ui->stringList->item(i)->checkState()) {
+                ui->stringList->item(i)->setCheckState(Qt::CheckState::Unchecked);
+            }
+            else {
+                ui->stringList->item(i)->setCheckState(Qt::CheckState::Checked);
+            }
+        }
+        else {
+            i++;
+        }
+    }
 }
 
 void MainWindow::on_savedStringList_itemDoubleClicked(QListWidgetItem *item)
 {
     //QApplication::clipboard()->setText(item->text());
-    stringToHexLocation(item);
+    //stringToHexLocation(item);
 }
 
 void MainWindow::on_stringSearchButton_clicked()
@@ -417,7 +550,7 @@ void MainWindow::on_stringSearchButton_clicked()
             //qDebug() << "search string: " << stringsAdvancedSearchIterator;
             //qDebug() << "search string: " << strings[stringsAdvancedSearchIterator - 1];
             //ui->stringList->item((stringsAdvancedSearchIterator % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setSelected(true);
-            ui->stringList->item((stringsAdvancedSearchIndex % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setCheckState(Qt::Checked);
+            ui->stringList->item((stringsAdvancedSearchIndex % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setSelected(true);//setCheckState(Qt::Checked);
             //ui->stringList->setFocus();
             //refreshStrings();
         }
@@ -1490,70 +1623,14 @@ void MainWindow::buildEntropyGraph()
     }
 }
 
-void MainWindow::stringToHexLocation(QListWidgetItem *item)
-{
-    bool itemIndexFound = false;
-    int i = 0; // string location on screen
+/*
 
-    // if from find strings
-    if (ui->stackedWidget->currentIndex() == 1) {
-        ui->stackedWidget->setCurrentIndex(4);
-        refreshWindow();
-        while (!itemIndexFound && i < maxDisplayStrings) {
-            if (ui->stringList->item(i) == item) {
-                itemIndexFound = true;
-            }
-            else {
-                i++;
-            }
-        }
-        if (stringsSorted) {
-            bool locFound = false;
-            int j = 0;
-            while (!locFound && j < stringCount) {
-                if (swapStringMap[j] == stringOffset + i) {
-                    locFound = true;
-                }
-                else {
-                    j++;
-                }
-            }
-            ui->hexScrollBar->setValue(hexLocationMap[j] / hexDisplayCols);
-        }
-        else {
-            ui->hexScrollBar->setValue(hexLocationMap[stringOffset + i] / hexDisplayCols);
-        }
-    }
-    // if from saved strings
-    else if (ui->stackedWidget->currentIndex() == 2) {
-        ui->stackedWidget->setCurrentIndex(4);
-        refreshWindow();
-        while (!itemIndexFound && i < ui->savedStringList->count()) {
-            if (ui->savedStringList->item(i) == item) {
-                itemIndexFound = true;
-            }
-            else {
-                i++;
-            }
-        }
-        if (stringsSorted) {
-            bool locFound = false;
-            int j = 0;
-            while (!locFound && j < stringCount) {
-                if (swapStringMap[j] == savedStringLocationMap[i]) {
-                    locFound = true;
-                }
-                else {
-                    j++;
-                }
-            }
-            ui->hexScrollBar->setValue(hexLocationMap[j] / hexDisplayCols);
-        }
-        else {
-            ui->hexScrollBar->setValue(hexLocationMap[savedStringLocationMap[i]] / hexDisplayCols);
-        }
-    }
-}
+
+string to hex
+
+
+
+*/
 
 void MainWindow::removeSelected()
 {

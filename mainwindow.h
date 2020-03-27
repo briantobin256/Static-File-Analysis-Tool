@@ -182,6 +182,16 @@ private slots:
 
     void on_hexByteDisplay_textChanged();
 
+    void showContextMenu(const QPoint &point);
+
+    void copyHighlightedItemsText();
+
+    void checkHighlighted();
+
+    void highlightAll();
+
+    void stringToHexLocation();
+
 private:
     Ui::MainWindow *ui;
     CustomDialog *dialogBox;
@@ -217,7 +227,7 @@ private:
     void removeSelected();
     void refreshStrings();
     void refreshSavedStrings();
-    void stringToHexLocation(QListWidgetItem *item);
+    //void stringToHexLocation(QListWidgetItem *item);
 
     // dlls
     void findDLLs();
