@@ -1198,8 +1198,26 @@ void MainWindow::stringToHexLocation()
 
 void MainWindow::findDLLs()
 {
-    if (fileOpened) {
-        if (!dllsBuilt && PE && (rdataStartLoc > 0 || idataStartLoc > 0)) {
+    if (fileOpened && !dllsBuilt) {
+
+        // font things
+        QFont dllFont, titleFont;
+        dllFont.setPixelSize(20);
+        dllFont.setFamily("Courier");
+        titleFont.setPixelSize(25);
+        titleFont.setFamily("Courier");
+        ui->DLLTitleBrowser->setFont(titleFont);
+        ui->DLLFunctionTitleBrowser->setFont(titleFont);
+        ui->DLLNameBrowser->setFont(dllFont);
+        ui->DLLFunctionNameBrowser->setFont(dllFont);
+
+        // background colour
+        ui->DLLTitleBrowser->setStyleSheet("background-color: #FF1493;");
+        ui->DLLFunctionTitleBrowser->setStyleSheet("background-color: #FAEBD7;");
+        ui->DLLNameBrowser->setStyleSheet("background-color: #696969; color: #FF1493");
+        ui->DLLFunctionNameBrowser->setStyleSheet("background-color: #FFF8DC;");
+
+        if (PE && (rdataStartLoc > 0 || idataStartLoc > 0)) {
 
             int dllNamePointerLoc = 0, functionNamePointerLoc = 0, dataSectionRVA = 0, dataStartLoc = 0, dllCount = 0, functionCount = 0;
 
@@ -1243,7 +1261,6 @@ void MainWindow::findDLLs()
             // FIND ALL DLL NAMES
             //
 
-            QStringList dllName;
             if (dllNamePointerLoc > 0) {
                 bool goodName = true;
                 int addressOffset = 0;
@@ -1253,7 +1270,6 @@ void MainWindow::findDLLs()
                         location += pow(16, i * 2) * static_cast<unsigned char>(rawData[dllNamePointerLoc + i + addressOffset]);
                     }
                     if (location != 0) {
-                        dllName += getFunctionName(location - 2, dataSectionRVA, dataStartLoc);
                         dllNames += getFunctionName(location - 2, dataSectionRVA, dataStartLoc) + "<br>";
                         dllCount++;
                     }
@@ -1263,9 +1279,6 @@ void MainWindow::findDLLs()
                     addressOffset += 20;
                 }
             }
-
-            dllNames.prepend("------------------------------------------------------------------<br>");
-            dllNames.prepend("DLL Names (" + QString::number(dllCount) + ") - Import Directory Table (" + QString::number(dllNamePointerLoc, 16).toUpper() + "h)<br>");
 
             //
             // FIND ALL FUNCTION NAMES
@@ -1283,18 +1296,18 @@ void MainWindow::findDLLs()
                 // end of a specific dlls functions
                 if (location == 0) {
                     functions.sort();
-                    functions += "------------------------------------------------------------------";
+                    functions += "-----------------------------------------------------------------------------";
                     if (dllsCompletedCount == dllCount) {
                         functionsFinished = true;
                     }
-
-                    // string list to html
-                    for (int i = 0; i < functions.size(); i++) {
-                        dllFunctionNames += functions.at(i) + "<br>";
+                    else {
+                        // string list to html
+                        for (int i = 0; i < functions.size(); i++) {
+                            dllFunctionNames += functions.at(i) + "<br>";
+                        }
+                        functions.clear();
+                        dllsCompletedCount++;
                     }
-
-                    functions.clear();
-                    dllsCompletedCount++;
                 }
                 else {
                     QString functionName = "";
@@ -1315,12 +1328,19 @@ void MainWindow::findDLLs()
                 addressOffset += 4;
             }
 
-            if (dllNames.count() == 2) {
+            // set dll name and funtion title bars
+            DLLTitle += "DLL Names (" + QString::number(dllCount) + ") - Import Directory Table (<a href='" + QString::number(dllNamePointerLoc) + "'>" + QString::number(dllNamePointerLoc, 16).toUpper() + "h<a>)";
+            FunctionTitle += "Function Names (" + QString::number(functionCount) + ") - Import Address Table (<a href='" + QString::number(functionNamePointerLoc) + "'>" + QString::number(functionNamePointerLoc, 16).toUpper() + "h<a>)";
+            ui->DLLTitleBrowser->insertHtml(DLLTitle);
+            ui->DLLFunctionTitleBrowser->insertHtml(FunctionTitle);
+
+            if (dllNames.count() == 0) {
                 dllNames += "There was an error when finding dll names and function calls.";
             }
             else {
-                dllFunctionNames.prepend("------------------------------------------------------------------<br>");
-                dllFunctionNames.prepend("Function Names (" + QString::number(functionCount) + ") - Import Address Table (" + QString::number(functionNamePointerLoc, 16).toUpper() + "h)<br>");
+                dllNames.remove(dllNames.size() - 4, 4);
+                dllFunctionNames.remove(dllFunctionNames.size() - 4, 4);
+                dllFunctionNames.prepend("-----------------------------------------------------------------------------<br>");
             }
         }
         else {
@@ -1332,11 +1352,32 @@ void MainWindow::findDLLs()
             }
         }
 
+        // set dll names and function
         ui->DLLNameBrowser->insertHtml(dllNames);
         ui->DLLFunctionNameBrowser->insertHtml(dllFunctionNames);
 
         dllsBuilt = true;
     }
+    else if (dllsBuilt) {
+        ui->DLLTitleBrowser->clear();
+        ui->DLLFunctionTitleBrowser->clear();
+        ui->DLLTitleBrowser->insertHtml(DLLTitle);
+        ui->DLLFunctionTitleBrowser->insertHtml(FunctionTitle);
+    }
+}
+
+void MainWindow::on_DLLTitleBrowser_anchorClicked(const QUrl &arg1)
+{
+    ui->stackedWidget->setCurrentIndex(4);
+    ui->hexScrollBar->setValue(arg1.url().toInt() / hexDisplayCols);
+    refreshHex();
+}
+
+void MainWindow::on_DLLFunctionTitleBrowser_anchorClicked(const QUrl &arg1)
+{
+    ui->stackedWidget->setCurrentIndex(4);
+    ui->hexScrollBar->setValue(arg1.url().toInt() / hexDisplayCols);
+    refreshHex();
 }
 
 QString MainWindow::getFunctionName(int location, int dataSectionRVA, int dataStartLoc)
@@ -1546,6 +1587,10 @@ void MainWindow::resetChecks()
     dllFunctionNames.clear();
     ui->DLLNameBrowser->clear();
     ui->DLLFunctionNameBrowser->clear();
+    ui->DLLTitleBrowser->clear();
+    ui->DLLFunctionTitleBrowser->clear();
+    DLLTitle = "";
+    FunctionTitle = "";
 
     // hex
     hexLocationMap.clear();

@@ -72,6 +72,8 @@ public:
     // DLL things
     QString dllNames;
     QString dllFunctionNames;
+    QString DLLTitle;
+    QString FunctionTitle;
 
     //hex things
     int hexDisplayRows;
@@ -198,6 +200,10 @@ private slots:
     void on_savedStringOutputButton_clicked();
 
     void on_savedStringSearchButton_clicked();
+
+    void on_DLLTitleBrowser_anchorClicked(const QUrl &arg1);
+
+    void on_DLLFunctionTitleBrowser_anchorClicked(const QUrl &arg1);
 
 private:
     Ui::MainWindow *ui;
