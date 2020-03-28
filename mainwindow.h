@@ -44,8 +44,6 @@ public:
     QString fileName;
     QString directory;
     QString fileHash;
-    QStringList strings;
-    QStringList unsortedStrings;
     QString backupLoc;
 
     // string things
@@ -54,15 +52,17 @@ public:
     QMap<int, int> savedStringLocationMap;
     QMap<int, int> hexLocationMap;
     QMap<int, int> swapStringMap;
-
+    QStringList strings;
+    QStringList savedStrings;
+    QStringList unsortedStrings;
+    QString searchString;
     int stringCount;
     int stringOffset;
     int maxDisplayStrings;
-    int stringsAdvancedSearchIndex;
-    int dllSearchIndex;
-    QString stringsAdvancedSearchString;
-    bool sortStrings;
-    bool removeDuplicates;
+    int totalStringSize;
+    int totalSavedStringSize;
+    //int stringsAdvancedSearchIndex;
+    int searchStringIndex;
     int stringLength;
     bool sorting;
     bool removedStrings;
@@ -71,6 +71,7 @@ public:
 
     // DLL things
     QStringList dllFunctions;
+    int maxDisplayDLLs;
 
     //hex things
     int hexDisplayRows;
@@ -166,8 +167,6 @@ private slots:
 
     void on_stringSortUnsort_clicked();
 
-    void on_deleteSelectedStringsButton_clicked();
-
     void on_actionEntropy_Graph_triggered();
 
     void on_actionDisassembly_triggered();
@@ -188,9 +187,19 @@ private slots:
 
     void checkHighlighted();
 
+    void uncheckHighlighted();
+
+    void removeSelected();
+
     void highlightAll();
 
     void stringToHexLocation();
+
+    void on_stringOutputButton_clicked();
+
+    void on_savedStringOutputButton_clicked();
+
+    void on_savedStringSearchButton_clicked();
 
 private:
     Ui::MainWindow *ui;
@@ -224,10 +233,10 @@ private:
     // strings
     void findStrings();
     void saveDisplayedStrings();
-    void removeSelected();
     void refreshStrings();
     void refreshSavedStrings();
-    //void stringToHexLocation(QListWidgetItem *item);
+    void outputStrings();
+    void searchStringList();
 
     // dlls
     void findDLLs();

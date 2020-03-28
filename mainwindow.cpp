@@ -10,7 +10,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->stackedWidget->setCurrentIndex(0);
 
     basicWindowName = "Static File Analysis Tool";
-    maxDisplayStrings = 24;
 
     fileOpened = false;
     resetChecks();
@@ -19,10 +18,6 @@ MainWindow::MainWindow(QWidget *parent)
     fileHash = "";
     backupLoc = "";
 
-    // strings context menu
-    ui->stringList->setContextMenuPolicy(Qt::CustomContextMenu);
-    connect(ui->stringList, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(showContextMenu(QPoint)));
-
     // tmp
     QFile file("D:/Downloads/strings.exe");
     open(&file);
@@ -30,119 +25,6 @@ MainWindow::MainWindow(QWidget *parent)
     ui->stackedWidget->setCurrentIndex(1);
 
     refreshWindow();
-}
-
-void MainWindow::showContextMenu(const QPoint &point)
-{
-    // Handle global position
-    QPoint globalPos = ui->stringList->mapToGlobal(point);
-
-    // context menu actions
-    QMenu myMenu;
-    myMenu.addAction("Copy Highlighted",  this, SLOT(copyHighlightedItemsText()));
-    myMenu.addAction("Check Highlighted",  this, SLOT(checkHighlighted()));
-    myMenu.addAction("Highlight All",  this, SLOT(highlightAll()));
-    myMenu.addSeparator();
-    myMenu.addAction("find first highlighted in hex editor", this, SLOT(stringToHexLocation()));
-
-    myMenu.exec(globalPos);
-}
-
-void MainWindow::copyHighlightedItemsText()
-{
-    // copy all selected text
-    QString text = "";
-    for (int i = 0; i < maxDisplayStrings; i++) {
-        if (ui->stringList->item(i)->isSelected()) {
-            text += ui->stringList->item(i)->text() + "\n";
-        }
-    }
-    text.remove(text.size() - 2, 2);
-    QApplication::clipboard()->setText(text);
-}
-
-void MainWindow::checkHighlighted()
-{
-    for (int i = 0; i < maxDisplayStrings; i++) {
-        if (ui->stringList->item(i)->isSelected()) {
-            ui->stringList->item(i)->setCheckState(Qt::CheckState::Checked);
-        }
-    }
-}
-
-void MainWindow::highlightAll()
-{
-    for (int i = 0; i < maxDisplayStrings; i++) {
-        ui->stringList->item(i)->setSelected(true);
-    }
-}
-
-void MainWindow::stringToHexLocation()
-{
-    bool itemIndexFound = false;
-    int i = 0; // string location on screen
-
-    // if from find strings
-    if (ui->stackedWidget->currentIndex() == 1) {
-        ui->stackedWidget->setCurrentIndex(4);
-        refreshWindow();
-        while (!itemIndexFound && i < maxDisplayStrings) {
-            if (ui->stringList->item(i)->isSelected()) {
-                itemIndexFound = true;
-            }
-            else {
-                i++;
-            }
-        }
-        if (stringsSorted) {
-            bool locFound = false;
-            int j = 0;
-            while (!locFound && j < stringCount) {
-                if (swapStringMap[j] == stringOffset + i) {
-                    locFound = true;
-                }
-                else {
-                    j++;
-                }
-            }
-            ui->hexScrollBar->setValue(hexLocationMap[j] / hexDisplayCols);
-        }
-        else {
-            ui->hexScrollBar->setValue(hexLocationMap[stringOffset + i] / hexDisplayCols);
-        }
-        // highlight in hex
-    }
-    // if from saved strings
-    else if (ui->stackedWidget->currentIndex() == 2) {
-        ui->stackedWidget->setCurrentIndex(4);
-        refreshWindow();
-        while (!itemIndexFound && i < ui->savedStringList->count()) {
-            if (ui->savedStringList->item(i)->isSelected()) {
-                itemIndexFound = true;
-            }
-            else {
-                i++;
-            }
-        }
-        if (stringsSorted) {
-            bool locFound = false;
-            int j = 0;
-            while (!locFound && j < stringCount) {
-                if (swapStringMap[j] == savedStringLocationMap[i]) {
-                    locFound = true;
-                }
-                else {
-                    j++;
-                }
-            }
-            ui->hexScrollBar->setValue(hexLocationMap[j] / hexDisplayCols);
-        }
-        else {
-            ui->hexScrollBar->setValue(hexLocationMap[savedStringLocationMap[i]] / hexDisplayCols);
-        }
-
-        // highlight in hex
-    }
 }
 
 MainWindow::~MainWindow()
@@ -495,25 +377,43 @@ void MainWindow::on_savedStringList_itemDoubleClicked(QListWidgetItem *item)
 
 void MainWindow::on_stringSearchButton_clicked()
 {
+    searchStringList();
+}
+
+void MainWindow::on_savedStringSearchButton_clicked()
+{
+    searchStringList();
+}
+
+void MainWindow::searchStringList()
+{
     if (stringsBuilt) {
 
-        QString search = ui->searchString->text();
-
-        if (stringsAdvancedSearchString != search) {
-            stringsAdvancedSearchIndex = 0;
+        QString search = "";
+        QStringList list;
+        int count = 0, displayStrings = maxDisplayStrings;
+        if (ui->stackedWidget->currentIndex() == 1) {
+            search = ui->searchString->text();
+            count = stringCount;
+            list = strings;
         }
-        stringsAdvancedSearchString = search;
+        else {
+            search = ui->searchSavedString->text();
+            count = ui->savedStringList->count();
+            list = savedStrings;
+            displayStrings = count;
+        }
+
+        if (searchString != search) {
+            searchStringIndex = 0;
+        }
+        searchString = search;
 
         bool found = false;
-        while (!found && stringsAdvancedSearchIndex < stringCount) {
-
-            //
-            // starting search icon
-            //
-
-            QString searching = strings[stringsAdvancedSearchIndex];
+        while (!found && searchStringIndex < count) {
+            QString searching = list[searchStringIndex];
             int searchLength = search.length();
-            int searchedLength = strings[stringsAdvancedSearchIndex].length();
+            int searchedLength = searching.length();
 
             // for each starting position the search string could fit into the searched string
             for (int j = 0; j <= searchedLength - searchLength; j++) {
@@ -522,8 +422,13 @@ void MainWindow::on_stringSearchButton_clicked()
                 for (k = 0; k < searchLength; k++) {
                     // if chars dont match
                     if (searching[j + k] != search[k]) {
-                        // if case sensitive match
-                        if ((searching[j + k].unicode() + 32) != search[k] && (searching[j + k].unicode() - 32) != search[k]) {
+                        // if searching char is A - Z, check a - z aswell
+                        if (searching[j + k].unicode() >= 65 && searching[j + k].unicode() <= 90) {
+                            if ((searching[j + k].unicode() + 32) != search[k]) {
+                                break;
+                            }
+                        }
+                        else {
                             break;
                         }
                     }
@@ -532,30 +437,37 @@ void MainWindow::on_stringSearchButton_clicked()
                     found = true;
                 }
             }
-            stringsAdvancedSearchIndex++;
+            searchStringIndex++;
         }
-
-        //
-        // finished search icon
-        //
 
         if (found) {
-            if (stringsAdvancedSearchIndex % maxDisplayStrings == 0) {
-                ui->stringsScrollBar->setValue((stringsAdvancedSearchIndex / maxDisplayStrings) - 1);
+            if (ui->stackedWidget->currentIndex() == 1) {
+                int previousPage = ui->stringsScrollBar->value();
+                if (searchStringIndex % displayStrings == 0) {
+                    ui->stringsScrollBar->setValue((searchStringIndex / displayStrings) - 1);
+                }
+                else {
+                    ui->stringsScrollBar->setValue(searchStringIndex / displayStrings);
+                }
+
+                // unselect any selected then select search string
+                if (previousPage == ui->stringsScrollBar->value()) {
+                    for (int i = 0; i < displayStrings; i++) {
+                        ui->stringList->item(i)->setSelected(false);
+                    }
+                }
+                ui->stringList->item((searchStringIndex % displayStrings - 1 + displayStrings) % displayStrings)->setSelected(true);
             }
             else {
-                ui->stringsScrollBar->setValue(stringsAdvancedSearchIndex / maxDisplayStrings);
+                for (int i = 0; i < displayStrings; i++) {
+                    ui->savedStringList->item(i)->setSelected(false);
+                }
+                ui->savedStringList->item(searchStringIndex - 1)->setSelected(true);
+                ui->savedStringList->setCurrentRow(searchStringIndex - 1);
             }
-            // highlight string
-            //qDebug() << "search string: " << stringsAdvancedSearchIterator;
-            //qDebug() << "search string: " << strings[stringsAdvancedSearchIterator - 1];
-            //ui->stringList->item((stringsAdvancedSearchIterator % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setSelected(true);
-            ui->stringList->item((stringsAdvancedSearchIndex % maxDisplayStrings - 1 + maxDisplayStrings) % maxDisplayStrings)->setSelected(true);//setCheckState(Qt::Checked);
-            //ui->stringList->setFocus();
-            //refreshStrings();
         }
-        else if (stringsAdvancedSearchIndex == stringCount) {
-            stringsAdvancedSearchIndex = 0;
+        else if (searchStringIndex == count) {
+            searchStringIndex = 0;
         }
     }
 }
@@ -601,10 +513,104 @@ void MainWindow::on_stringSortUnsort_clicked()
     refreshWindow();
 }
 
-void MainWindow::on_deleteSelectedStringsButton_clicked()
+void MainWindow::on_stringOutputButton_clicked()
 {
-    removeSelected();
-    refreshWindow();
+    outputStrings();
+}
+
+void MainWindow::on_savedStringOutputButton_clicked()
+{
+    outputStrings();
+}
+
+void MainWindow::outputStrings()
+{
+    dialogBox = new CustomDialog();
+    dialogBox->setWindowTitle("Output Strings");
+    QLabel *label = new QLabel(dialogBox);
+
+    if (fileOpened) {
+        label->setText("Please select a location to store the strings text file.");
+        dialogBox->exec();
+        QFile file(QFileDialog::getExistingDirectory(this, "Select a location to store strings."));
+        QString stringsLoc = file.fileName();
+        file.close();
+
+        if (stringsLoc != "") {
+            // find which stringlist to use and the total size of the strings
+            int totalStringsLength = 0, stringsSize = 0;
+            QStringList list;
+            QString outputFileName = "";
+            if (ui->stackedWidget->currentIndex() == 1) {
+                list = strings;
+                outputFileName = "strings." + fileName + ".txt";
+                stringsSize = stringCount;
+                totalStringsLength = totalStringSize + stringsSize;
+            }
+            else {
+                list = savedStrings;
+                outputFileName = "savedStrings." + fileName + ".txt";
+                stringsSize = savedStrings.count();
+                totalStringsLength = totalSavedStringSize + stringsSize;
+            }
+
+            qDebug() << stringsSize;
+            qDebug() << totalStringsLength;
+
+            QString fullName = stringsLoc + 92 + outputFileName;
+            QFile stringsOutput(fullName);
+            char *stringBytes;
+
+            if (stringsOutput.open(QIODevice::ReadWrite)) {
+
+                bool enoughMemory = true;
+                try {
+                    stringBytes = new char[totalStringsLength];
+                } catch (...) {
+                    enoughMemory = false;
+                }
+
+                if (enoughMemory) {
+                    // turn stringlist into char array
+                    int byte = 0;
+                    // for each string
+                    for (int i = 0; i < stringsSize; i++) {
+                        QString string = list.at(i);
+                        int size = string.size();
+                        // for each char in string
+                        for (int j = 0; j < size; j++) {
+                            stringBytes[byte] = string.at(j).unicode();
+                            byte++;
+                        }
+                        // append line break
+                        stringBytes[byte] = 10;
+                        byte++;
+                    }
+
+                    QDataStream ds(&stringsOutput);
+                    ds.writeRawData(stringBytes, totalStringsLength - 1);
+                    stringsOutput.close();
+
+                    label->setText("Strings outputted successfully.");
+                }
+                else {
+                    label->setText("Not enough system memory.");
+                }
+
+                free(stringBytes);
+            }
+            else {
+                label->setText("Cannot write to disk.");
+            }
+        }
+        else {
+            label->setText("No location selected.");
+        }
+    }
+    else {
+        label->setText("You must first select a file to analyse before strings can be outputted to a text file.");
+    }
+    dialogBox->exec();
 }
 
 void MainWindow::wheelEvent(QWheelEvent *event)
@@ -814,6 +820,13 @@ bool MainWindow::unpack()
 void MainWindow::findStrings()
 {
     if (!stringsBuilt && fileOpened) {
+
+        // strings context menu
+        ui->stringList->setContextMenuPolicy(Qt::CustomContextMenu);
+        ui->savedStringList->setContextMenuPolicy(Qt::CustomContextMenu);
+        connect(ui->stringList, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(showContextMenu(QPoint)));
+        connect(ui->savedStringList, SIGNAL(customContextMenuRequested(QPoint)), this, SLOT(showContextMenu(QPoint)));
+
         QString item = "";
         bool nullSpaced = false, validString = false;
         stringCount = 0;
@@ -884,6 +897,7 @@ void MainWindow::findStrings()
                 strings.insert(stringCount,item);
                 stringsMap[item] = true;
                 hexLocationMap[stringCount] = stringStartLoc;
+                totalStringSize += item.size();
                 stringCount++;
                 item = "";
                 validString = false;
@@ -894,6 +908,7 @@ void MainWindow::findStrings()
             strings.insert(stringCount,item);
             stringsMap[item] = true;
             hexLocationMap[stringCount] = fileSize - item.size();
+            totalStringSize += item.size();
             stringCount++;
         }
 
@@ -908,7 +923,6 @@ void MainWindow::findStrings()
         QString count = QString::number(stringCount);
         ui->stringCountValue->setText(count);
 
-        maxDisplayStrings = 24; // eventually based on ui things
         // scroll bar value
         if (stringCount % maxDisplayStrings > 0) {
             ui->stringsScrollBar->setMaximum(stringCount / maxDisplayStrings);
@@ -952,6 +966,8 @@ void MainWindow::refreshStrings()
 
         ui->stringList->addItems(displayStrings);
 
+        QSize stringSize;
+        stringSize.setHeight(ui->stringList->height() / maxDisplayStrings);
         // recheck saved strings
         for(int i = 0; i < displayStringCount; i++) {
             if (savedStringMap[i + stringOffset]) {
@@ -960,6 +976,7 @@ void MainWindow::refreshStrings()
             else {
                 ui->stringList->item(i)->setCheckState(Qt::Unchecked);
             }
+            ui->stringList->item(i)->setSizeHint(stringSize);
         }
 
         // display things
@@ -1002,23 +1019,187 @@ void MainWindow::saveDisplayedStrings()
 void MainWindow::refreshSavedStrings()
 {
     if (stringsBuilt) {
-        QStringList savedStrings;
+        savedStrings.clear();
+        totalSavedStringSize = 0;
         for (int i = 0; i < stringCount; i++) {
             if (savedStringMap[i]) {
                savedStrings += strings[i];
                savedStringLocationMap[savedStrings.count() - 1] = i;
+               totalSavedStringSize += strings[i].size();
             }
         }
-        ui->savedStringList->clear();
         ui->savedStringList->addItems(savedStrings);
 
-        if (ui->savedStringList->count() > 0) {
+        if (savedStrings.count() > 0) {
             stringsSaved = true;
         }
 
         // display things
         QString count = QString::number(ui->savedStringList->count());
         ui->savedStringCountValue->setText(count);
+    }
+}
+
+void MainWindow::showContextMenu(const QPoint &point)
+{
+    QListWidget *list;
+    QMenu myMenu;
+    myMenu.addAction("Copy",  this, SLOT(copyHighlightedItemsText()));
+
+    // if find strings page
+    if (ui->stackedWidget->currentIndex() == 1) {
+        list = ui->stringList;
+        myMenu.addAction("Check",  this, SLOT(checkHighlighted()));
+        myMenu.addAction("Uncheck",  this, SLOT(uncheckHighlighted()));
+    }
+    else {
+        list = ui->savedStringList;
+        myMenu.addAction("Remove",  this, SLOT(removeSelected()));
+    }
+
+    myMenu.addSeparator();
+    myMenu.addAction("Highlight All",  this, SLOT(highlightAll()));
+    myMenu.addSeparator();
+    myMenu.addAction("View Location in Hex", this, SLOT(stringToHexLocation()));
+
+    // set location for men to appear
+    QPoint globalPos = list->mapToGlobal(point);
+
+    myMenu.exec(globalPos);
+}
+
+void MainWindow::copyHighlightedItemsText()
+{
+    // copy all selected text
+    QString text = "";
+    if (ui->stackedWidget->currentIndex() == 1) {
+        for (int i = 0; i < maxDisplayStrings; i++) {
+            if (ui->stringList->item(i)->isSelected()) {
+                text += ui->stringList->item(i)->text() + "\n";
+            }
+        }
+    }
+    else {
+        for (int i = 0; i < ui->savedStringList->count(); i++) {
+            if (ui->savedStringList->item(i)->isSelected()) {
+                text += ui->savedStringList->item(i)->text() + "\n";
+            }
+        }
+    }
+    text.remove(text.size() - 2, 2);
+    QApplication::clipboard()->setText(text);
+}
+
+void MainWindow::checkHighlighted()
+{
+    for (int i = 0; i < maxDisplayStrings; i++) {
+        if (ui->stringList->item(i)->isSelected()) {
+            ui->stringList->item(i)->setCheckState(Qt::CheckState::Checked);
+        }
+    }
+}
+
+void MainWindow::uncheckHighlighted()
+{
+    for (int i = 0; i < maxDisplayStrings; i++) {
+        if (ui->stringList->item(i)->isSelected()) {
+            ui->stringList->item(i)->setCheckState(Qt::CheckState::Unchecked);
+        }
+    }
+}
+
+void MainWindow::highlightAll()
+{
+    if (ui->stackedWidget->currentIndex() == 1) {
+        for (int i = 0; i < maxDisplayStrings; i++) {
+            ui->stringList->item(i)->setSelected(true);
+        }
+    }
+    else {
+        for (int i = 0; i < ui->savedStringList->count(); i++) {
+            ui->savedStringList->item(i)->setSelected(true);
+        }
+    }
+}
+
+void MainWindow::removeSelected()
+{
+    if (fileOpened) {
+        QModelIndexList selection = ui->savedStringList->selectionModel()->selectedRows();
+        for (int i = 0; i < selection.count(); i++) {
+            QModelIndex index = selection.at(i);
+            savedStringMap[savedStringLocationMap[index.row()]] = false;
+        }
+        removedStrings = true;
+        refreshSavedStrings();
+    }
+}
+
+void MainWindow::stringToHexLocation()
+{
+    bool itemIndexFound = false;
+    int i = 0; // string location on screen
+
+    // if from find strings
+    if (ui->stackedWidget->currentIndex() == 1) {
+        ui->stackedWidget->setCurrentIndex(4);
+        refreshWindow();
+        while (!itemIndexFound && i < maxDisplayStrings) {
+            if (ui->stringList->item(i)->isSelected()) {
+                itemIndexFound = true;
+            }
+            else {
+                i++;
+            }
+        }
+        if (stringsSorted) {
+            bool locFound = false;
+            int j = 0;
+            while (!locFound && j < stringCount) {
+                if (swapStringMap[j] == stringOffset + i) {
+                    locFound = true;
+                }
+                else {
+                    j++;
+                }
+            }
+            ui->hexScrollBar->setValue(hexLocationMap[j] / hexDisplayCols);
+        }
+        else {
+            ui->hexScrollBar->setValue(hexLocationMap[stringOffset + i] / hexDisplayCols);
+        }
+        // highlight in hex
+    }
+    // if from saved strings
+    else if (ui->stackedWidget->currentIndex() == 2) {
+        ui->stackedWidget->setCurrentIndex(4);
+        refreshWindow();
+        while (!itemIndexFound && i < ui->savedStringList->count()) {
+            if (ui->savedStringList->item(i)->isSelected()) {
+                itemIndexFound = true;
+            }
+            else {
+                i++;
+            }
+        }
+        if (stringsSorted) {
+            bool locFound = false;
+            int j = 0;
+            while (!locFound && j < stringCount) {
+                if (swapStringMap[j] == savedStringLocationMap[i]) {
+                    locFound = true;
+                }
+                else {
+                    j++;
+                }
+            }
+            ui->hexScrollBar->setValue(hexLocationMap[j] / hexDisplayCols);
+        }
+        else {
+            ui->hexScrollBar->setValue(hexLocationMap[savedStringLocationMap[i]] / hexDisplayCols);
+        }
+
+        // highlight in hex
     }
 }
 
@@ -1140,8 +1321,8 @@ void MainWindow::findDLLs()
                 dllFunctions += "There was an error when finding dll names and function calls.";
             }
             else {
-                if (dllFunctions.count() - maxDisplayStrings > 0) {
-                    ui->dllScrollBar->setMaximum(dllFunctions.count() - maxDisplayStrings);
+                if (dllFunctions.count() - maxDisplayDLLs > 0) {
+                    ui->dllScrollBar->setMaximum(dllFunctions.count() - maxDisplayDLLs);
                 }
             }
             ui->dllCountValue->setText(QString::number(dllCount));
@@ -1190,8 +1371,8 @@ void MainWindow::refreshDLLs()
 
         ui->DLL_List->clear();
 
-        int dllOffset = ui->dllScrollBar->value(), maxDisplayItems = maxDisplayStrings;
-        if (dllFunctions.count() < maxDisplayStrings) {
+        int dllOffset = ui->dllScrollBar->value(), maxDisplayItems = maxDisplayDLLs; // temp
+        if (dllFunctions.count() < maxDisplayDLLs) {
             maxDisplayItems = dllFunctions.count();
         }
 
@@ -1374,6 +1555,7 @@ void MainWindow::resetChecks()
     stringsSorted = false;
     firstStringsRefresh = true;
     strings.clear();
+    savedStrings.clear();
     unsortedStrings.clear();
     stringsMap.clear();
     savedStringMap.clear();
@@ -1381,12 +1563,16 @@ void MainWindow::resetChecks()
     stringLength = 3;
     ui->stringsScrollBar->setValue(0);
     sorting = false;
+    maxDisplayStrings = 30;
+    totalStringSize = 0;
+    totalSavedStringSize = 0;
 
     // dlls
     dllFunctions.clear();
     ui->dllCountValue->setText(QString::number(0));
     ui->dllFunctionCountValue->setText(QString::number(0));
     ui->dllScrollBar->setMaximum(0);
+    maxDisplayDLLs = 24;
 
     // hex
     hexLocationMap.clear();
@@ -1553,10 +1739,11 @@ void MainWindow::buildEntropyGraph()
                 chunkRange << QString::number(i); //QString::number(i * chunkSize);// + " - " + QString::number((i * chunkSize) + chunkSize);
             }
             // last and incomplete chunk
+            /*
             if (fileSize % chunkSize > 0) {
-                //*entropySet << chunkEntropy(chunks * chunkSize, (fileSize % chunkSize + chunkSize) % chunkSize);
-                //chunkRange << QString::number(chunks); //QString::number(chunks * chunkSize);// << " - " << QString::number((chunks * chunkSize) + ((fileSize % chunkSize + chunkSize) % chunkSize));
-            }
+                *entropySet << chunkEntropy(chunks * chunkSize, (fileSize % chunkSize + chunkSize) % chunkSize);
+                chunkRange << QString::number(chunks); //QString::number(chunks * chunkSize);// << " - " << QString::number((chunks * chunkSize) + ((fileSize % chunkSize + chunkSize) % chunkSize));
+            }*/
 
             QBarCategoryAxis *axisY = new QBarCategoryAxis();
             QValueAxis *axisX = new QValueAxis();
@@ -1620,27 +1807,6 @@ void MainWindow::buildEntropyGraph()
 
             entropyGraphBuilt = true;
         }
-    }
-}
-
-/*
-
-
-string to hex
-
-
-
-*/
-
-void MainWindow::removeSelected()
-{
-    if (fileOpened) {
-        QModelIndexList selection = ui->savedStringList->selectionModel()->selectedRows();
-        for (int i = 0; i < selection.count(); i++) {
-            QModelIndex index = selection.at(i);
-            savedStringMap[savedStringLocationMap[index.row()]] = false;
-        }
-        removedStrings = true;
     }
 }
 
