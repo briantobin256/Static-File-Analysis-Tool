@@ -22,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     QFile file("D:/Downloads/strings.exe");
     open(&file);
     file.close();
-    ui->stackedWidget->setCurrentIndex(3);
+    ui->stackedWidget->setCurrentIndex(4);
 
     refreshWindow();
 }
@@ -1012,6 +1012,7 @@ void MainWindow::saveDisplayedStrings()
 void MainWindow::refreshSavedStrings()
 {
     if (stringsBuilt) {
+        saveDisplayedStrings();
         savedStrings.clear();
         totalSavedStringSize = 0;
         for (int i = 0; i < stringCount; i++) {
@@ -1021,6 +1022,7 @@ void MainWindow::refreshSavedStrings()
                totalSavedStringSize += strings[i].size();
             }
         }
+        ui->savedStringList->clear();
         ui->savedStringList->addItems(savedStrings);
 
         if (savedStrings.count() > 0) {
@@ -1132,11 +1134,10 @@ void MainWindow::stringToHexLocation()
 {
     bool itemIndexFound = false;
     int i = 0; // string location on screen
+    int scrollBarValue = 0;
 
     // if from find strings
     if (ui->stackedWidget->currentIndex() == 1) {
-        ui->stackedWidget->setCurrentIndex(4);
-        refreshWindow();
         while (!itemIndexFound && i < maxDisplayStrings) {
             if (ui->stringList->item(i)->isSelected()) {
                 itemIndexFound = true;
@@ -1156,17 +1157,14 @@ void MainWindow::stringToHexLocation()
                     j++;
                 }
             }
-            ui->hexScrollBar->setValue(hexLocationMap[j] / hexDisplayCols);
+            scrollBarValue = hexLocationMap[j] / hexDisplayCols;
         }
         else {
-            ui->hexScrollBar->setValue(hexLocationMap[stringOffset + i] / hexDisplayCols);
+            scrollBarValue = hexLocationMap[stringOffset + i] / hexDisplayCols;
         }
-        // highlight in hex
     }
     // if from saved strings
     else if (ui->stackedWidget->currentIndex() == 2) {
-        ui->stackedWidget->setCurrentIndex(4);
-        refreshWindow();
         while (!itemIndexFound && i < ui->savedStringList->count()) {
             if (ui->savedStringList->item(i)->isSelected()) {
                 itemIndexFound = true;
@@ -1186,14 +1184,16 @@ void MainWindow::stringToHexLocation()
                     j++;
                 }
             }
-            ui->hexScrollBar->setValue(hexLocationMap[j] / hexDisplayCols);
+            scrollBarValue = hexLocationMap[j] / hexDisplayCols;
         }
         else {
-            ui->hexScrollBar->setValue(hexLocationMap[savedStringLocationMap[i]] / hexDisplayCols);
+            scrollBarValue = hexLocationMap[savedStringLocationMap[i]] / hexDisplayCols;
         }
-
-        // highlight in hex
     }
+
+    ui->stackedWidget->setCurrentIndex(4);
+    refreshWindow();
+    ui->hexScrollBar->setValue(scrollBarValue);
 }
 
 void MainWindow::findDLLs()
@@ -1212,9 +1212,9 @@ void MainWindow::findDLLs()
         ui->DLLFunctionNameBrowser->setFont(dllFont);
 
         // background colour
-        ui->DLLTitleBrowser->setStyleSheet("background-color: #FF1493;");
-        ui->DLLFunctionTitleBrowser->setStyleSheet("background-color: #FAEBD7;");
-        ui->DLLNameBrowser->setStyleSheet("background-color: #696969; color: #FF1493");
+        ui->DLLTitleBrowser->setStyleSheet("background-color: #FAFAD2;");
+        ui->DLLNameBrowser->setStyleSheet("background-color: #FFF8DC;");
+        ui->DLLFunctionTitleBrowser->setStyleSheet("background-color: #FAFAD2;");
         ui->DLLFunctionNameBrowser->setStyleSheet("background-color: #FFF8DC;");
 
         if (PE && (rdataStartLoc > 0 || idataStartLoc > 0)) {
@@ -1329,8 +1329,8 @@ void MainWindow::findDLLs()
             }
 
             // set dll name and funtion title bars
-            DLLTitle += "DLL Names (" + QString::number(dllCount) + ") - Import Directory Table (<a href='" + QString::number(dllNamePointerLoc) + "'>" + QString::number(dllNamePointerLoc, 16).toUpper() + "h<a>)";
-            FunctionTitle += "Function Names (" + QString::number(functionCount) + ") - Import Address Table (<a href='" + QString::number(functionNamePointerLoc) + "'>" + QString::number(functionNamePointerLoc, 16).toUpper() + "h<a>)";
+            DLLTitle += "DLL Names (" + QString::number(dllCount) + ") - Import Directory Table (<a href='" + QString::number(dllNamePointerLoc) + "'>" + QString::number(dllNamePointerLoc, 16).toUpper() + "h</a>)";
+            FunctionTitle += "Function Names (" + QString::number(functionCount) + ") - Import Address Table (<a href='" + QString::number(functionNamePointerLoc) + "'>" + QString::number(functionNamePointerLoc, 16).toUpper() + "h</a>)";
             ui->DLLTitleBrowser->insertHtml(DLLTitle);
             ui->DLLFunctionTitleBrowser->insertHtml(FunctionTitle);
 
@@ -1633,13 +1633,15 @@ void MainWindow::saveChanges()
 {
     if (dataChanged) {
         QMessageBox::StandardButton reply;
-        reply = QMessageBox::question(this, "Warning!", "Do you want to save the changes made in the hex editor?", QMessageBox::Yes|QMessageBox::No);
+        reply = QMessageBox::question(this, "Warning!", "Do you want to save the changes made in the hex editor?\nThis will reset all saved strings.", QMessageBox::Yes|QMessageBox::No);
         if (reply == QMessageBox::Yes) {
 
             // change actual file data
             QString tmpHash = generateHash(rawData, fileSize);
             QString tmpName = tmpHash + ".tmp";
             QString fullTmpName = directory + tmpName;
+
+            // write to temporary file
             QFile newFile(fullTmpName);
             if (newFile.open(QIODevice::ReadWrite)) {
                 QDataStream ds(&newFile);
@@ -1657,8 +1659,10 @@ void MainWindow::saveChanges()
                 path.remove(fileName);
                 path.rename(tmpName, fileName);
 
-                // reset checks
-                resetChecks();
+                // open new file
+                QFile f(directory + fileName);
+                open(&f);
+                f.close();
             }
             else {
                 dialogBox = new CustomDialog();
@@ -2199,6 +2203,7 @@ void MainWindow::getDisassembly()
                                 }
                                 // if opcode is (E8, E9)
                                 else if (byte == 232 || byte == 233) {
+                                    operand2 = "short ";
                                     if (operandSizeModifier) {
                                         maxImmediates = 2;
                                     }
@@ -2228,6 +2233,7 @@ void MainWindow::getDisassembly()
                                 }
                                 // if opcode is (9A, EA)
                                 else if (byte == 154 || byte == 234) {
+                                    operand2 = "short ";
                                     maxImmediates = (operandSize / 8) + 2;
                                 }
                                 // if opcode is (A0 - A3)
