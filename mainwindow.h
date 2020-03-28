@@ -70,8 +70,8 @@ public:
     bool firstStringsRefresh;
 
     // DLL things
-    QStringList dllFunctions;
-    int maxDisplayDLLs;
+    QString dllNames;
+    QString dllFunctionNames;
 
     //hex things
     int hexDisplayRows;
@@ -175,8 +175,6 @@ private slots:
 
     void on_disassemblyBrowser_anchorClicked(const QUrl &arg1);
 
-    void on_dllScrollBar_valueChanged();
-
     void on_hexByteDisplay_cursorPositionChanged();
 
     void on_hexByteDisplay_textChanged();
@@ -240,7 +238,6 @@ private:
 
     // dlls
     void findDLLs();
-    void refreshDLLs();
     QString getFunctionName(int location, int dataSectionRVA, int dataStartLoc);
 
     // hex

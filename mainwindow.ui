@@ -490,7 +490,7 @@
      </palette>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>3</number>
     </property>
     <widget class="QWidget" name="page_0_Main_Window"/>
     <widget class="QWidget" name="page_1_Find_Strings">
@@ -784,139 +784,38 @@
      </widget>
     </widget>
     <widget class="QWidget" name="page_3_DLLs">
-     <widget class="QListWidget" name="DLL_List">
+     <widget class="QTextBrowser" name="DLLNameBrowser">
       <property name="geometry">
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>925</width>
-        <height>680</height>
+        <width>965</width>
+        <height>220</height>
        </rect>
       </property>
-      <property name="sizePolicy">
-       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
-        <horstretch>0</horstretch>
-        <verstretch>0</verstretch>
-       </sizepolicy>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>925</width>
-        <height>680</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>925</width>
-        <height>680</height>
-       </size>
-      </property>
-      <property name="focusPolicy">
-       <enum>Qt::NoFocus</enum>
-      </property>
-      <property name="verticalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <property name="horizontalScrollBarPolicy">
-       <enum>Qt::ScrollBarAlwaysOff</enum>
-      </property>
-      <property name="autoScroll">
-       <bool>true</bool>
-      </property>
-      <property name="autoScrollMargin">
-       <number>16</number>
-      </property>
-      <property name="editTriggers">
-       <set>QAbstractItemView::DoubleClicked|QAbstractItemView::EditKeyPressed</set>
-      </property>
-      <property name="defaultDropAction">
-       <enum>Qt::CopyAction</enum>
-      </property>
-      <property name="selectionMode">
-       <enum>QAbstractItemView::SingleSelection</enum>
+      <property name="html">
+       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
-     <widget class="QScrollBar" name="dllScrollBar">
+     <widget class="QTextBrowser" name="DLLFunctionNameBrowser">
       <property name="geometry">
        <rect>
-        <x>945</x>
-        <y>10</y>
-        <width>25</width>
-        <height>680</height>
+        <x>10</x>
+        <y>240</y>
+        <width>965</width>
+        <height>510</height>
        </rect>
       </property>
-      <property name="minimumSize">
-       <size>
-        <width>25</width>
-        <height>680</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>25</width>
-        <height>680</height>
-       </size>
-      </property>
-      <property name="maximum">
-       <number>0</number>
-      </property>
-      <property name="pageStep">
-       <number>16</number>
-      </property>
-      <property name="orientation">
-       <enum>Qt::Vertical</enum>
-      </property>
-     </widget>
-     <widget class="QLabel" name="dllFunctionCountValue">
-      <property name="geometry">
-       <rect>
-        <x>540</x>
-        <y>720</y>
-        <width>101</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string/>
-      </property>
-     </widget>
-     <widget class="QLabel" name="dllFunctionCountLabel">
-      <property name="geometry">
-       <rect>
-        <x>410</x>
-        <y>720</y>
-        <width>131</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>Function Count:</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="dllCountLabel">
-      <property name="geometry">
-       <rect>
-        <x>60</x>
-        <y>720</y>
-        <width>81</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>DLL Count:</string>
-      </property>
-     </widget>
-     <widget class="QLabel" name="dllCountValue">
-      <property name="geometry">
-       <rect>
-        <x>170</x>
-        <y>720</y>
-        <width>151</width>
-        <height>20</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string/>
+      <property name="html">
+       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+&lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
+p, li { white-space: pre-wrap; }
+&lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
+&lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
       </property>
      </widget>
     </widget>
@@ -1356,19 +1255,19 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>925</width>
+        <width>920</width>
         <height>670</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
-        <width>925</width>
+        <width>920</width>
         <height>670</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>925</width>
+        <width>920</width>
         <height>670</height>
        </size>
       </property>

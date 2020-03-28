@@ -22,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     QFile file("D:/Downloads/strings.exe");
     open(&file);
     file.close();
-    ui->stackedWidget->setCurrentIndex(1);
+    ui->stackedWidget->setCurrentIndex(3);
 
     refreshWindow();
 }
@@ -324,13 +324,6 @@ void MainWindow::on_stringsScrollBar_valueChanged()
 {
     if (!reseting) {
         refreshStrings();
-    }
-}
-
-void MainWindow::on_dllScrollBar_valueChanged()
-{
-    if (!reseting) {
-        refreshDLLs();
     }
 }
 
@@ -1206,8 +1199,6 @@ void MainWindow::stringToHexLocation()
 void MainWindow::findDLLs()
 {
     if (fileOpened) {
-        // temp
-        ui->DLL_List->clear();
         if (!dllsBuilt && PE && (rdataStartLoc > 0 || idataStartLoc > 0)) {
 
             int dllNamePointerLoc = 0, functionNamePointerLoc = 0, dataSectionRVA = 0, dataStartLoc = 0, dllCount = 0, functionCount = 0;
@@ -1252,7 +1243,7 @@ void MainWindow::findDLLs()
             // FIND ALL DLL NAMES
             //
 
-            QStringList dllNames;
+            QStringList dllName;
             if (dllNamePointerLoc > 0) {
                 bool goodName = true;
                 int addressOffset = 0;
@@ -1262,7 +1253,8 @@ void MainWindow::findDLLs()
                         location += pow(16, i * 2) * static_cast<unsigned char>(rawData[dllNamePointerLoc + i + addressOffset]);
                     }
                     if (location != 0) {
-                        dllNames += getFunctionName(location - 2, dataSectionRVA, dataStartLoc);
+                        dllName += getFunctionName(location - 2, dataSectionRVA, dataStartLoc);
+                        dllNames += getFunctionName(location - 2, dataSectionRVA, dataStartLoc) + "<br>";
                         dllCount++;
                     }
                     else {
@@ -1270,8 +1262,10 @@ void MainWindow::findDLLs()
                     }
                     addressOffset += 20;
                 }
-                dllFunctions += dllNames;
             }
+
+            dllNames.prepend("------------------------------------------------------------------<br>");
+            dllNames.prepend("DLL Names (" + QString::number(dllCount) + ") - Import Directory Table (" + QString::number(dllNamePointerLoc, 16).toUpper() + "h)<br>");
 
             //
             // FIND ALL FUNCTION NAMES
@@ -1289,14 +1283,18 @@ void MainWindow::findDLLs()
                 // end of a specific dlls functions
                 if (location == 0) {
                     functions.sort();
-                    functions.prepend("---------------------------------");
-                    dllFunctions += functions;
-                    functions.clear();
-                    dllsCompletedCount++;
+                    functions += "------------------------------------------------------------------";
                     if (dllsCompletedCount == dllCount) {
                         functionsFinished = true;
-                        dllFunctions += "---------------------------------";
                     }
+
+                    // string list to html
+                    for (int i = 0; i < functions.size(); i++) {
+                        dllFunctionNames += functions.at(i) + "<br>";
+                    }
+
+                    functions.clear();
+                    dllsCompletedCount++;
                 }
                 else {
                     QString functionName = "";
@@ -1317,25 +1315,26 @@ void MainWindow::findDLLs()
                 addressOffset += 4;
             }
 
-            if (dllFunctions.count() == 0) {
-                dllFunctions += "There was an error when finding dll names and function calls.";
+            if (dllNames.count() == 2) {
+                dllNames += "There was an error when finding dll names and function calls.";
             }
             else {
-                if (dllFunctions.count() - maxDisplayDLLs > 0) {
-                    ui->dllScrollBar->setMaximum(dllFunctions.count() - maxDisplayDLLs);
-                }
+                dllFunctionNames.prepend("------------------------------------------------------------------<br>");
+                dllFunctionNames.prepend("Function Names (" + QString::number(functionCount) + ") - Import Address Table (" + QString::number(functionNamePointerLoc, 16).toUpper() + "h)<br>");
             }
-            ui->dllCountValue->setText(QString::number(dllCount));
-            ui->dllFunctionCountValue->setText(QString::number(functionCount));
         }
         else {
             if (!PE) {
-                dllFunctions += "This file is not a PE file.\nDLL names and function calls could not be found.";
+                dllNames += "This file is not a PE file.\nDLL names and function calls could not be found.";
             }
             else {
-                dllFunctions += "This file is a PE file.\nHowever, idata or rdata section could not be found.";
+                dllNames += "This file is a PE file.\nHowever, idata or rdata section could not be found.";
             }
         }
+
+        ui->DLLNameBrowser->insertHtml(dllNames);
+        ui->DLLFunctionNameBrowser->insertHtml(dllFunctionNames);
+
         dllsBuilt = true;
     }
 }
@@ -1359,31 +1358,6 @@ QString MainWindow::getFunctionName(int location, int dataSectionRVA, int dataSt
         }
     }
     return functionName;
-}
-
-void MainWindow::refreshDLLs()
-{
-    if (fileOpened) {
-
-        if (!dllsBuilt) {
-            findDLLs();
-        }
-
-        ui->DLL_List->clear();
-
-        int dllOffset = ui->dllScrollBar->value(), maxDisplayItems = maxDisplayDLLs; // temp
-        if (dllFunctions.count() < maxDisplayDLLs) {
-            maxDisplayItems = dllFunctions.count();
-        }
-
-        // build display
-        QStringList displayDLLs;
-        for (int i = 0; i < maxDisplayItems; i++) {
-            displayDLLs += dllFunctions[dllOffset + i];
-        }
-
-        ui->DLL_List->addItems(displayDLLs);
-    }
 }
 
 QString MainWindow::byteToHexString(int c)
@@ -1509,7 +1483,7 @@ void MainWindow::refreshWindow()
         break;
 
         case 3: extendedWindowName = " - DLLs";
-        refreshDLLs();
+        findDLLs();
         break;
 
         case 4: extendedWindowName = " - Hex";
@@ -1568,11 +1542,10 @@ void MainWindow::resetChecks()
     totalSavedStringSize = 0;
 
     // dlls
-    dllFunctions.clear();
-    ui->dllCountValue->setText(QString::number(0));
-    ui->dllFunctionCountValue->setText(QString::number(0));
-    ui->dllScrollBar->setMaximum(0);
-    maxDisplayDLLs = 24;
+    dllNames.clear();
+    dllFunctionNames.clear();
+    ui->DLLNameBrowser->clear();
+    ui->DLLFunctionNameBrowser->clear();
 
     // hex
     hexLocationMap.clear();
