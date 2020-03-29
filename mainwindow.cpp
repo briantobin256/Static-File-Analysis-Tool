@@ -1370,14 +1370,14 @@ void MainWindow::on_DLLTitleBrowser_anchorClicked(const QUrl &arg1)
 {
     ui->stackedWidget->setCurrentIndex(4);
     ui->hexScrollBar->setValue(arg1.url().toInt() / hexDisplayCols);
-    refreshHex();
+    refreshWindow();
 }
 
 void MainWindow::on_DLLFunctionTitleBrowser_anchorClicked(const QUrl &arg1)
 {
     ui->stackedWidget->setCurrentIndex(4);
     ui->hexScrollBar->setValue(arg1.url().toInt() / hexDisplayCols);
-    refreshHex();
+    refreshWindow();
 }
 
 QString MainWindow::getFunctionName(int location, int dataSectionRVA, int dataStartLoc)
@@ -1837,6 +1837,7 @@ void MainWindow::refreshDisassembly()
     if (fileOpened) {
 
         if (!disassemblyBuilt) {
+            maxDisplayInstructions = 31;
             getDisassembly();
         }
 
@@ -1863,7 +1864,7 @@ void MainWindow::refreshDisassembly()
         ui->disassemblyPageNumberValue->setText(display);
 
         // font
-        displayInstructions.prepend("<p style='font-family:courier;font-size:15px;'>");
+        displayInstructions.prepend("<p style='font-family:Courier;font-size:20px;'>");
         displayInstructions.append("</p>");
         ui->disassemblyBrowser->setHtml(displayInstructions);
     }
@@ -2528,20 +2529,25 @@ void MainWindow::getDisassembly()
                     displacementIndex++;
                     
                     if (displacementIndex == maxDisplacements) {
+                        QString fontStart = "", fontEnd = "";
+                        if (!rareInstruction) {
+                            fontStart = "<font color='green'>";
+                            fontEnd = "</font>";
+                        }
 
                         if (negative) {
                             if (maxDisplacements > 1) {
                                 displacementValue *= -1;
                             }
-                            operand2 += "-" + QString::number(displacementValue, 16).toUpper() + "h]";
+                            operand2 += fontStart + "-" + QString::number(displacementValue, 16).toUpper() + "h" + fontEnd + "]";
                         }
                         else {
-                            operand2 += "+" + QString::number(displacementValue, 16).toUpper() + "h]";
+                            operand2 += fontStart + "+" + QString::number(displacementValue, 16).toUpper() + "h" + fontEnd + "]";
                         }
 
                         // if register addressing mode
                         if (mod == 0 && rm == 101) {
-                            operand2 = "dword ptr ds:" + QString::number(displacementValue, 16).toUpper() + "h"; // convert to loc_ value
+                            operand2 = "dword ptr ds:" + fontStart + QString::number(displacementValue, 16).toUpper() + "h" + fontEnd; // convert to loc_ value
                         }
 
                         if (maxImmediates == 0) {
@@ -2626,14 +2632,14 @@ void MainWindow::getDisassembly()
                                 if (operand2 == "short " || (opcodeByte >= 128 && opcodeByte <= 143 && extended)) {
                                     QString loc = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
                                     operand2 += "<a href='" + loc + "'>";
-                                    operand2 += "loc_" + loc + "</a>";
+                                    operand2 += "loc " + loc + "</a>";
                                     locMap[loc] = true;
                                 }
                                 // if a call to a location
                                 else if (opcodeByte == 154 || opcodeByte == 232) {
                                     QString sub = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
                                     operand2 += "<a href='" + sub + "'>";
-                                    operand2 += "sub_" + sub + "</a>";
+                                    operand2 += "sub " + sub + "</a>";
                                     subMap[sub] = true;
                                 }
                                 else {
@@ -2666,7 +2672,6 @@ void MainWindow::getDisassembly()
             QString location = QString::number(instructionStartByte + instrucionDisplayOffset, 16).toUpper();
             disassemblyLine += location;
 
-            // good instruction
             if (!error) {
                 // get instruction mnemonic if not special
                 if (instruction == "") {
@@ -2688,8 +2693,18 @@ void MainWindow::getDisassembly()
                         }
                     }
                 }
+
                 disassemblyLine += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-                disassemblyLine += instruction;
+
+                if (rareInstruction) {
+                    disassemblyLine += instruction;
+                }
+                else {
+                    disassemblyLine += "<font color='blue'>";//993333
+                    disassemblyLine += instruction;
+                    disassemblyLine += "</font>";
+                }
+
                 if (!operand1isDestination) {
                     if (operand2 != "") {
                         disassemblyLine += operand2;
@@ -2781,7 +2796,7 @@ void MainWindow::getDisassembly()
                 QStringList list;
                 list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
                 list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
-                list += startLocationString + "<font color='blue'> ; --------------------------START PROCEDURE--------------------------<br></font>";
+                list += startLocationString + "<font color='blue'> ; --------------------- <font color='red'>START PROCEDURE</font> -----------------------------<br></font>";
                 list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
                 list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
                 list += startLocationString + "<br>";
@@ -2798,12 +2813,12 @@ void MainWindow::getDisassembly()
             }
         }
 
-        maxDisplayInstructions = 41;
         ui->disassemblyScrollBar->setMaximum(disassembly.count() - maxDisplayInstructions);
         ui->disassemblyBrowser->setOpenExternalLinks(false);
         reseting = true;
         ui->disassemblyScrollBar->setValue(codeStartProcedure);
         reseting = false;
+        ui->disassemblyBrowser->setStyleSheet("background-color: #F0F0F0;");
     }
     else {
         // if error during PE scan
@@ -2839,86 +2854,89 @@ QString MainWindow::immediateFormat(QString s)
     else {
         s+= "0";
     }
+    s.prepend("<font color='green'>");
+    s.append("</font>");
     return s;
 }
 
 QString MainWindow::registerName(int reg, int operandSize)
 {
+    QString fontStart = "<font color='#ff00ff'>", fontEnd = "</font>", registerName = "";
     switch (reg) {
         case 0: switch (operandSize) {
-                    case 8: return "al";
+                    case 8: registerName = "al";
                     break;
-                    case 16: return "ax";
+                    case 16: registerName = "ax";
                     break;
-                    case 32: return "eax";
+                    case 32: registerName = "eax";
                     break;
                 }
         break;
         case 1: switch (operandSize) {
-                    case 8: return "cl";
+                    case 8: registerName = "cl";
                     break;
-                    case 16: return "cx";
+                    case 16: registerName = "cx";
                     break;
-                    case 32: return "ecx";
+                    case 32: registerName = "ecx";
                     break;
                 }
         break;
         case 10: switch (operandSize) {
-                    case 8: return "dl";
+                    case 8: registerName = "dl";
                     break;
-                    case 16: return "dx";
+                    case 16: registerName = "dx";
                     break;
-                    case 32: return "edx";
+                    case 32: registerName = "edx";
                     break;
                 }
         break;
         case 11: switch (operandSize) {
-                    case 8: return "bl";
+                    case 8: registerName = "bl";
                     break;
-                    case 16: return "bx";
+                    case 16: registerName = "bx";
                     break;
-                    case 32: return "ebx";
+                    case 32: registerName = "ebx";
                     break;
                 }
         break;
         case 100: switch (operandSize) {
-                    case 8: return "ah";
+                    case 8: registerName = "ah";
                     break;
-                    case 16: return "sp";
+                    case 16: registerName = "sp";
                     break;
-                    case 32: return "esp";
+                    case 32: registerName = "esp";
                     break;
                 }
         break;
         case 101: switch (operandSize) {
-                    case 8: return "ch";
+                    case 8: registerName = "ch";
                     break;
-                    case 16: return "bp";
+                    case 16: registerName = "bp";
                     break;
-                    case 32: return "ebp";
+                    case 32: registerName = "ebp";
                     break;
                 }
         break;
         case 110: switch (operandSize) {
-                    case 8: return "dh";
+                    case 8: registerName = "dh";
                     break;
-                    case 16: return "si";
+                    case 16: registerName = "si";
                     break;
-                    case 32: return "esi";
+                    case 32: registerName = "esi";
                     break;
                 }
         break;
         case 111: switch (operandSize) {
-                    case 8: return "bh";
+                    case 8: registerName = "bh";
                     break;
-                    case 16: return "di";
+                    case 16: registerName = "di";
                     break;
-                    case 32: return "edi";
+                    case 32: registerName = "edi";
                     break;
                 }
         break;
     }
-    return "";
+    return fontStart + registerName + fontEnd;
 }
 
 QString MainWindow::getSpecialByteInstruction(int specialByte, int reg)

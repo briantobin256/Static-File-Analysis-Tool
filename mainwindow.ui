@@ -528,19 +528,19 @@
        <rect>
         <x>945</x>
         <y>10</y>
-        <width>25</width>
+        <width>30</width>
         <height>700</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
-        <width>25</width>
+        <width>30</width>
         <height>700</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>25</width>
+        <width>30</width>
         <height>700</height>
        </size>
       </property>
@@ -1035,8 +1035,8 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>941</width>
-        <height>741</height>
+        <width>965</width>
+        <height>745</height>
        </rect>
       </property>
       <property name="widgetResizable">
@@ -1047,8 +1047,8 @@ p, li { white-space: pre-wrap; }
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>939</width>
-         <height>739</height>
+         <width>963</width>
+         <height>743</height>
         </rect>
        </property>
       </widget>
@@ -1331,21 +1331,24 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>10</x>
         <y>10</y>
-        <width>920</width>
-        <height>670</height>
+        <width>925</width>
+        <height>700</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
-        <width>920</width>
-        <height>670</height>
+        <width>925</width>
+        <height>700</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>920</width>
-        <height>670</height>
+        <width>925</width>
+        <height>700</height>
        </size>
+      </property>
+      <property name="frameShape">
+       <enum>QFrame::StyledPanel</enum>
       </property>
       <property name="verticalScrollBarPolicy">
        <enum>Qt::ScrollBarAlwaysOff</enum>
@@ -1359,20 +1362,20 @@ p, li { white-space: pre-wrap; }
        <rect>
         <x>945</x>
         <y>10</y>
-        <width>25</width>
-        <height>670</height>
+        <width>30</width>
+        <height>700</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
-        <width>25</width>
-        <height>670</height>
+        <width>30</width>
+        <height>700</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
-        <width>25</width>
-        <height>670</height>
+        <width>30</width>
+        <height>700</height>
        </size>
       </property>
       <property name="maximum">
@@ -1388,10 +1391,10 @@ p, li { white-space: pre-wrap; }
      <widget class="QLabel" name="disassemblyPageNumberLabel">
       <property name="geometry">
        <rect>
-        <x>30</x>
-        <y>710</y>
-        <width>69</width>
-        <height>20</height>
+        <x>10</x>
+        <y>725</y>
+        <width>45</width>
+        <height>30</height>
        </rect>
       </property>
       <property name="text">
@@ -1401,10 +1404,10 @@ p, li { white-space: pre-wrap; }
      <widget class="QLabel" name="disassemblyPageNumberValue">
       <property name="geometry">
        <rect>
-        <x>110</x>
-        <y>710</y>
-        <width>191</width>
-        <height>20</height>
+        <x>55</x>
+        <y>725</y>
+        <width>200</width>
+        <height>30</height>
        </rect>
       </property>
       <property name="text">
@@ -1414,8 +1417,8 @@ p, li { white-space: pre-wrap; }
      <widget class="QPushButton" name="disassemblyStartLocationButton">
       <property name="geometry">
        <rect>
-        <x>520</x>
-        <y>700</y>
+        <x>460</x>
+        <y>720</y>
         <width>112</width>
         <height>34</height>
        </rect>
