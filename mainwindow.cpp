@@ -22,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     QFile file("D:/Downloads/strings.exe");
     open(&file);
     file.close();
-    ui->stackedWidget->setCurrentIndex(4);
+    ui->stackedWidget->setCurrentIndex(7);
 
     refreshWindow();
 }
@@ -1893,8 +1893,9 @@ void MainWindow::getDisassembly()
             disassembly += "Opcode text file could not be opened!<br>Try running as administrator or reinstalling the program!";
         }
 
-        int instructionSizeOffset = 0;
+        int instructionSizeOffset = 0, instrucionDisplayOffset = 4194304 + baseOfCode, startLocation = codeEntryPoint - baseOfCode;
         QMap<QString, bool> locMap, subMap;
+        QString startLocationString = "";
         // for each instruction in file
         while (codeStartLoc + instructionSizeOffset < codeEndLoc) {
 
@@ -2203,7 +2204,9 @@ void MainWindow::getDisassembly()
                                 }
                                 // if opcode is (E8, E9)
                                 else if (byte == 232 || byte == 233) {
-                                    operand2 = "short ";
+                                    if (byte == 233) {
+                                        operand2 = "short ";
+                                    }
                                     if (operandSizeModifier) {
                                         maxImmediates = 2;
                                     }
@@ -2231,8 +2234,12 @@ void MainWindow::getDisassembly()
                                 else if (byte == 106) {
                                      maxImmediates = 1;
                                 }
-                                // if opcode is (9A, EA)
-                                else if (byte == 154 || byte == 234) {
+                                // if opcode is (9A)
+                                else if (byte == 154) {
+                                    maxImmediates = (operandSize / 8) + 2;
+                                }
+                                // if opcode is (EA)
+                                else if (byte == 234) {
                                     operand2 = "short ";
                                     maxImmediates = (operandSize / 8) + 2;
                                 }
@@ -2623,7 +2630,7 @@ void MainWindow::getDisassembly()
                                     locMap[loc] = true;
                                 }
                                 // if a call to a location
-                                else if (opcodeByte == 232) {
+                                else if (opcodeByte == 154 || opcodeByte == 232) {
                                     QString sub = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
                                     operand2 += "<a href='" + sub + "'>";
                                     operand2 += "sub_" + sub + "</a>";
@@ -2656,11 +2663,10 @@ void MainWindow::getDisassembly()
             // GET LINE READY FOR OUTPUT
             //
 
-            if (rareInstruction) {
-                disassemblyLine = "<font color='red'>";
-            }
-            QString location = QString::number(instructionStartByte + 4198400, 16).toUpper();
+            QString location = QString::number(instructionStartByte + instrucionDisplayOffset, 16).toUpper();
             disassemblyLine += location;
+
+            // good instruction
             if (!error) {
                 // get instruction mnemonic if not special
                 if (instruction == "") {
@@ -2702,6 +2708,7 @@ void MainWindow::getDisassembly()
                 }
                 disassemblyLine += "<br>";
             }
+            // aligning or extended opcode that is not handled
             else {
                 if (aligning) {
                     aligning = false;
@@ -2714,45 +2721,89 @@ void MainWindow::getDisassembly()
             }
 
             if (rareInstruction) {
-                disassemblyLine += "</font>";
+                disassemblyLine.prepend("<font color='red'>");
+                disassemblyLine.append("</font>");
             }
 
             disassembly += disassemblyLine;
 
-            if (seperator) {
-                disassembly += location + " ; -------------------------------------------------------------------<br>";
+            // if code start procedure
+            if (startLocation == instructionStartByte) {
+                // for finding start location when location and sub location labels are inserted after all instructions are built
+                startLocationString = location;
+            }
+            else if (seperator) {
+                disassemblyLine += location + " ; -------------------------------------------------------------------<br>";
             }
         }
 
         //
-        // FORMATTING
+        // FORMATTING AFTER DISASSEMBLY BUILT
         //
 
         // for all locations and sub locations
-        int instructionIterator = 0, locCount = 0, totalLocs = disassembly.count();
+        int instructionIterator = 0, locCount = 0, totalLocs = disassembly.count(), startjumpOffset = 0;
         while (instructionIterator < totalLocs) {
             QString instruction = disassembly[instructionIterator + (locCount * 2)];
             int split = instruction.indexOf('&');
             QStringRef instructionRef(&instruction, split - 6, split);
             QString loc = instructionRef.toString();
+
+            // if start location, jump offsets need to be increased by start label length (currently 6 lines)
+            if (loc == startLocationString) {
+                startjumpOffset = 6;
+            }
+
             if (locMap[loc]) {
                 disassembly.insert(instructionIterator + (locCount * 2), loc + "<br>");
                 disassembly.insert(instructionIterator + (locCount * 2) + 1, loc + "&nbsp;loc_" + loc + "<br>");
-                locOffsetMap[loc] = instructionIterator + (locCount * 2);
+                locOffsetMap[loc] = instructionIterator + (locCount * 2) + startjumpOffset;
                 locCount++;
             }
             else if (subMap[loc]) {
                 disassembly.insert(instructionIterator + (locCount * 2), loc + "<br>");
                 disassembly.insert(instructionIterator + (locCount * 2) + 1, loc + "&nbsp;sub_" + loc + "<br>");
-                locOffsetMap[loc] = instructionIterator + (locCount * 2);
+                locOffsetMap[loc] = instructionIterator + (locCount * 2) + startjumpOffset;
                 locCount++;
             }
             instructionIterator++;
         }
 
+        // find start procedure
+        bool startFound = false;
+        int i = 0, size = disassembly.count();
+        codeStartProcedure = 0;
+        while (!startFound && i < size) {
+            QString instruction = disassembly[i];
+            QStringRef instructionRef(&instruction, 0, 6);
+            QString loc = instructionRef.toString();
+            if (loc == startLocationString) {
+                QStringList list;
+                list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
+                list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
+                list += startLocationString + "<font color='blue'> ; --------------------------START PROCEDURE--------------------------<br></font>";
+                list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
+                list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
+                list += startLocationString + "<br>";
+
+                for (int j = 0; j < list.size(); j++) {
+                    disassembly.insert(i + j , list.at(j));
+                }
+
+                codeStartProcedure = i;
+                startFound = true;
+            }
+            else {
+                i++;
+            }
+        }
+
         maxDisplayInstructions = 41;
         ui->disassemblyScrollBar->setMaximum(disassembly.count() - maxDisplayInstructions);
         ui->disassemblyBrowser->setOpenExternalLinks(false);
+        reseting = true;
+        ui->disassemblyScrollBar->setValue(codeStartProcedure);
+        reseting = false;
     }
     else {
         // if error during PE scan
@@ -3009,6 +3060,7 @@ void MainWindow::getPEinformation()
     idataStartLoc = 0, idataRVA = 0;
     IDTLoc = 0, IDTSize = 0;
     IATLoc = 0, IATSize = 0;
+    codeEntryPoint = 0, baseOfCode = 0;
 
     if (PE) {
         try {
@@ -3106,8 +3158,9 @@ void MainWindow::getPEinformation()
                     sectionRVA = rdataRVA;
                 }
 
+                // find Import Directory Table and Import Address Table locations and sizes
                 if (idataFound || rdataFound) {
-                    // find import directory table location and size
+                    // find IDT location and size
                     int virtualSize = 0;
                     for (int i = 0; i < 4; i++) {
                         virtualSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 128 + i]);
@@ -3119,7 +3172,7 @@ void MainWindow::getPEinformation()
                         IDTSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 132 + i]);
                     }
 
-                    // find import address table location and size
+                    // find IAT location and size
                     virtualSize = 0;
                     for (int i = 0; i < 4; i++) {
                         virtualSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 216 + i]);
@@ -3131,6 +3184,14 @@ void MainWindow::getPEinformation()
                         IATSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 220 + i]);
                     }
                 }
+
+                // find code entry point and base of code
+                for (int i = 0; i < 4; i++) {
+                    codeEntryPoint += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 40 + i]);
+                }
+                for (int i = 0; i < 4; i++) {
+                    baseOfCode += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 44 + i]);
+                }
             }
         } catch (...) {
             codeEndLoc = 0;
@@ -3141,8 +3202,13 @@ void MainWindow::getPEinformation()
 void MainWindow::on_disassemblyBrowser_anchorClicked(const QUrl &arg1)
 {
     ui->disassemblyScrollBar->setValue(locOffsetMap[arg1.url()]);
-    refreshDisassembly();
 }
+
+void MainWindow::on_disassemblyStartLocationButton_clicked()
+{
+    ui->disassemblyScrollBar->setValue(codeStartProcedure);
+}
+
 
 void MainWindow::refreshHex()
 {

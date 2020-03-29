@@ -114,6 +114,8 @@ public:
     int idataStartLoc, idataRVA;
     int IDTLoc, IDTSize;
     int IATLoc, IATSize;
+    int codeEntryPoint, baseOfCode;
+
 
 
     // disassembly
@@ -123,6 +125,7 @@ public:
     QMap<int, int>opTypeMap;
     QMap<int, QString>opcodeMap;
     QMap<QString, int> locOffsetMap;
+    int codeStartProcedure;
 
     bool reseting;
 
@@ -204,6 +207,8 @@ private slots:
     void on_DLLTitleBrowser_anchorClicked(const QUrl &arg1);
 
     void on_DLLFunctionTitleBrowser_anchorClicked(const QUrl &arg1);
+
+    void on_disassemblyStartLocationButton_clicked();
 
 private:
     Ui::MainWindow *ui;
