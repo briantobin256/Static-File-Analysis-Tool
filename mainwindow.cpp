@@ -19,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     backupLoc = "";
 
     // tmp
-    QFile file("C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe
+    QFile file("D:/Downloads/strings.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe
     open(&file);
     file.close();
     ui->stackedWidget->setCurrentIndex(7);
@@ -1363,8 +1363,8 @@ QString MainWindow::getFunctionName(int location, int dataSectionRVA, int dataSt
     int i = 0;
     QString functionName = "";
     int loc = location - dataSectionRVA + dataStartLoc + 2;
-    if (loc > 0 && loc < fileSize - 3) {
-        while (!terminator) {
+    if (loc > 0) {
+        while (!terminator && loc + i < fileSize) {
             char c = rawData[loc + i];
             if (static_cast<unsigned char>(c) == 0 && functionName.size() > 0) {
                 terminator = true;
@@ -1374,8 +1374,12 @@ QString MainWindow::getFunctionName(int location, int dataSectionRVA, int dataSt
             }
             i++;
         }
+        if (loc + i < fileSize) {
+            return functionName;
+        }
+        return "";
     }
-    return functionName;
+    return "";
 }
 
 QString MainWindow::byteToHexString(int c)
@@ -2680,21 +2684,18 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                             // if a segment pointer, try to get name
                             else if (operand2 == segment) {
                                 QString function = getFunctionCallName(immediateValue);
-
                                 if (function.size() > 4) {
                                     QString fontStart = segment + "<font color='red'>";
                                     QString fontEnd = "</font>";
                                     operand2 = fontStart + function + fontEnd;
                                 }
+                                else if (segementOverride) {
+                                    operand2 = "large " + segment + "<font color='green'>" + QString::number(immediateValue, 16).toUpper() + "</font>";
+                                }
                                 else {
-                                    if (segementOverride) {
-                                        operand2 = "large " + segment + "<font color='green'>" + QString::number(immediateValue, 16).toUpper() + "</font>";
-                                    }
-                                    else {
-                                        operandPrefix.remove(operandPrefix.size() - 5, 5);
-                                        operandPrefix += "_";
-                                        operand2 = operandPrefix + + "<font color='green'>" + QString::number(immediateValue, 16).toUpper() + "</font>";
-                                    }
+                                    operandPrefix.remove(operandPrefix.size() - 5, 5);
+                                    operandPrefix += "_";
+                                    operand2 = operandPrefix + + "<font color='green'>" + QString::number(immediateValue, 16).toUpper() + "</font>";
                                 }
                             }
                             else {
@@ -2919,10 +2920,13 @@ QString MainWindow::getFunctionCallName(int immediateValue)
         sectionStart = rdataStartLoc;
     }
     pointerLocationOffset = immediateValue - (imagebase + sectionRVA);
-    for (int i = 0; i < 4; i++) {
-        location += pow(16, i * 2) * static_cast<unsigned char>(rawData[pointerStartLoc + pointerLocationOffset + i]);
+    if (pointerStartLoc + pointerLocationOffset + 4 < fileSize) {
+        for (int i = 0; i < 4; i++) {
+            location += pow(16, i * 2) * static_cast<unsigned char>(rawData[pointerStartLoc + pointerLocationOffset + i]);
+        }
+        return getFunctionName(location, sectionRVA, sectionStart);
     }
-    return getFunctionName(location, sectionRVA, sectionStart);
+    return "";
 }
 
 QString MainWindow::registerName(int reg, int operandSize)
