@@ -362,104 +362,88 @@ void MainWindow::on_stringList_itemDoubleClicked(QListWidgetItem *item)
     }
 }
 
-void MainWindow::on_savedStringList_itemDoubleClicked(QListWidgetItem *item)
-{
-    //QApplication::clipboard()->setText(item->text());
-    //stringToHexLocation(item);
-}
-
 void MainWindow::on_stringSearchButton_clicked()
 {
-    searchStringList();
+    if (searchStringList(ui->searchString->text(), &strings, false)) {
+        int previousPage = ui->stringsScrollBar->value(), displayStrings = ui->stringList->count();
+        if (searchStringIndex % displayStrings == 0) {
+            ui->stringsScrollBar->setValue((searchStringIndex / displayStrings) - 1);
+        }
+        else {
+            ui->stringsScrollBar->setValue(searchStringIndex / displayStrings);
+        }
+        // unselect any selected then select search string
+        if (previousPage == ui->stringsScrollBar->value()) {
+            for (int i = 0; i < displayStrings; i++) {
+                ui->stringList->item(i)->setSelected(false);
+            }
+        }
+        ui->stringList->item((searchStringIndex % displayStrings - 1 + displayStrings) % displayStrings)->setSelected(true);
+    }
 }
 
 void MainWindow::on_savedStringSearchButton_clicked()
 {
-    searchStringList();
+    if (searchStringList(ui->searchSavedString->text(), &savedStrings, false)) {
+        int displayStrings = ui->savedStringList->count();
+        for (int i = 0; i < displayStrings; i++) {
+            ui->savedStringList->item(i)->setSelected(false);
+        }
+        ui->savedStringList->item(searchStringIndex - 1)->setSelected(true);
+        ui->savedStringList->setCurrentRow(searchStringIndex - 1);
+    }
 }
 
-void MainWindow::searchStringList()
+void MainWindow::on_disassemblySearchButton_clicked()
 {
-        QString search = "";
-        QStringList list;
-        int count = 0, displayStrings = maxDisplayStrings;
-        if (ui->stackedWidget->currentIndex() == 1) {
-            search = ui->searchString->text();
-            count = stringCount;
-            list = strings;
-        }
-        else {
-            search = ui->searchSavedString->text();
-            count = ui->savedStringList->count();
-            list = savedStrings;
-            displayStrings = count;
-        }
+    if (searchStringList(ui->disassemblySearchString->text(), &disassembly, ui->disassemblySearchFromBeginningCheckBox->checkState())) {
+        ui->disassemblyScrollBar->setValue(searchStringIndex - 1);
+    }
+}
 
-        if (searchString != search) {
-            searchStringIndex = 0;
-        }
-        searchString = search;
+bool MainWindow::searchStringList(QString searchString, QStringList *list, bool searchFromBeginning)
+{
+    int count = list->size();
+    if (searchStringIndex >= count || searchFromBeginning) {
+        searchStringIndex = 0;
+    }
+    previousSearchString = searchString;
 
-        bool found = false;
-        while (!found && searchStringIndex < count) {
-            QString searching = list[searchStringIndex];
-            int searchLength = search.length();
-            int searchedLength = searching.length();
+    bool found = false;
+    while (!found && searchStringIndex < count) {
+        QString currentItem = list->at(searchStringIndex);
+        int searchLength = searchString.length();
+        int searchedLength = currentItem.length();
 
-            // for each starting position the search string could fit into the searched string
-            for (int j = 0; j <= searchedLength - searchLength; j++) {
-                int k;
-                // for the length of the search string
-                for (k = 0; k < searchLength; k++) {
-                    // if chars dont match
-                    if (searching[j + k] != search[k]) {
-                        // if searching char is A - Z, check a - z aswell
-                        if (searching[j + k].unicode() >= 65 && searching[j + k].unicode() <= 90) {
-                            if ((searching[j + k].unicode() + 32) != search[k]) {
-                                break;
-                            }
-                        }
-                        else {
+        // for each starting position the search string could fit into the searched string
+        for (int j = 0; j <= searchedLength - searchLength; j++) {
+            int k;
+            // for the length of the search string
+            for (k = 0; k < searchLength; k++) {
+                // if chars dont match
+                if (currentItem[j + k] != searchString[k]) {
+                    // if searching char is A - Z, check a - z aswell
+                    if (currentItem[j + k].unicode() >= 65 && currentItem[j + k].unicode() <= 90) {
+                        if ((currentItem[j + k].unicode() + 32) != searchString[k]) {
                             break;
                         }
                     }
-                }
-                if (k == searchLength) {
-                    found = true;
-                }
-            }
-            searchStringIndex++;
-        }
-
-        if (found) {
-            if (ui->stackedWidget->currentIndex() == 1) {
-                int previousPage = ui->stringsScrollBar->value();
-                if (searchStringIndex % displayStrings == 0) {
-                    ui->stringsScrollBar->setValue((searchStringIndex / displayStrings) - 1);
-                }
-                else {
-                    ui->stringsScrollBar->setValue(searchStringIndex / displayStrings);
-                }
-
-                // unselect any selected then select search string
-                if (previousPage == ui->stringsScrollBar->value()) {
-                    for (int i = 0; i < displayStrings; i++) {
-                        ui->stringList->item(i)->setSelected(false);
+                    else {
+                        break;
                     }
                 }
-                ui->stringList->item((searchStringIndex % displayStrings - 1 + displayStrings) % displayStrings)->setSelected(true);
             }
-            else {
-                for (int i = 0; i < displayStrings; i++) {
-                    ui->savedStringList->item(i)->setSelected(false);
-                }
-                ui->savedStringList->item(searchStringIndex - 1)->setSelected(true);
-                ui->savedStringList->setCurrentRow(searchStringIndex - 1);
+            if (k == searchLength) {
+                found = true;
             }
         }
-        else if (searchStringIndex == count) {
-            searchStringIndex = 0;
-        }
+        searchStringIndex++;
+    }
+
+    if (found) {
+        return true;
+    }
+    return false;
 }
 
 void MainWindow::on_stringSortUnsort_clicked()

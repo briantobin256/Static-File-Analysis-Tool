@@ -55,7 +55,7 @@ public:
     QStringList strings;
     QStringList savedStrings;
     QStringList unsortedStrings;
-    QString searchString;
+    QString previousSearchString;
     int stringCount;
     int stringOffset;
     int maxDisplayStrings;
@@ -161,8 +161,6 @@ private slots:
 
     void on_stringSearchButton_clicked();
 
-    void on_savedStringList_itemDoubleClicked(QListWidgetItem *item);
-
     void on_actionUndo_All_Changes_triggered();
 
     void on_actionExit_triggered();
@@ -211,6 +209,8 @@ private slots:
 
     void on_disassemblyStartLocationButton_clicked();
 
+    void on_disassemblySearchButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     CustomDialog *dialogBox;
@@ -246,7 +246,7 @@ private:
     void refreshStrings();
     void refreshSavedStrings();
     void outputStrings();
-    void searchStringList();
+    bool searchStringList(QString searchString, QStringList *list, bool searchFromBeginning);
 
     // dlls
     void findDLLs();

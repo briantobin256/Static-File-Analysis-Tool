@@ -1417,14 +1417,50 @@ p, li { white-space: pre-wrap; }
      <widget class="QPushButton" name="disassemblyStartLocationButton">
       <property name="geometry">
        <rect>
-        <x>460</x>
-        <y>720</y>
+        <x>255</x>
+        <y>725</y>
         <width>112</width>
         <height>34</height>
        </rect>
       </property>
       <property name="text">
        <string>start location</string>
+      </property>
+     </widget>
+     <widget class="QPushButton" name="disassemblySearchButton">
+      <property name="geometry">
+       <rect>
+        <x>900</x>
+        <y>725</y>
+        <width>70</width>
+        <height>30</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>search</string>
+      </property>
+     </widget>
+     <widget class="QLineEdit" name="disassemblySearchString">
+      <property name="geometry">
+       <rect>
+        <x>595</x>
+        <y>725</y>
+        <width>300</width>
+        <height>30</height>
+       </rect>
+      </property>
+     </widget>
+     <widget class="QCheckBox" name="disassemblySearchFromBeginningCheckBox">
+      <property name="geometry">
+       <rect>
+        <x>385</x>
+        <y>730</y>
+        <width>191</width>
+        <height>23</height>
+       </rect>
+      </property>
+      <property name="text">
+       <string>search from beginning</string>
       </property>
      </widget>
     </widget>
