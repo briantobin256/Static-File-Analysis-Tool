@@ -490,14 +490,14 @@
      </palette>
     </property>
     <property name="currentIndex">
-     <number>7</number>
+     <number>2</number>
     </property>
     <widget class="QWidget" name="page_0_Main_Window"/>
     <widget class="QWidget" name="page_1_Find_Strings">
      <widget class="QLabel" name="stringCountLabel">
       <property name="geometry">
        <rect>
-        <x>380</x>
+        <x>235</x>
         <y>725</y>
         <width>100</width>
         <height>30</height>
@@ -513,7 +513,7 @@
      <widget class="QLabel" name="stringCountValue">
       <property name="geometry">
        <rect>
-        <x>480</x>
+        <x>335</x>
         <y>725</y>
         <width>95</width>
         <height>30</height>
@@ -591,9 +591,9 @@
      <widget class="QLineEdit" name="searchString">
       <property name="geometry">
        <rect>
-        <x>720</x>
+        <x>630</x>
         <y>725</y>
-        <width>175</width>
+        <width>265</width>
         <height>30</height>
        </rect>
       </property>
@@ -637,30 +637,17 @@
        <string/>
       </property>
      </widget>
-     <widget class="QPushButton" name="stringSortUnsort">
+     <widget class="QCheckBox" name="stringsSearchFromBeginningCheckBox">
       <property name="geometry">
        <rect>
-        <x>250</x>
+        <x>430</x>
         <y>725</y>
-        <width>100</width>
+        <width>190</width>
         <height>30</height>
        </rect>
       </property>
       <property name="text">
-       <string>sort / unsort</string>
-      </property>
-     </widget>
-     <widget class="QPushButton" name="stringOutputButton">
-      <property name="geometry">
-       <rect>
-        <x>590</x>
-        <y>725</y>
-        <width>100</width>
-        <height>30</height>
-       </rect>
-      </property>
-      <property name="text">
-       <string>output to txt</string>
+       <string>search from beginning</string>
       </property>
      </widget>
     </widget>
@@ -769,17 +756,17 @@
        <string>Saved String Count:</string>
       </property>
      </widget>
-     <widget class="QPushButton" name="savedStringOutputButton">
+     <widget class="QCheckBox" name="savedStringsSearchFromBeginningCheckBox">
       <property name="geometry">
        <rect>
-        <x>400</x>
+        <x>385</x>
         <y>725</y>
-        <width>100</width>
+        <width>190</width>
         <height>30</height>
        </rect>
       </property>
       <property name="text">
-       <string>output to txt</string>
+       <string>search from beginning</string>
       </property>
      </widget>
     </widget>
@@ -1420,7 +1407,7 @@ p, li { white-space: pre-wrap; }
         <x>255</x>
         <y>725</y>
         <width>112</width>
-        <height>34</height>
+        <height>30</height>
        </rect>
       </property>
       <property name="text">
@@ -1454,9 +1441,9 @@ p, li { white-space: pre-wrap; }
       <property name="geometry">
        <rect>
         <x>385</x>
-        <y>730</y>
-        <width>191</width>
-        <height>23</height>
+        <y>725</y>
+        <width>190</width>
+        <height>30</height>
        </rect>
       </property>
       <property name="text">

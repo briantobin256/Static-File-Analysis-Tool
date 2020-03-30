@@ -169,8 +169,6 @@ private slots:
 
     void on_stringList_itemDoubleClicked(QListWidgetItem *item);
 
-    void on_stringSortUnsort_clicked();
-
     void on_actionEntropy_Graph_triggered();
 
     void on_actionDisassembly_triggered();
@@ -195,11 +193,11 @@ private slots:
 
     void highlightAll();
 
+    void sortStrings();
+
+    void outputStrings();
+
     void stringToHexLocation();
-
-    void on_stringOutputButton_clicked();
-
-    void on_savedStringOutputButton_clicked();
 
     void on_savedStringSearchButton_clicked();
 
@@ -245,7 +243,6 @@ private:
     void saveDisplayedStrings();
     void refreshStrings();
     void refreshSavedStrings();
-    void outputStrings();
     bool searchStringList(QString searchString, QStringList *list, bool searchFromBeginning);
 
     // dlls

@@ -22,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     QFile file("C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe
     open(&file);
     file.close();
-    ui->stackedWidget->setCurrentIndex(7);
+    ui->stackedWidget->setCurrentIndex(1);
 
     refreshWindow();
 }
@@ -364,7 +364,7 @@ void MainWindow::on_stringList_itemDoubleClicked(QListWidgetItem *item)
 
 void MainWindow::on_stringSearchButton_clicked()
 {
-    if (searchStringList(ui->searchString->text(), &strings, false)) {
+    if (searchStringList(ui->searchString->text(), &strings, ui->stringsSearchFromBeginningCheckBox->checkState())) {
         int previousPage = ui->stringsScrollBar->value(), displayStrings = ui->stringList->count();
         if (searchStringIndex % displayStrings == 0) {
             ui->stringsScrollBar->setValue((searchStringIndex / displayStrings) - 1);
@@ -384,7 +384,7 @@ void MainWindow::on_stringSearchButton_clicked()
 
 void MainWindow::on_savedStringSearchButton_clicked()
 {
-    if (searchStringList(ui->searchSavedString->text(), &savedStrings, false)) {
+    if (searchStringList(ui->searchSavedString->text(), &savedStrings, ui->savedStringsSearchFromBeginningCheckBox->checkState())) {
         int displayStrings = ui->savedStringList->count();
         for (int i = 0; i < displayStrings; i++) {
             ui->savedStringList->item(i)->setSelected(false);
@@ -446,7 +446,7 @@ bool MainWindow::searchStringList(QString searchString, QStringList *list, bool 
     return false;
 }
 
-void MainWindow::on_stringSortUnsort_clicked()
+void MainWindow::sortStrings()
 {
     saveDisplayedStrings();
     sorting = true;
@@ -487,16 +487,6 @@ void MainWindow::on_stringSortUnsort_clicked()
     refreshWindow();
 }
 
-void MainWindow::on_stringOutputButton_clicked()
-{
-    outputStrings();
-}
-
-void MainWindow::on_savedStringOutputButton_clicked()
-{
-    outputStrings();
-}
-
 void MainWindow::outputStrings()
 {
     dialogBox = new CustomDialog();
@@ -527,9 +517,6 @@ void MainWindow::outputStrings()
                 stringsSize = savedStrings.count();
                 totalStringsLength = totalSavedStringSize + stringsSize;
             }
-
-            qDebug() << stringsSize;
-            qDebug() << totalStringsLength;
 
             QString fullName = stringsLoc + 92 + outputFileName;
             QFile stringsOutput(fullName);
@@ -1035,8 +1022,17 @@ void MainWindow::showContextMenu(const QPoint &point)
 
     myMenu.addSeparator();
     myMenu.addAction("Highlight All",  this, SLOT(highlightAll()));
+    myMenu.addAction("Sort / Unsort Strings",  this, SLOT(sortStrings()));
     myMenu.addSeparator();
     myMenu.addAction("View Location in Hex", this, SLOT(stringToHexLocation()));
+
+    // if find strings page
+    if (ui->stackedWidget->currentIndex() == 1) {
+        myMenu.addAction("Output all strings to txt file", this, SLOT(outputStrings()));
+    }
+    else {
+        myMenu.addAction("Output saved strings to txt file", this, SLOT(outputStrings()));
+    }
 
     // set location for men to appear
     QPoint globalPos = list->mapToGlobal(point);
