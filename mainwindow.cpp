@@ -19,8 +19,8 @@ MainWindow::MainWindow(QWidget *parent)
     backupLoc = "";
 
     // tmp
-    QFile file("D:/Downloads/strings.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe
-    open(&file);
+    QFile file("C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe   D:/Downloads/strings.exe
+    //open(&file);
     file.close();
     ui->stackedWidget->setCurrentIndex(7);
 
@@ -856,7 +856,7 @@ void MainWindow::findStrings()
             // if current item should be added to string list
             if (validString) {
                 strings.insert(stringCount,item);
-                stringsMap[item] = true;
+                stringLocationMap[i - item.size()] = item;
                 hexLocationMap[stringCount] = stringStartLoc;
                 totalStringSize += item.size();
                 stringCount++;
@@ -865,9 +865,10 @@ void MainWindow::findStrings()
             }
         }
 
+        // if string exists that is terminated by the file ending
         if (item != "" && item.size() >= stringLength) {
             strings.insert(stringCount,item);
-            stringsMap[item] = true;
+            stringLocationMap[fileSize - item.size()] = item;
             hexLocationMap[stringCount] = fileSize - item.size();
             totalStringSize += item.size();
             stringCount++;
@@ -1278,10 +1279,7 @@ void MainWindow::findDLLs()
                         functionsFinished = true;
                     }
                     else {
-                        // string list to html
-                        for (int i = 0; i < functions.size(); i++) {
-                            dllFunctionNames += functions.at(i) + "<br>";
-                        }
+                        dllFunctionNames += functions;
                         functions.clear();
                         dllsCompletedCount++;
                     }
@@ -1316,8 +1314,7 @@ void MainWindow::findDLLs()
             }
             else {
                 dllNames.remove(dllNames.size() - 4, 4);
-                dllFunctionNames.remove(dllFunctionNames.size() - 4, 4);
-                dllFunctionNames.prepend("-----------------------------------------------------------------------------<br>");
+                dllFunctionNames.prepend("-----------------------------------------------------------------------------");
             }
         }
         else {
@@ -1329,9 +1326,14 @@ void MainWindow::findDLLs()
             }
         }
 
+        QString html;
+        for (int i = 0; i < dllFunctionNames.size(); i++) {
+            html += dllFunctionNames.at(i) + "<br>";
+        }
+
         // set dll names and function
         ui->DLLNameBrowser->insertHtml(dllNames);
-        ui->DLLFunctionNameBrowser->insertHtml(dllFunctionNames);
+        ui->DLLFunctionNameBrowser->insertHtml(html);
 
         dllsBuilt = true;
     }
@@ -1553,8 +1555,8 @@ void MainWindow::resetChecks()
     strings.clear();
     savedStrings.clear();
     unsortedStrings.clear();
-    stringsMap.clear();
     savedStringMap.clear();
+    stringLocationMap.clear();
     swapStringMap.clear();
     stringLength = 3;
     ui->stringsScrollBar->setValue(0);
@@ -1919,16 +1921,19 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
 
         // current byte types
         bool prefix = true, opcode = false, modByte = false, SIB = false, extendedOpcode = false;
-        bool operandSizeModifier = false, specialInstruction = false, aligning = false, rareInstruction = false, hasPrefix = false, segementOverride = false;
+        bool operandSizeModifier = false, specialInstruction = false, aligning = false, rareInstruction = false, hasPrefix = false, segementOverride = false, canHaveString = false;
         int mod = 0, reg = 0, rm = 0, scale = 0, index = 0, base = 0, displacementIndex = 0, maxDisplacements = 0, immediateIndex = 0, maxImmediates = 0, operandSize = 8, extended = 0;
         QString operand1 = "", operand2 = "", operandPrefix = "", disassemblyLine = "", segment = "ds:";
         bool operand1isDestination = false, noOperands = false;
         QString imVal = "", secImVal = "";
+//qDebug() << "starting instruction" << QString::number(codeStartLoc + instructionSizeOffset, 16);
 
         // for each byte in instruction
         while (!instructionComplete) {
+            //qDebug() << "getting byte" << QString::number(codeStartLoc + instructionSizeOffset, 16);
             char c = rawData[codeStartLoc + instructionSizeOffset];
             unsigned char byte = static_cast<unsigned char>(c);
+            //qDebug() << "got byte" << QString::number(codeStartLoc + instructionSizeOffset, 16);
 
             //
             // OPTIONAL INSTRUCTION PREFIX BYTE CHECK (F0, F2, F3, 26, 2E, 36, 3E, 64, 65, 66, 67)
@@ -2041,6 +2046,10 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                                 }
                                 else {
                                     maxImmediates = 1;
+                                }
+                                // immediate can refer to a string (C6, C7)
+                                if (byte == 198 || byte == 199) {
+                                    canHaveString = true;
                                 }
                             }
 
@@ -2319,6 +2328,11 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                             // if call or jump, add seperator
                             if ((byte >= 233 && byte <= 235) || byte == 194 || byte == 202) {
                                 seperator = true;
+                            }
+
+                            // immediate can refer to a string (C6, C7)
+                            if (byte == 104 || byte == 106 || (byte >= 160 && byte <= 163) || (byte >= 176 && byte <= 191)) {
+                                canHaveString = true;
                             }
                         }
                     }
@@ -2662,44 +2676,86 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                         operand1 = imVal;
                         operand2 = secImVal;
                     }
-                    else {
-                        if (!hasModByte) {
-                            if (negative) {
-                                immediateValue *= -1;
+                    else if (!hasModByte) {
+                        if (negative) {
+                            immediateValue *= -1;
+                        }
+                        // if a jump to a location
+                        if (operand2 == "short " || (opcodeByte >= 128 && opcodeByte <= 143 && extended)) {
+                            QString loc = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
+                            operand2 += "<a href='" + loc + "'>";
+                            operand2 += "loc " + loc + "</a>";
+                            locMap[loc] = true;
+                        }
+                        // if a call to a location
+                        else if (opcodeByte == 154 || opcodeByte == 232) {
+                            QString sub = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
+                            operand2 += "<a href='" + sub + "'>";
+                            operand2 += "sub " + sub + "</a>";
+                            subMap[sub] = true;
+                        }
+                        // if a segment pointer, try to get name
+                        else if (operand2 == segment) {
+                            QString function = getFunctionCallName(immediateValue);
+                            if (function.size() > 4) {
+                                QString fontStart = segment + "<font color='red'>";
+                                QString fontEnd = "</font>";
+                                operand2 = fontStart + function + fontEnd;
                             }
-                            // if a jump to a location
-                            if (operand2 == "short " || (opcodeByte >= 128 && opcodeByte <= 143 && extended)) {
-                                QString loc = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
-                                operand2 += "<a href='" + loc + "'>";
-                                operand2 += "loc " + loc + "</a>";
-                                locMap[loc] = true;
-                            }
-                            // if a call to a location
-                            else if (opcodeByte == 154 || opcodeByte == 232) {
-                                QString sub = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
-                                operand2 += "<a href='" + sub + "'>";
-                                operand2 += "sub " + sub + "</a>";
-                                subMap[sub] = true;
-                            }
-                            // if a segment pointer, try to get name
-                            else if (operand2 == segment) {
-                                QString function = getFunctionCallName(immediateValue);
-                                if (function.size() > 4) {
-                                    QString fontStart = segment + "<font color='red'>";
-                                    QString fontEnd = "</font>";
-                                    operand2 = fontStart + function + fontEnd;
-                                }
-                                else if (segementOverride) {
-                                    operand2 = "large " + segment + "<font color='green'>" + QString::number(immediateValue, 16).toUpper() + "</font>";
-                                }
-                                else {
-                                    operandPrefix.remove(operandPrefix.size() - 5, 5);
-                                    operandPrefix += "_";
-                                    operand2 = operandPrefix + + "<font color='green'>" + QString::number(immediateValue, 16).toUpper() + "</font>";
-                                }
+                            else if (segementOverride) {
+                                operand2 = "large " + segment + "<font color='green'>" + QString::number(immediateValue, 16).toUpper() + "</font>";
                             }
                             else {
-                                operand2 += imVal;
+                                operandPrefix.remove(operandPrefix.size() - 5, 5);
+                                operandPrefix += "_";
+                                operand2 = operandPrefix + + "<font color='green'>" + QString::number(immediateValue, 16).toUpper() + "</font>";
+                            }
+                        }
+                        // if immediate value can be reference to a string
+                        else if (canHaveString) {
+                            operand2 += imVal;
+                            if (!stringsBuilt) {
+                                findStrings();
+                            }
+                            QString string = "";
+                            // try rdata section if found
+                            if (rdataRVA > 0) {
+                                string = immediateIsStringOffset(immediateValue, rdataStartLoc, rdataRVA);
+                            }
+                            // else try data section if found
+                            else if (dataVirtualAddress > 0) {
+                                string = immediateIsStringOffset(immediateValue, dataStartLoc, dataVirtualAddress);
+                            }
+                            // if a string is being referenced, display it
+                            if (string.size() > 0) {
+                                operand2 += " ; ";
+                                operand2 += 34 + string + 34;
+                            }
+                        }
+                        else {
+                            operand2 += imVal;
+                        }
+                    }
+                    else {
+                        // if immediate value can be reference to a string
+                        if (canHaveString) {
+                            operand1 += imVal;
+                            if (!stringsBuilt) {
+                                findStrings();
+                            }
+                            QString string = "";
+                            // try rdata section if found
+                            if (rdataRVA > 0) {
+                                string = immediateIsStringOffset(immediateValue, rdataStartLoc, rdataRVA);
+                            }
+                            // else try data section if found
+                            else if (dataVirtualAddress > 0) {
+                                string = immediateIsStringOffset(immediateValue, dataStartLoc, dataVirtualAddress);
+                            }
+                            // if a string is being referenced, display it
+                            if (string.size() > 0) {
+                                operand1 += " ; ";
+                                operand1 += 34 + string + 34;
                             }
                         }
                         else {
@@ -2868,8 +2924,19 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
             i++;
         }
     }
-
     return disassemblyList;
+}
+
+QString MainWindow::immediateIsStringOffset(int immediateValue, int startLoc, int virtualAddress)
+{
+    int dataOffset = immediateValue - (imagebase + virtualAddress);
+    int physicalAddress = startLoc + dataOffset;
+    if (physicalAddress > 0 && physicalAddress < fileSize) {
+        if (stringLocationMap[physicalAddress].size() > 0) {
+            return stringLocationMap[physicalAddress];
+        }
+    }
+    return "";
 }
 
 QString MainWindow::immediateFormat(QString s)
@@ -2920,11 +2987,21 @@ QString MainWindow::getFunctionCallName(int immediateValue)
         sectionStart = rdataStartLoc;
     }
     pointerLocationOffset = immediateValue - (imagebase + sectionRVA);
-    if (pointerStartLoc + pointerLocationOffset + 4 < fileSize) {
+    if (pointerStartLoc + pointerLocationOffset + 4 < fileSize && pointerStartLoc + pointerLocationOffset + 4 > 0) {
+        QString functionName = "";
         for (int i = 0; i < 4; i++) {
             location += pow(16, i * 2) * static_cast<unsigned char>(rawData[pointerStartLoc + pointerLocationOffset + i]);
         }
-        return getFunctionName(location, sectionRVA, sectionStart);
+        functionName = getFunctionName(location, sectionRVA, sectionStart);
+        if (!dllsBuilt) {
+            findDLLs();
+        }
+        // check if function exists in imports
+        for (int i = 0; i < dllFunctionNames.size(); i++) {
+            if (functionName == dllFunctionNames.at(i)) {
+                return functionName;
+            }
+        }
     }
     return "";
 }
@@ -3149,6 +3226,7 @@ void MainWindow::getPEinformation()
     IDTLoc = 0, IDTSize = 0;
     IATLoc = 0, IATSize = 0;
     codeEntryPoint = 0, baseOfCode = 0;
+    dataStartLoc = 0, dataVirtualAddress = 0;
 
     if (PE) {
         try {
@@ -3177,12 +3255,12 @@ void MainWindow::getPEinformation()
                     imagebase += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 52 + i]);
                 }
 
-                // find text, idata and rdata sections
-                bool textFound = false, itextFound = false, rdataFound = false, idataFound = false;
-                int sectionSize = 40, textLocation = 0, itextLocation = 0, rdataLocation = 0, idataLocation = 0;
+                // find text, idata and rdata and data sections
+                bool textFound = false, rdataFound = false, idataFound = false, dataFound = false;
+                int sectionSize = 40, textLocation = 0, rdataLocation = 0, idataLocation = 0, dataLocation = 0;
                 int sectionLocation = peHeaderStartLoc + peHeaderSize + optionalHeaderSize, sectionNumber = 0;
 
-                while ((!textFound || !itextFound || !rdataFound || !idataFound) && sectionNumber < sectionCount) {
+                while ((!textFound || !rdataFound || !idataFound || !dataFound) && sectionNumber < sectionCount) {
                     QString sectionName = "";
                     for (int i = 0; i < 5; i++) {
                         sectionName += rawData[sectionLocation + i];
@@ -3190,10 +3268,6 @@ void MainWindow::getPEinformation()
                     if (sectionName == ".text") {
                         textFound = true;
                         textLocation = sectionLocation;
-                    }
-                    else if (sectionName == ".itex") {
-                        itextFound = true;
-                        itextLocation = sectionLocation;
                     }
                     else if (sectionName == ".rdat") {
                         rdataFound = true;
@@ -3203,11 +3277,14 @@ void MainWindow::getPEinformation()
                         idataFound = true;
                         idataLocation = sectionLocation;
                     }
+                    else if (sectionName == ".data") {
+                        dataFound = true;
+                        dataLocation = sectionLocation;
+                    }
                     sectionLocation += sectionSize;
                     sectionNumber++;
                 }
 
-                // find code start and end location
                 if (textFound) {
                     // find code start physical location
                     for (int i = 0; i < 4; i++) {
@@ -3225,27 +3302,37 @@ void MainWindow::getPEinformation()
                     }
                 }
 
-                // find idata start and end location
                 if (idataFound) {
-                    // find idata physical start location
+                    // find idata physical address
                     for (int i = 0; i < 4; i++) {
                         idataStartLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[idataLocation + 20 + i]);
                     }
-                    // find rdata virtual start location
+                    // find idata virtual address
                     for (int i = 0; i < 4; i++) {
                         idataRVA += pow(16, i * 2) * static_cast<unsigned char>(rawData[idataLocation + 12 + i]);
                     }
                 }
 
-                // find rdata start and end location
                 if (rdataFound) {
-                    // find rdata physical start location
+                    // find rdata physical address
                     for (int i = 0; i < 4; i++) {
                         rdataStartLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[rdataLocation + 20 + i]);
                     }
-                    // find rdata virtual start location
+                    // find rdata virtual address
                     for (int i = 0; i < 4; i++) {
                         rdataRVA += pow(16, i * 2) * static_cast<unsigned char>(rawData[rdataLocation + 12 + i]);
+                    }
+                    // find data virtual address
+                }
+
+                if (dataFound) {
+                    // find data physical address
+                    for (int i = 0; i < 4; i++) {
+                        dataStartLoc += pow(16, i * 2) * static_cast<unsigned char>(rawData[dataLocation + 20 + i]);
+                    }
+                    // find data virtual address
+                    for (int i = 0; i < 4; i++) {
+                        dataVirtualAddress += pow(16, i * 2) * static_cast<unsigned char>(rawData[dataLocation + 12 + i]);
                     }
                 }
 

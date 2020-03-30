@@ -47,7 +47,7 @@ public:
     QString backupLoc;
 
     // string things
-    QMap<QString, bool> stringsMap;
+    QMap<int, QString> stringLocationMap;
     QMap<int, bool> savedStringMap;
     QMap<int, int> savedStringLocationMap;
     QMap<int, int> hexLocationMap;
@@ -71,7 +71,7 @@ public:
 
     // DLL things
     QString dllNames;
-    QString dllFunctionNames;
+    QStringList dllFunctionNames;
     QString DLLTitle;
     QString FunctionTitle;
 
@@ -116,6 +116,7 @@ public:
     int IDTLoc, IDTSize;
     int IATLoc, IATSize;
     int codeEntryPoint, baseOfCode;
+    int dataStartLoc, dataVirtualAddress;
 
 
     // disassembly
@@ -269,6 +270,7 @@ private:
     int getOperandSize(unsigned char byte, bool operandSizeModifier);
     QString immediateFormat(QString s);
     QString getFunctionCallName(int immediateValue);
+    QString immediateIsStringOffset(int immediateValue, int physicalAddress, int virtualAddress);
 
     //void searchStringList;
 };
