@@ -22,7 +22,7 @@ MainWindow::MainWindow(QWidget *parent)
     QFile file("C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe
     open(&file);
     file.close();
-    ui->stackedWidget->setCurrentIndex(1);
+    ui->stackedWidget->setCurrentIndex(7);
 
     refreshWindow();
 }
@@ -607,7 +607,7 @@ void MainWindow::wheelEvent(QWheelEvent *event)
     */
 }
 
-void MainWindow::closeEvent (QCloseEvent *event)
+void MainWindow::closeEvent()
 {
     saveChanges();
     QApplication::quit();
@@ -1590,6 +1590,11 @@ void MainWindow::resetChecks()
     disassemblyBuilt = false;
     disassembly.clear();
     ui->disassemblyScrollBar->setValue(0);
+    opTypeMap.clear();
+    opcodeMap.clear();
+    locOffsetMap.clear();
+    codeStartProcedure = 0;
+    jumpStack.clear();
 
     reseting = false;
 }
@@ -3100,7 +3105,6 @@ void MainWindow::getPEinformation()
         PE = false;
     }
 
-    PEinfoBuilt = true;
     imagebase = 0;
     codeStartLoc = 0, codeEndLoc = 0, codeVirtualAddress = 0;
     rdataStartLoc = 0, rdataRVA = 0;
@@ -3261,11 +3265,25 @@ void MainWindow::getPEinformation()
 
 void MainWindow::on_disassemblyBrowser_anchorClicked(const QUrl &arg1)
 {
+    // save current location in jump map
+    jumpStack.push(ui->disassemblyScrollBar->value());
+    // jump to new location
     ui->disassemblyScrollBar->setValue(locOffsetMap[arg1.url()]);
+    refreshWindow();
+}
+
+void MainWindow::on_disassemblyJumpBackButton_clicked()
+{
+    if (jumpStack.size() > 0) {
+        ui->disassemblyScrollBar->setValue(jumpStack.pop());
+    }
 }
 
 void MainWindow::on_disassemblyStartLocationButton_clicked()
 {
+    // save current location in jump map
+    jumpStack.push(ui->disassemblyScrollBar->value());
+
     ui->disassemblyScrollBar->setValue(codeStartProcedure);
 }
 

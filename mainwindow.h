@@ -108,7 +108,7 @@ public:
 
 
     // PE things
-    bool PE, PEinfoBuilt;
+    bool PE;
     int imagebase;
     int codeStartLoc, codeEndLoc, codeVirtualAddress;
     int rdataStartLoc, rdataRVA;
@@ -116,7 +116,6 @@ public:
     int IDTLoc, IDTSize;
     int IATLoc, IATSize;
     int codeEntryPoint, baseOfCode;
-
 
 
     // disassembly
@@ -127,6 +126,7 @@ public:
     QMap<int, QString>opcodeMap;
     QMap<QString, int> locOffsetMap;
     int codeStartProcedure;
+    QStack<int> jumpStack;
 
     bool reseting;
 
@@ -209,6 +209,8 @@ private slots:
 
     void on_disassemblySearchButton_clicked();
 
+    void on_disassemblyJumpBackButton_clicked();
+
 private:
     Ui::MainWindow *ui;
     CustomDialog *dialogBox;
@@ -217,7 +219,7 @@ private:
     void refreshWindow();
     void refreshChecklist();
     void resetChecks();
-    void MainWindow::closeEvent (QCloseEvent *event);
+    void MainWindow::closeEvent();
     virtual void wheelEvent(QWheelEvent *event);
 
     // hashing
