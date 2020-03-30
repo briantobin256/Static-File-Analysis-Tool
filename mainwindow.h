@@ -109,7 +109,8 @@ public:
 
     // PE things
     bool PE, PEinfoBuilt;
-    int codeStartLoc, codeEndLoc;
+    int imagebase;
+    int codeStartLoc, codeEndLoc, codeVirtualAddress;
     int rdataStartLoc, rdataRVA;
     int idataStartLoc, idataRVA;
     int IDTLoc, IDTSize;
@@ -260,6 +261,7 @@ private:
 
     // disassembly
     void getDisassembly();
+    QStringList disassembleSection(int start, int end, int virtualAddress);
     void refreshDisassembly();
     QString registerName(int reg, int operandSize);
     QString segmentRegisterName(int reg);
@@ -267,6 +269,7 @@ private:
     QString getExtendedByteInstruction(int extendedByte, int reg);
     int getOperandSize(unsigned char byte, bool operandSizeModifier);
     QString immediateFormat(QString s);
+    QString getFunctionCallName(int immediateValue);
 
     //void searchStringList;
 };

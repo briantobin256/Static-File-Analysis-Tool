@@ -19,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
     backupLoc = "";
 
     // tmp
-    QFile file("D:/Downloads/strings.exe");
+    QFile file("C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe
     open(&file);
     file.close();
     ui->stackedWidget->setCurrentIndex(7);
@@ -380,8 +380,6 @@ void MainWindow::on_savedStringSearchButton_clicked()
 
 void MainWindow::searchStringList()
 {
-    if (stringsBuilt) {
-
         QString search = "";
         QStringList list;
         int count = 0, displayStrings = maxDisplayStrings;
@@ -462,7 +460,6 @@ void MainWindow::searchStringList()
         else if (searchStringIndex == count) {
             searchStringIndex = 0;
         }
-    }
 }
 
 void MainWindow::on_stringSortUnsort_clicked()
@@ -1894,925 +1891,10 @@ void MainWindow::getDisassembly()
             disassembly += "Opcode text file could not be opened!<br>Try running as administrator or reinstalling the program!";
         }
 
-        int instructionSizeOffset = 0, instrucionDisplayOffset = 4194304 + baseOfCode, startLocation = codeEntryPoint - baseOfCode;
-        QMap<QString, bool> locMap, subMap;
-        QString startLocationString = "";
-        // for each instruction in file
-        while (codeStartLoc + instructionSizeOffset < codeEndLoc) {
+        // get disassembled code
+        disassembly += disassembleSection(codeStartLoc, codeEndLoc, codeVirtualAddress);
 
-            // current instruction variables
-            bool instructionComplete = false, error = false, secondImmediate = false, hasModByte = false, seperator = false;
-            int opcodeByte = 0, instructionStartByte = instructionSizeOffset, errorStartLocation = 0;
-            int immediateValue = 0, displacementValue = 0;
-            QString instruction = "", parameters = "";
-
-            // current byte types
-            bool prefix = true, opcode = false, modByte = false, SIB = false, extendedOpcode = false;
-            bool operandSizeModifier = false, specialInstruction = false, aligning = false, rareInstruction = false;
-            int mod = 0, reg = 0, rm = 0, scale = 0, index = 0, base = 0, displacementIndex = 0, maxDisplacements = 0, immediateIndex = 0, maxImmediates = 0, operandSize = 8, extended = 0;
-            QString operand1 = "", operand2 = "", operandPrefix = "", disassemblyLine = "";
-            bool operand1isDestination = false, noOperands = false;
-            QString imVal = "", secImVal = "";
-
-            // for each byte in instruction
-            while (!instructionComplete) {
-                char c = rawData[codeStartLoc + instructionSizeOffset];
-                unsigned char byte = static_cast<unsigned char>(c);
-
-                //
-                // OPTIONAL INSTRUCTION PREFIX BYTE CHECK (F0, F2, F3, 26, 2E, 36, 3E, 64, 65, 66, 67)
-                //
-
-                if (prefix) {
-
-                    // if LOCK prefix (F0)
-                    if (byte == 240) {
-                        rareInstruction = true;
-                    }
-                    // if string manipulation prefix (F2, F3)
-                    else if (byte == 242 || byte == 243) {
-                        rareInstruction = true;
-                    }
-                    // if segment override prefix (26, 2E, 36, 3E, 64, 65)
-                    else if (byte == 38 || byte == 46 || byte == 54 || byte == 62 ||  byte == 100 || byte == 101) {
-                        rareInstruction = true;
-                    }
-                    // if operand override (66)
-                    else if (byte == 102) {
-                        operandSizeModifier = true;
-                    }
-                    // if address override (67)
-                    else if (byte == 103) {
-                        rareInstruction = true;
-                    }
-                    else {
-                        prefix = false;
-                        opcode = true;
-                    }
-                }
-
-                //
-                // OPCODE BYTE CHECK
-                //
-
-                if (opcode) {
-                    opcodeByte = byte;
-                    // if extended instruction
-                    if (byte == 15) {
-                        extendedOpcode = true;
-                        extended = 256;
-                        rareInstruction = true;
-                    }
-                    else {
-                        opcode = false;
-                        // if this instruction has a mod byte
-                        if (opTypeMap[byte + extended] == 2) {
-                            modByte = true;
-                            hasModByte = true;
-
-                            // calculate operand size (default = 8bits)
-                            if (byte % 2 == 1) {
-                                if (operandSizeModifier) {
-                                    operandSize = 16;
-                                    operandPrefix = "word ptr ";
-                                }
-                                else {
-                                    operandSize = 32;
-                                    operandPrefix = "dword ptr ";
-                                }
-                            }
-                            else {
-                                operandPrefix = "byte ptr ";
-                            }
-
-                            if (extendedOpcode) {
-                                // has immediate constant
-                                if (byte == 58 || (byte >= 112 && byte <= 115) || byte == 164 || byte == 172 || byte == 178 || byte == 180 || byte == 181 || byte == 186 || byte == 194 || byte == 196 || byte == 197 || byte == 198) {
-                                    if (byte == 178 || byte == 180 || byte == 181) {
-                                        maxImmediates = operandSize / 8;
-                                    }
-                                    else {
-                                        maxImmediates = 1;
-                                    }
-                                }
-                                // is correct
-                                if ((byte >= 144 && byte <= 159)) {
-                                    rareInstruction = false;
-                                }
-                            }
-                            else {
-                                // has immediate constant (69, 6B, 80 - 83, C0, C1, C6, C7)
-                                if (byte == 105 || byte == 107 || (byte >= 128 && byte <= 131) || byte == 192 || byte == 193 || byte == 198 || byte == 199) {
-                                    // only 69, 81, C7 has immediate bigger than 1
-                                    if (byte == 105 || byte == 129 || byte == 199) {
-                                        maxImmediates = operandSize / 8;
-                                    }
-                                    else {
-                                        maxImmediates = 1;
-                                    }
-                                }
-
-                                // if opcode has multiple possible instructions (80 - 83, C0, C1, D0 - D3, D8 - DF, F6, F7, FF)
-                                if ((byte >= 128 && byte <= 131) || byte == 192 || byte == 193 || (byte >= 208 && byte <= 211) || (byte >= 216 && byte <= 223) || byte == 246 || byte == 247 || byte == 255) {
-                                    specialInstruction = true;
-                                }
-                            }
-                        }
-                        // else if single byte instruction
-                        else if (opTypeMap[byte + extended] == 1) {
-                            instructionComplete = true;
-                            operand1isDestination = true;
-
-                            int opcodeRmBits;
-                            opcodeRmBits = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
-                            opcodeRmBits += (byte / 2 % 2) * 10;
-                            opcodeRmBits += (byte % 2);
-
-                            if (operandSizeModifier) {
-                                operandSize = 16;
-                                operandPrefix = "word ptr ";
-                            }
-                            else {
-                                operandSize = 32;
-                                operandPrefix = "dword ptr ";
-                            }
-
-                            // if opcode is (40 - 5F)
-                            if (byte >= 64 && byte <= 95) {
-                                operand1 = registerName(opcodeRmBits, operandSize);
-                            }
-                            // if opcode is (6C - 6F)
-                            else if (byte >= 108 && byte <= 111) {
-                                // if 8 bit
-                                if (byte % 2 == 0) {
-                                    operand2 = "byte ptr ";
-                                }
-                                else {
-                                    operand2 = operandPrefix;
-                                }
-                                // if 6C or 6D
-                                if (byte / 2 % 2 == 0) {
-                                    operand1isDestination = false;
-                                    operand2 += "es:[edi]";
-                                }
-                                else {
-                                    operand2 += "ds:[esi]";
-                                }
-                                operand1 = "dx";
-                            }
-                            // if opcode is (91 - 97)
-                            else if (byte >= 145 && byte <= 151) {
-                                operand1 = registerName(opcodeRmBits, operandSize);
-                                operand2 = registerName(0, operandSize);
-                            }
-                            // if opcode is (98)
-                            else if (byte == 152) {
-                                if (operandSizeModifier) {
-                                    instruction = "cbw";
-                                }
-                                else {
-                                    instruction = "cwde";
-                                }
-                            }
-                            // if opcode is (99)
-                            else if (byte == 153) {
-                                if (operandSizeModifier) {
-                                    instruction = "cwd";
-                                }
-                                else {
-                                    instruction = "cdq";
-                                }
-                            }
-                            // if opcode is (A4 - A7)
-                            else if (byte >= 164 && byte <= 167) {
-                                if (byte % 2 == 1) {
-                                    operand1 = operandPrefix;
-                                    operand2 = operandPrefix;
-                                }
-                                else {
-                                    operand1 = "byte ptr ";
-                                    operand2 = "byte ptr ";
-                                }
-
-                                if (byte / 2 % 2 == 0) {
-                                    operand1 += "es:[edi]";
-                                    operand2 += "ds:[esi]";
-                                }
-                                else {
-                                    operand1 += "ds:[esi]";
-                                    operand2 += "es:[edi]";
-                                }
-                            }
-                            // if opcode is (AA - AF)
-                            else if (byte >= 170 && byte <= 175) {
-                                // if AA or AB
-                                if (byte / 4 % 2 == 0) {
-                                    operand1isDestination = false;
-                                }
-                                // if AA, AB, AE, AF
-                                if (byte / 2 % 2 == 1) {
-                                    operand2 += "es:[edi]";
-                                }
-                                else {
-                                    operand2 += "ds:[esi]";
-                                }
-                                operand1 = registerName(0, operandSize);
-                            }
-                            // if opcode is (CC)
-                            else if (byte == 204) {
-                                if (!aligning) {
-                                    errorStartLocation = instructionStartByte;
-                                    aligning = true;
-                                    error = true;
-                                }
-                                if (instructionSizeOffset % 16 != 15) {
-                                    instructionComplete = false;
-                                    opcode = true;
-                                }
-                            }
-                            // if opcode is (D7)
-                            else if (byte == 215) {
-                                operand1 = "byte ptr ds:[ebx]";
-                            }
-                            // if opcode is (EC - EF)
-                            else if (byte >= 236 && byte <= 239) {
-                                operand1 = "dx";
-                                if (byte / 2 % 2 == 0) {
-                                    operand1isDestination = false;
-                                }
-                                if (byte % 2 == 0) {
-                                    operand2 = "al";
-                                }
-                                else {
-                                    operand2 = "eax";
-                                }
-                            }
-                            else {
-                                noOperands = true;
-                            }
-
-                            // if call or jump, add seperator
-                            if (byte == 195 || byte == 203) {
-                                seperator = true;
-                            }
-                        }
-                        // else has immediate value(s) only
-                        else {
-
-                            // calculate operand size (default 8 bits)
-                            if (operandSizeModifier) {
-                                operandSize = 16;
-                            }
-                            else {
-                                operandSize = 32;
-                            }
-
-                            if (extendedOpcode) {
-                                if (byte >= 128 && byte <= 144) {
-                                    maxImmediates = operandSize / 8;
-                                    rareInstruction = false;
-                                }
-                            }
-                            else {
-                                int opcodeRmBits;
-                                opcodeRmBits = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
-                                opcodeRmBits += (byte / 2 % 2) * 10;
-                                opcodeRmBits += (byte % 2);
-
-                                // if opcode is (04, 05, 0C, 0D, 14, 15, 1C, 1D, 24, 25, 2C, 2D, 34, 35, 3C, 3D)
-                                if (byte >= 4 && byte <= 61) {
-                                    operand1 = registerName(0, operandSize);
-                                    operand1isDestination = true;
-                                    maxImmediates = operandSize / 8;
-                                }
-                                // if has Short jump on condition (70 - 7F, E0 - E3, EB)
-                                else if ((byte >= 112 && byte <= 127) || (byte >= 224 && byte <= 227) || byte == 235) {
-                                    operand2 = "short ";
-                                    maxImmediates = 1;
-                                }
-                                // if opcode is (E4 - E7)
-                                else if (byte >= 228 && byte <= 231) {
-                                    if (byte % 2 == 0) {
-                                        operand1 = "al";
-                                    }
-                                    else {
-                                        operand1 = "eax";
-                                    }
-                                    if (byte / 2 % 2 == 0) {
-                                        operand1isDestination = true;
-                                    }
-                                    maxImmediates = 1;
-                                }
-                                // if opcode is (E8, E9)
-                                else if (byte == 232 || byte == 233) {
-                                    if (byte == 233) {
-                                        operand2 = "short ";
-                                    }
-                                    if (operandSizeModifier) {
-                                        maxImmediates = 2;
-                                    }
-                                    else {
-                                        maxImmediates = 4;
-                                    }
-                                }
-                                // if move immediate byte into 8 bit register (B0 - B7)
-                                else if (byte >= 176 && byte <= 183) {
-                                    maxImmediates = 1;
-                                    operand1 = registerName(opcodeRmBits, 8);
-                                    operand1isDestination = true;
-                                }
-                                // if move immediate word/double into 16/32 bit register (B8 - BF)
-                                else if (byte >= 184 && byte <= 191) {
-                                    maxImmediates = operandSize / 8;
-                                    operand1 = registerName(opcodeRmBits, operandSize);
-                                    operand1isDestination = true;
-                                }
-                                // if single operand immediate value (68, E8, E9)
-                                else if (byte == 104 || byte == 232 || byte == 233) {
-                                    maxImmediates = operandSize / 8;
-                                }
-                                // if single operand immediate byte (6A)
-                                else if (byte == 106) {
-                                     maxImmediates = 1;
-                                }
-                                // if opcode is (9A)
-                                else if (byte == 154) {
-                                    maxImmediates = (operandSize / 8) + 2;
-                                }
-                                // if opcode is (EA)
-                                else if (byte == 234) {
-                                    operand2 = "short ";
-                                    maxImmediates = (operandSize / 8) + 2;
-                                }
-                                // if opcode is (A0 - A3)
-                                else if (byte >= 160 && byte <= 163) {
-                                    if (byte / 2 % 2 == 0) {
-                                         operand1isDestination = true;
-                                    }
-                                    maxImmediates = 4;
-                                    operand1 = registerName(0, operandSize);
-                                    operand2 = "ds:";
-                                }
-                                // if opcode is (A8, A9)
-                                else if (byte == 168 || byte == 169) {
-                                    if (byte % 2 == 1) {
-                                        operand1 = registerName(0, operandSize);
-                                    }
-                                    else {
-                                        operand1 = registerName(0, 8);
-                                    }
-                                    maxImmediates = operandSize / 8;
-                                    operand1isDestination = true;
-                                }
-                                // if opcode is (C2)
-                                else if (byte == 194) {
-                                    maxImmediates = 2;
-                                }
-                                // if opcode is (C8)
-                                else if (byte == 200) {
-                                    maxImmediates = 3;
-                                }
-                                // if opcode is (CA)
-                                else if (byte == 202) {
-                                    maxImmediates = 2;
-                                }
-                                // if opcode is (CD)
-                                else if (byte == 205) {
-                                    maxImmediates = 1;
-                                }
-                                // if opcode is (D4, D5)
-                                else if (byte == 212 || byte == 213) {
-                                    maxImmediates = 1;
-                                }
-
-                                // if call or jump, add seperator
-                                if ((byte >= 233 && byte <= 235) || byte == 194 || byte == 202) {
-                                    seperator = true;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                //
-                // MOD REG R/M BYTE CHECK
-                //
-
-                else if (modByte) {
-                    // get addressing mode bits (first 2 bits)
-                    mod = (byte / static_cast<int>(pow(2, 7)) % 2) * 10;
-                    mod += (byte / static_cast<int>(pow(2, 6)) % 2);
-
-                    // get register bits (next 3 bits)
-                    reg = (byte / static_cast<int>(pow(2, 5)) % 2) * 100;
-                    reg += (byte / static_cast<int>(pow(2, 4)) % 2) * 10;
-                    reg += (byte / static_cast<int>(pow(2, 3)) % 2);
-
-                    // get r/m bits (last 3 bits)
-                    rm = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
-                    rm += (byte / 2 % 2) * 10;
-                    rm += (byte % 2);
-
-                    if (specialInstruction) {
-                        instruction = getSpecialByteInstruction(opcodeByte, reg);
-                    }
-
-                    if (mod == 1) {
-                        maxDisplacements = 1;
-                    }
-                    else if (mod == 10) {
-                        maxDisplacements = 4;
-                    }
-
-                    if (opcodeByte == 255) {
-                        operand2 = operandPrefix;
-                    }
-
-                    // if has SIB
-                    if (rm == 100 && mod != 11) {
-                        SIB = true;
-                    }
-
-                    // if not extended
-                    if (!extended) {
-                        // if opcode is (00 - 03, 08 - 0B, 10 - 13, 18 - 1B, 20 - 23, 28 - 2B, 30 - 33, 38 - 3B)
-                        if (opcodeByte < 60) {
-                            operand1 = registerName(reg, operandSize);
-                            if (opcodeByte / 2 % 2 == 1) {
-                                operand1isDestination = true;
-                            }
-                        }
-                        // if opcode is (62)
-                        else if (opcodeByte == 98) {
-                            if (operandSizeModifier) {
-                                operand2 = "dword ptr ";
-                                operandSize = 16;
-                            }
-                            else {
-                                operand2 = "qword ptr ";
-                                operandSize = 32;
-                            }
-                            operand1 = registerName(reg, operandSize);
-                            operand1isDestination = true;
-                        }
-                        // if opcode is (63)
-                        else if (opcodeByte == 99) {
-                            operand1 = registerName(reg, 16);
-                            operand2 = "word ptr ";
-                        }
-                        // if opcode is (69, 6B)
-                        else if (opcodeByte == 105 || opcodeByte == 107) {
-                            operand1 = registerName(reg, operandSize);
-                            operand1isDestination = true;
-                        }
-                        // if opcode is (84 - 89)
-                        else if (opcodeByte >= 132 && opcodeByte <= 137) {
-                            operand1 = registerName(reg, operandSize);
-                        }
-                        // if opcode is (8A, 8B)
-                        else if (opcodeByte == 138 || opcodeByte == 139) {
-                            operand1 = registerName(reg, operandSize);
-                            operand1isDestination = true;
-                        }
-                        // if opcode is (8C, 8E)
-                        else if (opcodeByte == 140 || opcodeByte == 142) {
-                            operand1 = segmentRegisterName(reg);
-                            operand2 = "word ptr ";
-                            if (opcodeByte / 2 % 2 == 1) {
-                                operand1isDestination = true;
-                            }
-                        }
-                        // if opcode is (8D)
-                        else if (opcodeByte == 141) {
-                            operand1 = registerName(reg, operandSize);
-                            operand1isDestination = true;
-                        }
-                        // if opcode is (C4, C5)
-                        else if (opcodeByte == 196 || opcodeByte == 197) {
-                            operand1 = registerName(reg, 32);
-                            operand1isDestination = true;
-                            if (operandSizeModifier) {
-                                operand2 = "dword ptr ";
-                            }
-                            else {
-                                operand2 = "fword ptr ";
-                            }
-                        }
-                        // if opcode is (D0 - D3)
-                        else if (opcodeByte >= 208 && opcodeByte <= 211) {
-                            if (opcodeByte / 2 % 2 == 0) {
-                                operand1 = "1";
-                            }
-                            else {
-                                operand1 = "cl";
-                            }
-                        }
-                        // if opcode is (F6)
-                        else if (opcodeByte == 246) {
-                            if (reg == 0) {
-                                maxImmediates = 1;
-                            }
-                        }
-                        // if opcode is (F7)
-                        else if (opcodeByte == 247) {
-                            if (reg == 0) {
-                                maxImmediates = operandSize / 8;
-                            }
-                        }
-                        // if opcode is (FE)
-                        else if (opcodeByte == 254) {
-                            if (reg == 0) {
-                                instruction = "inc ";
-                            }
-                            else {
-                                instruction = "dec ";
-                            }
-                        }
-                    }
-
-                    if (!SIB) {
-                        // register addressing mode
-                        if (mod == 11) {
-                            operand2 = registerName(rm, operandSize);
-                        }
-                        // if 32 bit displacement only mode
-                        else if (mod == 0 && rm == 101) {
-                            maxDisplacements = 4;
-                        }
-                        else {
-                            if (maxDisplacements == 0) {
-                                operand2 += "[" + registerName(rm, 32) + "]";
-                            }
-                            else {
-                                operand2 += "[" + registerName(rm, 32);
-                            }
-                        }
-                    }
-
-                    if (maxDisplacements == 0 && maxImmediates == 0 && !SIB) {
-                        instructionComplete = true;
-                    }
-
-                    modByte = false;
-                }
-
-                //
-                // SIB CHECK
-                //
-
-                else if (SIB) {
-                    // get scale bits (first 2 bits)
-                    scale = (byte / static_cast<int>(pow(2, 7)) % 2) * 10;
-                    scale += (byte / static_cast<int>(pow(2, 6)) % 2);
-
-                    // get index bits (next 3 bits)
-                    index = (byte / static_cast<int>(pow(2, 5)) % 2) * 100;
-                    index += (byte / static_cast<int>(pow(2, 4)) % 2) * 10;
-                    index += (byte / static_cast<int>(pow(2, 3)) % 2);
-
-                    // get base bits (last 3 bits)
-                    base = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
-                    base += (byte / 2 % 2) * 10;
-                    base += (byte % 2);
-
-                    // get base register
-                    if (mod != 101) {
-                        operand2 += "[" + registerName(base, 32);
-                    }
-                    else if (mod == 1 || mod == 10) {
-                        operand2 = "[ebp";
-                    }
-
-                    // get index register
-                    operand2 += "+" + registerName(index, 32);
-
-                    // get index scale value
-                    switch (scale) {
-                        case 0: operand2 += "*1";
-                        break;
-                        case 1: operand2 += "*2";
-                        break;
-                        case 10: operand2 += "*4";
-                        break;
-                        case 11: operand2 += "*8";
-                        break;
-                    }
-
-                    SIB = false;
-                    if (maxDisplacements == 0) {
-                        instructionComplete = true;
-                        operand2 += "]";
-                    }
-                    if (maxImmediates != 0) {
-                        instructionComplete = false;
-                    }
-                }
-
-                //
-                // DISPLACEMENT BYTE CHECK
-                //
-
-                else if (displacementIndex < maxDisplacements) {
-                    // sign check
-                    bool negative = false;
-                    if (displacementIndex == maxDisplacements - 1) {
-                        if (byte >= 128) {
-                            negative = true;
-                            if (maxDisplacements == 1) {
-                                byte -= (byte % 128) * 2;
-                            }
-                        }
-                    }
-
-                    qint64 k = pow(16,displacementIndex * 2) * byte;
-                    displacementValue += k;
-                    displacementIndex++;
-                    
-                    if (displacementIndex == maxDisplacements) {
-                        QString fontStart = "", fontEnd = "";
-                        if (!rareInstruction) {
-                            fontStart = "<font color='green'>";
-                            fontEnd = "</font>";
-                        }
-
-                        if (negative) {
-                            if (maxDisplacements > 1) {
-                                displacementValue *= -1;
-                            }
-                            operand2 += fontStart + "-" + QString::number(displacementValue, 16).toUpper() + "h" + fontEnd + "]";
-                        }
-                        else {
-                            operand2 += fontStart + "+" + QString::number(displacementValue, 16).toUpper() + "h" + fontEnd + "]";
-                        }
-
-                        // if register addressing mode
-                        if (mod == 0 && rm == 101) {
-                            operand2 = "dword ptr ds:" + fontStart + QString::number(displacementValue, 16).toUpper() + "h" + fontEnd; // convert to loc_ value
-                        }
-
-                        if (maxImmediates == 0) {
-                            instructionComplete = true;
-                        }
-                    }
-                }
-
-                //
-                // IMMEDIATE BYTE CHECK
-                //
-
-                else if (immediateIndex < maxImmediates) {
-                    // if opcode is (9A, EA)
-                    if (opcodeByte == 154 || opcodeByte == 234) {
-                        if (immediateIndex == maxImmediates - 2 && !secondImmediate) {
-                            secImVal = imVal;
-                            imVal = "";
-                            immediateIndex = 0;
-                            maxImmediates = 2;
-                            secondImmediate = true;
-                        }
-                    }
-                    // if opcode is (C8)
-                    else if (opcodeByte == 200) {
-                        if (immediateIndex == 2  && !secondImmediate) {
-                            secImVal = imVal;
-                            imVal = "";
-                            immediateIndex = 0;
-                            maxImmediates = 1;
-                            secondImmediate = true;
-                        }
-                    }
-
-                    // immediate value in hex
-                    imVal.prepend(byteToHexString(byte));
-
-                    // immediate value added to instruction pointer
-                    bool negative = false;
-                    // if a jump or call to a location
-                    if (operand2 == "short " || opcodeByte == 232 || (opcodeByte >= 128 && opcodeByte <= 143 && extended)) {
-                        if (maxImmediates == 1) {
-                            if (byte >= 128) {
-                                negative = true;
-                                byte -= (byte % 128) * 2;
-                            }
-                        }
-                        qint64 k = pow(16,immediateIndex * 2) * byte;
-                        immediateValue += k;
-                    }
-                    // if signed value
-                    else {
-                        if (opcodeByte == 106 || opcodeByte == 107 || opcodeByte == 131) {
-                            if (byte >= 128) {
-                                imVal.prepend("FFFFFF");
-                            }
-                        }
-                    }
-
-                    immediateIndex++;
-
-                    // end
-                    if (immediateIndex == maxImmediates) {
-
-                        imVal = immediateFormat(imVal);
-                        secImVal = immediateFormat(secImVal);
-
-                        if (opcodeByte == 154 || opcodeByte == 234) {
-                            operand2 = imVal + ":";
-                            operand2 += secImVal;
-                        }
-                        else if (opcodeByte == 200) {
-                            operand1 = imVal;
-                            operand2 = secImVal;
-                        }
-                        else {
-                            if (!hasModByte) {
-                                if (negative) {
-                                    immediateValue *= -1;
-                                }
-                                // if a jump to a location
-                                if (operand2 == "short " || (opcodeByte >= 128 && opcodeByte <= 143 && extended)) {
-                                    QString loc = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
-                                    operand2 += "<a href='" + loc + "'>";
-                                    operand2 += "loc " + loc + "</a>";
-                                    locMap[loc] = true;
-                                }
-                                // if a call to a location
-                                else if (opcodeByte == 154 || opcodeByte == 232) {
-                                    QString sub = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
-                                    operand2 += "<a href='" + sub + "'>";
-                                    operand2 += "sub " + sub + "</a>";
-                                    subMap[sub] = true;
-                                }
-                                else {
-                                    operand2 += imVal;
-                                }
-                            }
-                            else {
-                                operand1 += imVal;
-                            }
-                        }
-                        instructionComplete = true;
-                    }
-                }
-
-                //
-                // END OF INSTRUCTION LOOP CHECKS
-                //
-
-                else if (!prefix) {
-                    instructionComplete = true;
-                    error = true;
-                }
-                instructionSizeOffset++;
-            }
-
-            //
-            // GET LINE READY FOR OUTPUT
-            //
-
-            QString location = QString::number(instructionStartByte + instrucionDisplayOffset, 16).toUpper();
-            disassemblyLine += location;
-
-            if (!error) {
-                // get instruction mnemonic if not special
-                if (instruction == "") {
-                    if (extendedOpcode) {
-                        opcodeByte += 256;
-                    }
-                    QString line =  opcodeMap[opcodeByte];
-                    if (noOperands) {
-                        instruction = line;
-                    }
-                    else {
-                        int split = line.indexOf(" ");
-                        if (split > 0) {
-                            QStringRef instructionRef(&line, 0, split + 1);
-                            instruction += instructionRef.toString();
-                        }
-                        else {
-                            instruction = line;
-                        }
-                    }
-                }
-
-                disassemblyLine += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
-
-                if (rareInstruction) {
-                    disassemblyLine += instruction;
-                }
-                else {
-                    disassemblyLine += "<font color='blue'>";//993333
-                    disassemblyLine += instruction;
-                    disassemblyLine += "</font>";
-                }
-
-                if (!operand1isDestination) {
-                    if (operand2 != "") {
-                        disassemblyLine += operand2;
-                        if (operand1 != "") {
-                            disassemblyLine += ", ";
-                            disassemblyLine += operand1;
-                        }
-                    }
-                }
-                else if (operand1 != "") {
-                    disassemblyLine += operand1;
-                    if (operand2 != "") {
-                        disassemblyLine += ", ";
-                        disassemblyLine += operand2;
-                    }
-                }
-                disassemblyLine += "<br>";
-            }
-            // aligning or extended opcode that is not handled
-            else {
-                if (aligning) {
-                    aligning = false;
-                    disassemblyLine = QString::number(errorStartLocation + 4198400, 16).toUpper();
-                    disassemblyLine += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;align 10h<br>";
-                }
-                else {
-                    disassemblyLine += "<font color='red'>ERROR!<br></font>";
-                }
-            }
-
-            if (rareInstruction) {
-                disassemblyLine.prepend("<font color='red'>");
-                disassemblyLine.append("</font>");
-            }
-
-            disassembly += disassemblyLine;
-
-            // if code start procedure
-            if (startLocation == instructionStartByte) {
-                // for finding start location when location and sub location labels are inserted after all instructions are built
-                startLocationString = location;
-            }
-            else if (seperator) {
-                disassemblyLine += location + " ; -------------------------------------------------------------------<br>";
-            }
-        }
-
-        //
-        // FORMATTING AFTER DISASSEMBLY BUILT
-        //
-
-        // for all locations and sub locations
-        int instructionIterator = 0, locCount = 0, totalLocs = disassembly.count(), startjumpOffset = 0;
-        while (instructionIterator < totalLocs) {
-            QString instruction = disassembly[instructionIterator + (locCount * 2)];
-            int split = instruction.indexOf('&');
-            QStringRef instructionRef(&instruction, split - 6, split);
-            QString loc = instructionRef.toString();
-
-            // if start location, jump offsets need to be increased by start label length (currently 6 lines)
-            if (loc == startLocationString) {
-                startjumpOffset = 6;
-            }
-
-            if (locMap[loc]) {
-                disassembly.insert(instructionIterator + (locCount * 2), loc + "<br>");
-                disassembly.insert(instructionIterator + (locCount * 2) + 1, loc + "&nbsp;loc_" + loc + "<br>");
-                locOffsetMap[loc] = instructionIterator + (locCount * 2) + startjumpOffset;
-                locCount++;
-            }
-            else if (subMap[loc]) {
-                disassembly.insert(instructionIterator + (locCount * 2), loc + "<br>");
-                disassembly.insert(instructionIterator + (locCount * 2) + 1, loc + "&nbsp;sub_" + loc + "<br>");
-                locOffsetMap[loc] = instructionIterator + (locCount * 2) + startjumpOffset;
-                locCount++;
-            }
-            instructionIterator++;
-        }
-
-        // find start procedure
-        bool startFound = false;
-        int i = 0, size = disassembly.count();
-        codeStartProcedure = 0;
-        while (!startFound && i < size) {
-            QString instruction = disassembly[i];
-            QStringRef instructionRef(&instruction, 0, 6);
-            QString loc = instructionRef.toString();
-            if (loc == startLocationString) {
-                QStringList list;
-                list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
-                list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
-                list += startLocationString + "<font color='blue'> ; --------------------- <font color='red'>START PROCEDURE</font> -----------------------------<br></font>";
-                list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
-                list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
-                list += startLocationString + "<br>";
-
-                for (int j = 0; j < list.size(); j++) {
-                    disassembly.insert(i + j , list.at(j));
-                }
-
-                codeStartProcedure = i;
-                startFound = true;
-            }
-            else {
-                i++;
-            }
-        }
-
+        // set ui things
         ui->disassemblyScrollBar->setMaximum(disassembly.count() - maxDisplayInstructions);
         ui->disassemblyBrowser->setOpenExternalLinks(false);
         reseting = true;
@@ -2828,6 +1910,947 @@ void MainWindow::getDisassembly()
         }
     }
     disassemblyBuilt = true;
+}
+
+QStringList MainWindow::disassembleSection(int start, int end, int virtualAddress)
+{
+    int instructionSizeOffset = 0, instrucionDisplayOffset = imagebase + virtualAddress, startLocation = codeEntryPoint - baseOfCode;
+    QMap<QString, bool> locMap, subMap;
+    QString startLocationString = "";
+    QStringList disassemblyList;
+
+    // for each instruction in a code section
+    while (start + instructionSizeOffset < end) {
+
+        // current instruction variables
+        bool instructionComplete = false, error = false, secondImmediate = false, hasModByte = false, seperator = false;
+        int opcodeByte = 0, instructionStartByte = instructionSizeOffset, errorStartLocation = 0;
+        int immediateValue = 0, displacementValue = 0;
+        QString instruction = "", parameters = "";
+
+        // current byte types
+        bool prefix = true, opcode = false, modByte = false, SIB = false, extendedOpcode = false;
+        bool operandSizeModifier = false, specialInstruction = false, aligning = false, rareInstruction = false;
+        int mod = 0, reg = 0, rm = 0, scale = 0, index = 0, base = 0, displacementIndex = 0, maxDisplacements = 0, immediateIndex = 0, maxImmediates = 0, operandSize = 8, extended = 0;
+        QString operand1 = "", operand2 = "", operandPrefix = "", disassemblyLine = "";
+        bool operand1isDestination = false, noOperands = false;
+        QString imVal = "", secImVal = "";
+
+        // for each byte in instruction
+        while (!instructionComplete) {
+            char c = rawData[codeStartLoc + instructionSizeOffset];
+            unsigned char byte = static_cast<unsigned char>(c);
+
+            //
+            // OPTIONAL INSTRUCTION PREFIX BYTE CHECK (F0, F2, F3, 26, 2E, 36, 3E, 64, 65, 66, 67)
+            //
+
+            if (prefix) {
+
+                // if LOCK prefix (F0)
+                if (byte == 240) {
+                    rareInstruction = true;
+                }
+                // if string manipulation prefix (F2, F3)
+                else if (byte == 242 || byte == 243) {
+                    rareInstruction = true;
+                }
+                // if segment override prefix (26, 2E, 36, 3E, 64, 65)
+                else if (byte == 38 || byte == 46 || byte == 54 || byte == 62 ||  byte == 100 || byte == 101) {
+                    rareInstruction = true;
+                }
+                // if operand override (66)
+                else if (byte == 102) {
+                    operandSizeModifier = true;
+                }
+                // if address override (67)
+                else if (byte == 103) {
+                    rareInstruction = true;
+                }
+                else {
+                    prefix = false;
+                    opcode = true;
+                }
+            }
+
+            //
+            // OPCODE BYTE CHECK
+            //
+
+            if (opcode) {
+                opcodeByte = byte;
+                // if extended instruction
+                if (byte == 15) {
+                    extendedOpcode = true;
+                    extended = 256;
+                    rareInstruction = true;
+                }
+                else {
+                    opcode = false;
+                    // if this instruction has a mod byte
+                    if (opTypeMap[byte + extended] == 2) {
+                        modByte = true;
+                        hasModByte = true;
+
+                        // calculate operand size (default = 8bits)
+                        if (byte % 2 == 1) {
+                            if (operandSizeModifier) {
+                                operandSize = 16;
+                                operandPrefix = "word ptr ";
+                            }
+                            else {
+                                operandSize = 32;
+                                operandPrefix = "dword ptr ";
+                            }
+                        }
+                        else {
+                            operandPrefix = "byte ptr ";
+                        }
+
+                        if (extendedOpcode) {
+                            // has immediate constant
+                            if (byte == 58 || (byte >= 112 && byte <= 115) || byte == 164 || byte == 172 || byte == 178 || byte == 180 || byte == 181 || byte == 186 || byte == 194 || byte == 196 || byte == 197 || byte == 198) {
+                                if (byte == 178 || byte == 180 || byte == 181) {
+                                    maxImmediates = operandSize / 8;
+                                }
+                                else {
+                                    maxImmediates = 1;
+                                }
+                            }
+                            // is correct
+                            if ((byte >= 144 && byte <= 159)) {
+                                rareInstruction = false;
+                            }
+                        }
+                        else {
+                            // has immediate constant (69, 6B, 80 - 83, C0, C1, C6, C7)
+                            if (byte == 105 || byte == 107 || (byte >= 128 && byte <= 131) || byte == 192 || byte == 193 || byte == 198 || byte == 199) {
+                                // only 69, 81, C7 has immediate bigger than 1
+                                if (byte == 105 || byte == 129 || byte == 199) {
+                                    maxImmediates = operandSize / 8;
+                                }
+                                else {
+                                    maxImmediates = 1;
+                                }
+                            }
+
+                            // if opcode has multiple possible instructions (80 - 83, C0, C1, D0 - D3, D8 - DF, F6, F7, FF)
+                            if ((byte >= 128 && byte <= 131) || byte == 192 || byte == 193 || (byte >= 208 && byte <= 211) || (byte >= 216 && byte <= 223) || byte == 246 || byte == 247 || byte == 255) {
+                                specialInstruction = true;
+                            }
+                        }
+                    }
+                    // else if single byte instruction
+                    else if (opTypeMap[byte + extended] == 1) {
+                        instructionComplete = true;
+                        operand1isDestination = true;
+
+                        int opcodeRmBits;
+                        opcodeRmBits = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
+                        opcodeRmBits += (byte / 2 % 2) * 10;
+                        opcodeRmBits += (byte % 2);
+
+                        if (operandSizeModifier) {
+                            operandSize = 16;
+                            operandPrefix = "word ptr ";
+                        }
+                        else {
+                            operandSize = 32;
+                            operandPrefix = "dword ptr ";
+                        }
+
+                        // if opcode is (40 - 5F)
+                        if (byte >= 64 && byte <= 95) {
+                            operand1 = registerName(opcodeRmBits, operandSize);
+                        }
+                        // if opcode is (6C - 6F)
+                        else if (byte >= 108 && byte <= 111) {
+                            // if 8 bit
+                            if (byte % 2 == 0) {
+                                operand2 = "byte ptr ";
+                            }
+                            else {
+                                operand2 = operandPrefix;
+                            }
+                            // if 6C or 6D
+                            if (byte / 2 % 2 == 0) {
+                                operand1isDestination = false;
+                                operand2 += "es:[edi]";
+                            }
+                            else {
+                                operand2 += "ds:[esi]";
+                            }
+                            operand1 = "dx";
+                        }
+                        // if opcode is (91 - 97)
+                        else if (byte >= 145 && byte <= 151) {
+                            operand1 = registerName(opcodeRmBits, operandSize);
+                            operand2 = registerName(0, operandSize);
+                        }
+                        // if opcode is (98)
+                        else if (byte == 152) {
+                            if (operandSizeModifier) {
+                                instruction = "cbw";
+                            }
+                            else {
+                                instruction = "cwde";
+                            }
+                        }
+                        // if opcode is (99)
+                        else if (byte == 153) {
+                            if (operandSizeModifier) {
+                                instruction = "cwd";
+                            }
+                            else {
+                                instruction = "cdq";
+                            }
+                        }
+                        // if opcode is (A4 - A7)
+                        else if (byte >= 164 && byte <= 167) {
+                            if (byte % 2 == 1) {
+                                operand1 = operandPrefix;
+                                operand2 = operandPrefix;
+                            }
+                            else {
+                                operand1 = "byte ptr ";
+                                operand2 = "byte ptr ";
+                            }
+
+                            if (byte / 2 % 2 == 0) {
+                                operand1 += "es:[edi]";
+                                operand2 += "ds:[esi]";
+                            }
+                            else {
+                                operand1 += "ds:[esi]";
+                                operand2 += "es:[edi]";
+                            }
+                        }
+                        // if opcode is (AA - AF)
+                        else if (byte >= 170 && byte <= 175) {
+                            // if AA or AB
+                            if (byte / 4 % 2 == 0) {
+                                operand1isDestination = false;
+                            }
+                            // if AA, AB, AE, AF
+                            if (byte / 2 % 2 == 1) {
+                                operand2 += "es:[edi]";
+                            }
+                            else {
+                                operand2 += "ds:[esi]";
+                            }
+                            operand1 = registerName(0, operandSize);
+                        }
+                        // if opcode is (CC)
+                        else if (byte == 204) {
+                            if (!aligning) {
+                                errorStartLocation = instructionStartByte;
+                                aligning = true;
+                                error = true;
+                            }
+                            if (instructionSizeOffset % 16 != 15) {
+                                instructionComplete = false;
+                                opcode = true;
+                            }
+                        }
+                        // if opcode is (D7)
+                        else if (byte == 215) {
+                            operand1 = "byte ptr ds:[ebx]";
+                        }
+                        // if opcode is (EC - EF)
+                        else if (byte >= 236 && byte <= 239) {
+                            operand1 = "dx";
+                            if (byte / 2 % 2 == 0) {
+                                operand1isDestination = false;
+                            }
+                            if (byte % 2 == 0) {
+                                operand2 = "al";
+                            }
+                            else {
+                                operand2 = "eax";
+                            }
+                        }
+                        else {
+                            noOperands = true;
+                        }
+
+                        // if call or jump, add seperator
+                        if (byte == 195 || byte == 203) {
+                            seperator = true;
+                        }
+                    }
+                    // else has immediate value(s) only
+                    else {
+                        // calculate operand size (default 8 bits)
+                        if (operandSizeModifier) {
+                            operandSize = 16;
+                        }
+                        else {
+                            operandSize = 32;
+                        }
+
+                        if (extendedOpcode) {
+                            if (byte >= 128 && byte <= 144) {
+                                maxImmediates = operandSize / 8;
+                                rareInstruction = false;
+                            }
+                        }
+                        else {
+                            int opcodeRmBits;
+                            opcodeRmBits = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
+                            opcodeRmBits += (byte / 2 % 2) * 10;
+                            opcodeRmBits += (byte % 2);
+
+                            // if opcode is (04, 05, 0C, 0D, 14, 15, 1C, 1D, 24, 25, 2C, 2D, 34, 35, 3C, 3D)
+                            if (byte >= 4 && byte <= 61) {
+                                operand1 = registerName(0, operandSize);
+                                operand1isDestination = true;
+                                maxImmediates = operandSize / 8;
+                            }
+                            // if has Short jump on condition (70 - 7F, E0 - E3, EB)
+                            else if ((byte >= 112 && byte <= 127) || (byte >= 224 && byte <= 227) || byte == 235) {
+                                operand2 = "short ";
+                                maxImmediates = 1;
+                            }
+                            // if opcode is (E4 - E7)
+                            else if (byte >= 228 && byte <= 231) {
+                                if (byte % 2 == 0) {
+                                    operand1 = "al";
+                                }
+                                else {
+                                    operand1 = "eax";
+                                }
+                                if (byte / 2 % 2 == 0) {
+                                    operand1isDestination = true;
+                                }
+                                maxImmediates = 1;
+                            }
+                            // if opcode is (E8, E9)
+                            else if (byte == 232 || byte == 233) {
+                                if (byte == 233) {
+                                    operand2 = "short ";
+                                }
+                                if (operandSizeModifier) {
+                                    maxImmediates = 2;
+                                }
+                                else {
+                                    maxImmediates = 4;
+                                }
+                            }
+                            // if move immediate byte into 8 bit register (B0 - B7)
+                            else if (byte >= 176 && byte <= 183) {
+                                maxImmediates = 1;
+                                operand1 = registerName(opcodeRmBits, 8);
+                                operand1isDestination = true;
+                            }
+                            // if move immediate word/double into 16/32 bit register (B8 - BF)
+                            else if (byte >= 184 && byte <= 191) {
+                                maxImmediates = operandSize / 8;
+                                operand1 = registerName(opcodeRmBits, operandSize);
+                                operand1isDestination = true;
+                            }
+                            // if single operand immediate value (68, E8, E9)
+                            else if (byte == 104 || byte == 232 || byte == 233) {
+                                maxImmediates = operandSize / 8;
+                            }
+                            // if single operand immediate byte (6A)
+                            else if (byte == 106) {
+                                 maxImmediates = 1;
+                            }
+                            // if opcode is (9A)
+                            else if (byte == 154) {
+                                maxImmediates = (operandSize / 8) + 2;
+                            }
+                            // if opcode is (EA)
+                            else if (byte == 234) {
+                                operand2 = "short ";
+                                maxImmediates = (operandSize / 8) + 2;
+                            }
+                            // if opcode is (A0 - A3)
+                            else if (byte >= 160 && byte <= 163) {
+                                if (byte / 2 % 2 == 0) {
+                                     operand1isDestination = true;
+                                }
+                                maxImmediates = 4;
+                                operand1 = registerName(0, operandSize);
+                                operand2 = "ds:";
+                            }
+                            // if opcode is (A8, A9)
+                            else if (byte == 168 || byte == 169) {
+                                if (byte % 2 == 1) {
+                                    operand1 = registerName(0, operandSize);
+                                }
+                                else {
+                                    operand1 = registerName(0, 8);
+                                }
+                                maxImmediates = operandSize / 8;
+                                operand1isDestination = true;
+                            }
+                            // if opcode is (C2)
+                            else if (byte == 194) {
+                                maxImmediates = 2;
+                            }
+                            // if opcode is (C8)
+                            else if (byte == 200) {
+                                maxImmediates = 3;
+                            }
+                            // if opcode is (CA)
+                            else if (byte == 202) {
+                                maxImmediates = 2;
+                            }
+                            // if opcode is (CD)
+                            else if (byte == 205) {
+                                maxImmediates = 1;
+                            }
+                            // if opcode is (D4, D5)
+                            else if (byte == 212 || byte == 213) {
+                                maxImmediates = 1;
+                            }
+
+                            // if call or jump, add seperator
+                            if ((byte >= 233 && byte <= 235) || byte == 194 || byte == 202) {
+                                seperator = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            //
+            // MOD REG R/M BYTE CHECK
+            //
+
+            else if (modByte) {
+                // get addressing mode bits (first 2 bits)
+                mod = (byte / static_cast<int>(pow(2, 7)) % 2) * 10;
+                mod += (byte / static_cast<int>(pow(2, 6)) % 2);
+
+                // get register bits (next 3 bits)
+                reg = (byte / static_cast<int>(pow(2, 5)) % 2) * 100;
+                reg += (byte / static_cast<int>(pow(2, 4)) % 2) * 10;
+                reg += (byte / static_cast<int>(pow(2, 3)) % 2);
+
+                // get r/m bits (last 3 bits)
+                rm = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
+                rm += (byte / 2 % 2) * 10;
+                rm += (byte % 2);
+
+                if (specialInstruction) {
+                    instruction = getSpecialByteInstruction(opcodeByte, reg);
+                }
+
+                if (mod == 1) {
+                    maxDisplacements = 1;
+                }
+                else if (mod == 10) {
+                    maxDisplacements = 4;
+                }
+
+                if (opcodeByte == 255) {
+                    operand2 = operandPrefix;
+                }
+
+                // if has SIB
+                if (rm == 100 && mod != 11) {
+                    SIB = true;
+                }
+
+                // if not extended
+                if (!extended) {
+                    // if opcode is (00 - 03, 08 - 0B, 10 - 13, 18 - 1B, 20 - 23, 28 - 2B, 30 - 33, 38 - 3B)
+                    if (opcodeByte < 60) {
+                        operand1 = registerName(reg, operandSize);
+                        if (opcodeByte / 2 % 2 == 1) {
+                            operand1isDestination = true;
+                        }
+                    }
+                    // if opcode is (62)
+                    else if (opcodeByte == 98) {
+                        if (operandSizeModifier) {
+                            operand2 = "dword ptr ";
+                            operandSize = 16;
+                        }
+                        else {
+                            operand2 = "qword ptr ";
+                            operandSize = 32;
+                        }
+                        operand1 = registerName(reg, operandSize);
+                        operand1isDestination = true;
+                    }
+                    // if opcode is (63)
+                    else if (opcodeByte == 99) {
+                        operand1 = registerName(reg, 16);
+                        operand2 = "word ptr ";
+                    }
+                    // if opcode is (69, 6B)
+                    else if (opcodeByte == 105 || opcodeByte == 107) {
+                        operand1 = registerName(reg, operandSize);
+                        operand1isDestination = true;
+                    }
+                    // if opcode is (84 - 89)
+                    else if (opcodeByte >= 132 && opcodeByte <= 137) {
+                        operand1 = registerName(reg, operandSize);
+                    }
+                    // if opcode is (8A, 8B)
+                    else if (opcodeByte == 138 || opcodeByte == 139) {
+                        operand1 = registerName(reg, operandSize);
+                        operand1isDestination = true;
+                    }
+                    // if opcode is (8C, 8E)
+                    else if (opcodeByte == 140 || opcodeByte == 142) {
+                        operand1 = segmentRegisterName(reg);
+                        operand2 = "word ptr ";
+                        if (opcodeByte / 2 % 2 == 1) {
+                            operand1isDestination = true;
+                        }
+                    }
+                    // if opcode is (8D)
+                    else if (opcodeByte == 141) {
+                        operand1 = registerName(reg, operandSize);
+                        operand1isDestination = true;
+                    }
+                    // if opcode is (C4, C5)
+                    else if (opcodeByte == 196 || opcodeByte == 197) {
+                        operand1 = registerName(reg, 32);
+                        operand1isDestination = true;
+                        if (operandSizeModifier) {
+                            operand2 = "dword ptr ";
+                        }
+                        else {
+                            operand2 = "fword ptr ";
+                        }
+                    }
+                    // if opcode is (D0 - D3)
+                    else if (opcodeByte >= 208 && opcodeByte <= 211) {
+                        if (opcodeByte / 2 % 2 == 0) {
+                            operand1 = "1";
+                        }
+                        else {
+                            operand1 = "cl";
+                        }
+                    }
+                    // if opcode is (F6)
+                    else if (opcodeByte == 246) {
+                        if (reg == 0) {
+                            maxImmediates = 1;
+                        }
+                    }
+                    // if opcode is (F7)
+                    else if (opcodeByte == 247) {
+                        if (reg == 0) {
+                            maxImmediates = operandSize / 8;
+                        }
+                    }
+                    // if opcode is (FE)
+                    else if (opcodeByte == 254) {
+                        if (reg == 0) {
+                            instruction = "inc ";
+                        }
+                        else {
+                            instruction = "dec ";
+                        }
+                    }
+                }
+
+                if (!SIB) {
+                    // register addressing mode
+                    if (mod == 11) {
+                        operand2 = registerName(rm, operandSize);
+                    }
+                    // if 32 bit displacement only mode
+                    else if (mod == 0 && rm == 101) {
+                        maxDisplacements = 4;
+                    }
+                    else {
+                        if (maxDisplacements == 0) {
+                            operand2 += "[" + registerName(rm, 32) + "]";
+                        }
+                        else {
+                            operand2 += "[" + registerName(rm, 32);
+                        }
+                    }
+                }
+
+                if (maxDisplacements == 0 && maxImmediates == 0 && !SIB) {
+                    instructionComplete = true;
+                }
+
+                modByte = false;
+            }
+
+            //
+            // SIB CHECK
+            //
+
+            else if (SIB) {
+                // get scale bits (first 2 bits)
+                scale = (byte / static_cast<int>(pow(2, 7)) % 2) * 10;
+                scale += (byte / static_cast<int>(pow(2, 6)) % 2);
+
+                // get index bits (next 3 bits)
+                index = (byte / static_cast<int>(pow(2, 5)) % 2) * 100;
+                index += (byte / static_cast<int>(pow(2, 4)) % 2) * 10;
+                index += (byte / static_cast<int>(pow(2, 3)) % 2);
+
+                // get base bits (last 3 bits)
+                base = (byte / static_cast<int>(pow(2, 2)) % 2) * 100;
+                base += (byte / 2 % 2) * 10;
+                base += (byte % 2);
+
+                // get base register
+                if (mod != 101) {
+                    operand2 += "[" + registerName(base, 32);
+                }
+                else if (mod == 1 || mod == 10) {
+                    operand2 = "[ebp";
+                }
+
+                // get index register
+                operand2 += "+" + registerName(index, 32);
+
+                // get index scale value
+                switch (scale) {
+                    case 0: operand2 += "*1";
+                    break;
+                    case 1: operand2 += "*2";
+                    break;
+                    case 10: operand2 += "*4";
+                    break;
+                    case 11: operand2 += "*8";
+                    break;
+                }
+
+                SIB = false;
+                if (maxDisplacements == 0) {
+                    instructionComplete = true;
+                    operand2 += "]";
+                }
+                if (maxImmediates != 0) {
+                    instructionComplete = false;
+                }
+            }
+
+            //
+            // DISPLACEMENT BYTE CHECK
+            //
+
+            else if (displacementIndex < maxDisplacements) {
+                // sign check
+                bool negative = false;
+                if (displacementIndex == maxDisplacements - 1) {
+                    if (byte >= 128) {
+                        negative = true;
+                        if (maxDisplacements == 1) {
+                            byte -= (byte % 128) * 2;
+                        }
+                    }
+                }
+
+                qint64 k = pow(16,displacementIndex * 2) * byte;
+                displacementValue += k;
+                displacementIndex++;
+
+                if (displacementIndex == maxDisplacements) {
+                    QString fontStart = "", fontEnd = "";
+                    if (!rareInstruction) {
+                        fontStart = "<font color='green'>";
+                        fontEnd = "</font>";
+                    }
+                    if (negative) {
+                        if (maxDisplacements > 1) {
+                            displacementValue *= -1;
+                        }
+                        operand2 += fontStart + "-" + QString::number(displacementValue, 16).toUpper() + "h" + fontEnd + "]";
+                    }
+                    else {
+                        operand2 += fontStart + "+" + QString::number(displacementValue, 16).toUpper() + "h" + fontEnd + "]";
+                    }
+
+                    // if register addressing mode
+                    if (mod == 0 && rm == 101) {
+                        QString function = getFunctionCallName(displacementValue);
+
+                        if (function.size() > 4) {
+                            fontStart = "ds:<font color='red'>";
+                            fontEnd = "</font>";
+                            operand2 = fontStart + function + fontEnd;
+                        }
+                        else {
+                            operandPrefix.remove(operandPrefix.size() - 5, 5);
+                            operandPrefix += "_";
+                            operand2 = operandPrefix + QString::number(displacementValue, 16).toUpper();
+                        }
+                    }
+
+                    if (maxImmediates == 0) {
+                        instructionComplete = true;
+                    }
+                }
+            }
+
+            //
+            // IMMEDIATE BYTE CHECK
+            //
+
+            else if (immediateIndex < maxImmediates) {
+                // if opcode is (9A, EA)
+                if (opcodeByte == 154 || opcodeByte == 234) {
+                    if (immediateIndex == maxImmediates - 2 && !secondImmediate) {
+                        secImVal = imVal;
+                        imVal = "";
+                        immediateIndex = 0;
+                        maxImmediates = 2;
+                        secondImmediate = true;
+                    }
+                }
+                // if opcode is (C8)
+                else if (opcodeByte == 200) {
+                    if (immediateIndex == 2  && !secondImmediate) {
+                        secImVal = imVal;
+                        imVal = "";
+                        immediateIndex = 0;
+                        maxImmediates = 1;
+                        secondImmediate = true;
+                    }
+                }
+
+                // immediate value in hex
+                imVal.prepend(byteToHexString(byte));
+                // if signed value
+                if (opcodeByte == 106 || opcodeByte == 107 || opcodeByte == 131) {
+                    if (byte >= 128) {
+                        imVal.prepend("FFFFFF");
+                    }
+                }
+
+                // immediate value in dec
+                bool negative = false;
+                if (maxImmediates == 1) {
+                    if (byte >= 128) {
+                        negative = true;
+                        byte -= (byte % 128) * 2;
+                    }
+                }
+                qint64 k = pow(16,immediateIndex * 2) * byte;
+                immediateValue += k;
+                immediateIndex++;
+
+                // end
+                if (immediateIndex == maxImmediates) {
+                    imVal = immediateFormat(imVal);
+                    secImVal = immediateFormat(secImVal);
+
+                    if (opcodeByte == 154 || opcodeByte == 234) {
+                        operand2 = imVal + ":";
+                        operand2 += secImVal;
+                    }
+                    else if (opcodeByte == 200) {
+                        operand1 = imVal;
+                        operand2 = secImVal;
+                    }
+                    else {
+                        if (!hasModByte) {
+                            if (negative) {
+                                immediateValue *= -1;
+                            }
+                            // if a jump to a location
+                            if (operand2 == "short " || (opcodeByte >= 128 && opcodeByte <= 143 && extended)) {
+                                QString loc = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
+                                operand2 += "<a href='" + loc + "'>";
+                                operand2 += "loc " + loc + "</a>";
+                                locMap[loc] = true;
+                            }
+                            // if a call to a location
+                            else if (opcodeByte == 154 || opcodeByte == 232) {
+                                QString sub = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
+                                operand2 += "<a href='" + sub + "'>";
+                                operand2 += "sub " + sub + "</a>";
+                                subMap[sub] = true;
+                            }
+                            // if a ds: pointer, try to get name
+                            else if (operand2 == "ds:") {
+                                QString function = getFunctionCallName(immediateValue);
+
+                                if (function.size() > 4) {
+                                    QString fontStart = "ds:<font color='red'>";
+                                    QString fontEnd = "</font>";
+                                    operand2 = fontStart + function + fontEnd;
+                                }
+                                else {
+                                    operand2 = "dword_" + QString::number(immediateValue, 16).toUpper();
+                                }
+                            }
+                            else {
+                                operand2 += imVal;
+                            }
+                        }
+                        else {
+                            operand1 += imVal;
+                        }
+                    }
+                    instructionComplete = true;
+                }
+            }
+
+            //
+            // END OF INSTRUCTION LOOP CHECKS
+            //
+
+            else if (!prefix) {
+                instructionComplete = true;
+                error = true;
+            }
+            instructionSizeOffset++;
+        }
+
+        //
+        // GET LINE READY FOR OUTPUT
+        //
+
+        QString location = QString::number(instructionStartByte + instrucionDisplayOffset, 16).toUpper();
+        disassemblyLine += location;
+
+        if (!error) {
+            // get instruction mnemonic if not special
+            if (instruction == "") {
+                if (extendedOpcode) {
+                    opcodeByte += 256;
+                }
+                QString line =  opcodeMap[opcodeByte];
+                if (noOperands) {
+                    instruction = line;
+                }
+                else {
+                    int split = line.indexOf(" ");
+                    if (split > 0) {
+                        QStringRef instructionRef(&line, 0, split + 1);
+                        instruction += instructionRef.toString();
+                    }
+                    else {
+                        instruction = line;
+                    }
+                }
+            }
+
+            disassemblyLine += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+
+            if (rareInstruction) {
+                disassemblyLine += instruction;
+            }
+            else {
+                disassemblyLine += "<font color='blue'>";//993333
+                disassemblyLine += instruction;
+                disassemblyLine += "</font>";
+            }
+
+            if (!operand1isDestination) {
+                if (operand2 != "") {
+                    disassemblyLine += operand2;
+                    if (operand1 != "") {
+                        disassemblyLine += ", ";
+                        disassemblyLine += operand1;
+                    }
+                }
+            }
+            else if (operand1 != "") {
+                disassemblyLine += operand1;
+                if (operand2 != "") {
+                    disassemblyLine += ", ";
+                    disassemblyLine += operand2;
+                }
+            }
+            disassemblyLine += "<br>";
+        }
+        // aligning or extended opcode that is not handled
+        else {
+            if (aligning) {
+                aligning = false;
+                disassemblyLine = QString::number(errorStartLocation + 4198400, 16).toUpper();
+                disassemblyLine += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;align 10h<br>";
+            }
+            else {
+                disassemblyLine += "<font color='red'>ERROR!<br></font>";
+            }
+        }
+
+        if (rareInstruction) {
+            disassemblyLine.prepend("<font color='red'>");
+            disassemblyLine.append("</font>");
+        }
+
+        disassemblyList += disassemblyLine;
+
+        // if code start procedure
+        if (startLocation == instructionStartByte) {
+            // for finding start location when location and sub location labels are inserted after all instructions are built
+            startLocationString = location;
+        }
+        else if (seperator) {
+            disassemblyLine += location + " ; -------------------------------------------------------------------<br>";
+        }
+    }
+
+    //
+    // FORMATTING AFTER DISASSEMBLY BUILT
+    //
+
+    // for all locations and sub locations
+    int instructionIterator = 0, locCount = 0, totalLocs = disassemblyList.count(), startjumpOffset = 0;
+    while (instructionIterator < totalLocs) {
+        QString instruction = disassemblyList[instructionIterator + (locCount * 2)];
+        int split = instruction.indexOf('&');
+        QStringRef instructionRef(&instruction, split - 6, split);
+        QString loc = instructionRef.toString();
+
+        // if start location, jump offsets need to be increased by start label length (currently 6 lines)
+        if (loc == startLocationString) {
+            startjumpOffset = 6;
+        }
+
+        if (locMap[loc]) {
+            disassemblyList.insert(instructionIterator + (locCount * 2), loc + "<br>");
+            disassemblyList.insert(instructionIterator + (locCount * 2) + 1, loc + "&nbsp;loc_" + loc + "<br>");
+            locOffsetMap[loc] = instructionIterator + (locCount * 2) + startjumpOffset;
+            locCount++;
+        }
+        else if (subMap[loc]) {
+            disassemblyList.insert(instructionIterator + (locCount * 2), loc + "<br>");
+            disassemblyList.insert(instructionIterator + (locCount * 2) + 1, loc + "&nbsp;sub_" + loc + "<br>");
+            locOffsetMap[loc] = instructionIterator + (locCount * 2) + startjumpOffset;
+            locCount++;
+        }
+        instructionIterator++;
+    }
+
+    // find start procedure
+    bool startFound = false;
+    int i = 0, size = disassemblyList.count();
+    codeStartProcedure = 0;
+    while (!startFound && i < size) {
+        QString instruction = disassemblyList[i];
+        QStringRef instructionRef(&instruction, 0, 6);
+        QString loc = instructionRef.toString();
+        if (loc == startLocationString) {
+            QStringList list;
+            list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
+            list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
+            list += startLocationString + "<font color='blue'> ; --------------------- <font color='red'>START PROCEDURE</font> -----------------------------<br></font>";
+            list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
+            list += startLocationString + "<font color='blue'> ; -------------------------------------------------------------------<br></font>";
+            list += startLocationString + "<br>";
+
+            for (int j = 0; j < list.size(); j++) {
+                disassemblyList.insert(i + j , list.at(j));
+            }
+
+            codeStartProcedure = i;
+            startFound = true;
+        }
+        else {
+            i++;
+        }
+    }
+
+    return disassemblyList;
 }
 
 QString MainWindow::immediateFormat(QString s)
@@ -2857,6 +2880,31 @@ QString MainWindow::immediateFormat(QString s)
     s.prepend("<font color='green'>");
     s.append("</font>");
     return s;
+}
+
+QString MainWindow::getFunctionCallName(int immediateValue)
+{
+    // get function name
+    int location = 0, sectionStart = 0, sectionRVA = 0, pointerStartLoc = 0, pointerLocationOffset = 0;
+    if (IATLoc > 0) {
+        pointerStartLoc = IATLoc;
+    }
+    else {
+        pointerStartLoc = IDTLoc + IDTSize;
+    }
+    if (idataStartLoc > 0) {
+        sectionRVA = idataRVA;
+        sectionStart = idataStartLoc;
+    }
+    else {
+        sectionRVA = rdataRVA;
+        sectionStart = rdataStartLoc;
+    }
+    pointerLocationOffset = immediateValue - (imagebase + sectionRVA);
+    for (int i = 0; i < 4; i++) {
+        location += pow(16, i * 2) * static_cast<unsigned char>(rawData[pointerStartLoc + pointerLocationOffset + i]);
+    }
+    return getFunctionName(location, sectionRVA, sectionStart);
 }
 
 QString MainWindow::registerName(int reg, int operandSize)
@@ -3073,7 +3121,8 @@ void MainWindow::getPEinformation()
     }
 
     PEinfoBuilt = true;
-    codeStartLoc = 0, codeEndLoc = 0;
+    imagebase = 0;
+    codeStartLoc = 0, codeEndLoc = 0, codeVirtualAddress = 0;
     rdataStartLoc = 0, rdataRVA = 0;
     idataStartLoc = 0, idataRVA = 0;
     IDTLoc = 0, IDTSize = 0;
@@ -3102,12 +3151,17 @@ void MainWindow::getPEinformation()
             // if file has an optional header
             if (optionalHeaderSize > 0) {
 
+                // get image base
+                for (int i = 0; i < 4; i++) {
+                    imagebase += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 52 + i]);
+                }
+
                 // find text, idata and rdata sections
-                bool textFound = false, rdataFound = false, idataFound = false;
-                int sectionSize = 40, textLocation = 0, rdataLocation = 0, idataLocation = 0;
+                bool textFound = false, itextFound = false, rdataFound = false, idataFound = false;
+                int sectionSize = 40, textLocation = 0, itextLocation = 0, rdataLocation = 0, idataLocation = 0;
                 int sectionLocation = peHeaderStartLoc + peHeaderSize + optionalHeaderSize, sectionNumber = 0;
 
-                while ((!textFound || !rdataFound || !idataFound) && sectionNumber < sectionCount) {
+                while ((!textFound || !itextFound || !rdataFound || !idataFound) && sectionNumber < sectionCount) {
                     QString sectionName = "";
                     for (int i = 0; i < 5; i++) {
                         sectionName += rawData[sectionLocation + i];
@@ -3115,6 +3169,10 @@ void MainWindow::getPEinformation()
                     if (sectionName == ".text") {
                         textFound = true;
                         textLocation = sectionLocation;
+                    }
+                    else if (sectionName == ".itex") {
+                        itextFound = true;
+                        itextLocation = sectionLocation;
                     }
                     else if (sectionName == ".rdat") {
                         rdataFound = true;
@@ -3140,6 +3198,10 @@ void MainWindow::getPEinformation()
                         virtualSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[textLocation + 8 + i]);
                     }
                     codeEndLoc = virtualSize + codeStartLoc;
+                    // find code virtual address
+                    for (int i = 0; i < 4; i++) {
+                        codeVirtualAddress += pow(16, i * 2) * static_cast<unsigned char>(rawData[textLocation + 12 + i]);
+                    }
                 }
 
                 // find idata start and end location
