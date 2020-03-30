@@ -1915,9 +1915,9 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
 
         // current byte types
         bool prefix = true, opcode = false, modByte = false, SIB = false, extendedOpcode = false;
-        bool operandSizeModifier = false, specialInstruction = false, aligning = false, rareInstruction = false;
+        bool operandSizeModifier = false, specialInstruction = false, aligning = false, rareInstruction = false, hasPrefix = false, segementOverride = false;
         int mod = 0, reg = 0, rm = 0, scale = 0, index = 0, base = 0, displacementIndex = 0, maxDisplacements = 0, immediateIndex = 0, maxImmediates = 0, operandSize = 8, extended = 0;
-        QString operand1 = "", operand2 = "", operandPrefix = "", disassemblyLine = "";
+        QString operand1 = "", operand2 = "", operandPrefix = "", disassemblyLine = "", segment = "ds:";
         bool operand1isDestination = false, noOperands = false;
         QString imVal = "", secImVal = "";
 
@@ -1934,15 +1934,36 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
 
                 // if LOCK prefix (F0)
                 if (byte == 240) {
-                    rareInstruction = true;
+                    instruction = "lock ";
+                    hasPrefix = true;
                 }
                 // if string manipulation prefix (F2, F3)
                 else if (byte == 242 || byte == 243) {
-                    rareInstruction = true;
+                    if (byte == 242) {
+                        instruction = "repnz ";
+                    }
+                    else {
+                        instruction = "rep ";
+                    }
+                    hasPrefix = true;
                 }
                 // if segment override prefix (26, 2E, 36, 3E, 64, 65)
                 else if (byte == 38 || byte == 46 || byte == 54 || byte == 62 ||  byte == 100 || byte == 101) {
-                    rareInstruction = true;
+                    switch (byte) {
+                        case 38: segment = "es:";
+                        break;
+                        case 46: segment = "cs:";
+                        break;
+                        case 54: segment = "ss:";
+                        break;
+                        case 62: segment = "ds:";
+                        break;
+                        case 100: segment = "fs:";
+                        break;
+                        case 101: segment = "gs:";
+                        break;
+                    }
+                    segementOverride = true;
                 }
                 // if operand override (66)
                 else if (byte == 102) {
@@ -2063,7 +2084,7 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                                 operand2 += "es:[edi]";
                             }
                             else {
-                                operand2 += "ds:[esi]";
+                                operand2 += segment + "[esi]";
                             }
                             operand1 = "dx";
                         }
@@ -2075,19 +2096,19 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                         // if opcode is (98)
                         else if (byte == 152) {
                             if (operandSizeModifier) {
-                                instruction = "cbw";
+                                instruction += "cbw";
                             }
                             else {
-                                instruction = "cwde";
+                                instruction += "cwde";
                             }
                         }
                         // if opcode is (99)
                         else if (byte == 153) {
                             if (operandSizeModifier) {
-                                instruction = "cwd";
+                                instruction += "cwd";
                             }
                             else {
-                                instruction = "cdq";
+                                instruction += "cdq";
                             }
                         }
                         // if opcode is (A4 - A7)
@@ -2103,10 +2124,10 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
 
                             if (byte / 2 % 2 == 0) {
                                 operand1 += "es:[edi]";
-                                operand2 += "ds:[esi]";
+                                operand2 += segment + "[esi]";
                             }
                             else {
-                                operand1 += "ds:[esi]";
+                                operand1 += segment + "[esi]";
                                 operand2 += "es:[edi]";
                             }
                         }
@@ -2121,7 +2142,7 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                                 operand2 += "es:[edi]";
                             }
                             else {
-                                operand2 += "ds:[esi]";
+                                operand2 += segment + "[esi]";
                             }
                             operand1 = registerName(0, operandSize);
                         }
@@ -2139,7 +2160,7 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                         }
                         // if opcode is (D7)
                         else if (byte == 215) {
-                            operand1 = "byte ptr ds:[ebx]";
+                            operand1 = "byte ptr " + segment + "[ebx]";
                         }
                         // if opcode is (EC - EF)
                         else if (byte >= 236 && byte <= 239) {
@@ -2257,7 +2278,7 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                                 }
                                 maxImmediates = 4;
                                 operand1 = registerName(0, operandSize);
-                                operand2 = "ds:";
+                                operand2 = segment;
                             }
                             // if opcode is (A8, A9)
                             else if (byte == 168 || byte == 169) {
@@ -2320,7 +2341,7 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                 rm += (byte % 2);
 
                 if (specialInstruction) {
-                    instruction = getSpecialByteInstruction(opcodeByte, reg);
+                    instruction += getSpecialByteInstruction(opcodeByte, reg);
                 }
 
                 if (mod == 1) {
@@ -2428,10 +2449,10 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                     // if opcode is (FE)
                     else if (opcodeByte == 254) {
                         if (reg == 0) {
-                            instruction = "inc ";
+                            instruction += "inc ";
                         }
                         else {
-                            instruction = "dec ";
+                            instruction += "dec ";
                         }
                     }
                 }
@@ -2555,14 +2576,19 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                         QString function = getFunctionCallName(displacementValue);
 
                         if (function.size() > 4) {
-                            fontStart = "ds:<font color='red'>";
+                            fontStart = segment + "<font color='red'>";
                             fontEnd = "</font>";
                             operand2 = fontStart + function + fontEnd;
                         }
                         else {
-                            operandPrefix.remove(operandPrefix.size() - 5, 5);
-                            operandPrefix += "_";
-                            operand2 = operandPrefix + QString::number(displacementValue, 16).toUpper();
+                            if (segementOverride) {
+                                operand2 = "large " + segment + "<font color='green'>" + QString::number(displacementValue, 16).toUpper() + "</font>";
+                            }
+                            else {
+                                operandPrefix.remove(operandPrefix.size() - 5, 5);
+                                operandPrefix += "_";
+                                operand2 = operandPrefix + "<font color='green'>" + QString::number(displacementValue, 16).toUpper() + "</font>";
+                            }
                         }
                     }
 
@@ -2651,17 +2677,24 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                                 operand2 += "sub " + sub + "</a>";
                                 subMap[sub] = true;
                             }
-                            // if a ds: pointer, try to get name
-                            else if (operand2 == "ds:") {
+                            // if a segment pointer, try to get name
+                            else if (operand2 == segment) {
                                 QString function = getFunctionCallName(immediateValue);
 
                                 if (function.size() > 4) {
-                                    QString fontStart = "ds:<font color='red'>";
+                                    QString fontStart = segment + "<font color='red'>";
                                     QString fontEnd = "</font>";
                                     operand2 = fontStart + function + fontEnd;
                                 }
                                 else {
-                                    operand2 = "dword_" + QString::number(immediateValue, 16).toUpper();
+                                    if (segementOverride) {
+                                        operand2 = "large " + segment + "<font color='green'>" + QString::number(immediateValue, 16).toUpper() + "</font>";
+                                    }
+                                    else {
+                                        operandPrefix.remove(operandPrefix.size() - 5, 5);
+                                        operandPrefix += "_";
+                                        operand2 = operandPrefix + + "<font color='green'>" + QString::number(immediateValue, 16).toUpper() + "</font>";
+                                    }
                                 }
                             }
                             else {
@@ -2696,13 +2729,13 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
 
         if (!error) {
             // get instruction mnemonic if not special
-            if (instruction == "") {
+            if (instruction == "" || hasPrefix) {
                 if (extendedOpcode) {
                     opcodeByte += 256;
                 }
                 QString line =  opcodeMap[opcodeByte];
                 if (noOperands) {
-                    instruction = line;
+                    instruction += line;
                 }
                 else {
                     int split = line.indexOf(" ");
@@ -2711,7 +2744,7 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                         instruction += instructionRef.toString();
                     }
                     else {
-                        instruction = line;
+                        instruction += line;
                     }
                 }
             }
