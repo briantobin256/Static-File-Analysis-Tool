@@ -19,8 +19,8 @@ MainWindow::MainWindow(QWidget *parent)
     backupLoc = "";
 
     // tmp
-    QFile file("C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe   D:/Downloads/strings.exe
-    //open(&file);
+    QFile file("D:/Downloads/strings.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe   D:/Downloads/strings.exe
+    open(&file);
     file.close();
     ui->stackedWidget->setCurrentIndex(7);
 
@@ -364,7 +364,7 @@ void MainWindow::on_stringList_itemDoubleClicked(QListWidgetItem *item)
 
 void MainWindow::on_stringSearchButton_clicked()
 {
-    if (searchStringList(ui->searchString->text(), &strings, ui->stringsSearchFromBeginningCheckBox->checkState())) {
+    if (searchStringList(ui->searchString->text(), &strings, ui->stringsSearchFromBeginningCheckBox->checkState(), false)) {
         int previousPage = ui->stringsScrollBar->value(), displayStrings = ui->stringList->count();
         if (searchStringIndex % displayStrings == 0) {
             ui->stringsScrollBar->setValue((searchStringIndex / displayStrings) - 1);
@@ -384,7 +384,7 @@ void MainWindow::on_stringSearchButton_clicked()
 
 void MainWindow::on_savedStringSearchButton_clicked()
 {
-    if (searchStringList(ui->searchSavedString->text(), &savedStrings, ui->savedStringsSearchFromBeginningCheckBox->checkState())) {
+    if (searchStringList(ui->searchSavedString->text(), &savedStrings, ui->savedStringsSearchFromBeginningCheckBox->checkState(), false)) {
         int displayStrings = ui->savedStringList->count();
         for (int i = 0; i < displayStrings; i++) {
             ui->savedStringList->item(i)->setSelected(false);
@@ -396,12 +396,12 @@ void MainWindow::on_savedStringSearchButton_clicked()
 
 void MainWindow::on_disassemblySearchButton_clicked()
 {
-    if (searchStringList(ui->disassemblySearchString->text(), &disassembly, ui->disassemblySearchFromBeginningCheckBox->checkState())) {
+    if (searchStringList(ui->disassemblySearchString->text(), &disassembly, ui->disassemblySearchFromBeginningCheckBox->checkState(), true)) {
         ui->disassemblyScrollBar->setValue(searchStringIndex - 1);
     }
 }
 
-bool MainWindow::searchStringList(QString searchString, QStringList *list, bool searchFromBeginning)
+bool MainWindow::searchStringList(QString searchString, QStringList *list, bool searchFromBeginning, bool htmlList)
 {
     int count = list->size();
     if (searchStringIndex >= count || searchFromBeginning) {
@@ -409,33 +409,48 @@ bool MainWindow::searchStringList(QString searchString, QStringList *list, bool 
     }
     previousSearchString = searchString;
 
+    // for each string in list
     bool found = false;
     while (!found && searchStringIndex < count) {
         QString currentItem = list->at(searchStringIndex);
-        int searchLength = searchString.length();
-        int searchedLength = currentItem.length();
+        searchString = htmlSanitiseString(searchString);
+        int searchLength = searchString.length(), currentLength = currentItem.length();
 
         // for each starting position the search string could fit into the searched string
-        for (int j = 0; j <= searchedLength - searchLength; j++) {
-            int k;
-            // for the length of the search string
-            for (k = 0; k < searchLength; k++) {
-                // if chars dont match
-                if (currentItem[j + k] != searchString[k]) {
-                    // if searching char is A - Z, check a - z aswell
-                    if (currentItem[j + k].unicode() >= 65 && currentItem[j + k].unicode() <= 90) {
-                        if ((currentItem[j + k].unicode() + 32) != searchString[k]) {
+        bool tag = false;
+        int i = 0;
+        while (i <= currentLength - searchLength && !found) {
+            // if html, dont search through tags
+            if (htmlList) {
+                if (currentItem[i] == '<') {
+                    tag = true;
+                }
+                else if (currentItem[i] == '>') {
+                    tag = false;
+                }
+            }
+            if (!tag) {
+                // for the length of the search string
+                int j;
+                for (j = 0; j < searchLength; j++) {
+                    // if chars dont match
+                    if (currentItem[i + j] != searchString[j]) {
+                        // if searching char is A - Z, check a - z aswell
+                        if (currentItem[i + j].unicode() >= 65 && currentItem[i + j].unicode() <= 90) {
+                            if ((currentItem[i + j].unicode() + 32) != searchString[j]) {
+                                break;
+                            }
+                        }
+                        else {
                             break;
                         }
                     }
-                    else {
-                        break;
-                    }
+                }
+                if (j == searchLength) {
+                    found = true;
                 }
             }
-            if (k == searchLength) {
-                found = true;
-            }
+            i++;
         }
         searchStringIndex++;
     }
@@ -1926,14 +1941,11 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
         QString operand1 = "", operand2 = "", operandPrefix = "", disassemblyLine = "", segment = "ds:";
         bool operand1isDestination = false, noOperands = false;
         QString imVal = "", secImVal = "";
-//qDebug() << "starting instruction" << QString::number(codeStartLoc + instructionSizeOffset, 16);
 
         // for each byte in instruction
         while (!instructionComplete) {
-            //qDebug() << "getting byte" << QString::number(codeStartLoc + instructionSizeOffset, 16);
             char c = rawData[codeStartLoc + instructionSizeOffset];
             unsigned char byte = static_cast<unsigned char>(c);
-            //qDebug() << "got byte" << QString::number(codeStartLoc + instructionSizeOffset, 16);
 
             //
             // OPTIONAL INSTRUCTION PREFIX BYTE CHECK (F0, F2, F3, 26, 2E, 36, 3E, 64, 65, 66, 67)
@@ -2722,8 +2734,8 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                             if (rdataRVA > 0) {
                                 string = immediateIsStringOffset(immediateValue, rdataStartLoc, rdataRVA);
                             }
-                            // else try data section if found
-                            else if (dataVirtualAddress > 0) {
+                            // else try data section if found and rdata is not the right section
+                            if (dataVirtualAddress > 0 && string == "") {
                                 string = immediateIsStringOffset(immediateValue, dataStartLoc, dataVirtualAddress);
                             }
                             // if a string is being referenced, display it
@@ -2749,7 +2761,7 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                                 string = immediateIsStringOffset(immediateValue, rdataStartLoc, rdataRVA);
                             }
                             // else try data section if found
-                            else if (dataVirtualAddress > 0) {
+                            if (dataVirtualAddress > 0 && string == "") {
                                 string = immediateIsStringOffset(immediateValue, dataStartLoc, dataVirtualAddress);
                             }
                             // if a string is being referenced, display it
@@ -2932,11 +2944,29 @@ QString MainWindow::immediateIsStringOffset(int immediateValue, int startLoc, in
     int dataOffset = immediateValue - (imagebase + virtualAddress);
     int physicalAddress = startLoc + dataOffset;
     if (physicalAddress > 0 && physicalAddress < fileSize) {
-        if (stringLocationMap[physicalAddress].size() > 0) {
-            return stringLocationMap[physicalAddress];
+        QString string = stringLocationMap[physicalAddress];
+        if (string.size() > 0) {
+            string = htmlSanitiseString(string);
+            return string;
         }
     }
     return "";
+}
+
+QString MainWindow::htmlSanitiseString(QString string)
+{
+    // if string has '<' or '>'
+    for (int i = 0; i < string.size(); i++) {
+        if (string.at(i) == '<') {
+            string.remove(i, 1);
+            string.insert(i, "&#60;");
+        }
+        else if (string.at(i) == '>') {
+            string.remove(i, 1);
+            string.insert(i, "&#62;");
+        }
+    }
+    return string;
 }
 
 QString MainWindow::immediateFormat(QString s)

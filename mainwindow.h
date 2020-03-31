@@ -246,7 +246,8 @@ private:
     void saveDisplayedStrings();
     void refreshStrings();
     void refreshSavedStrings();
-    bool searchStringList(QString searchString, QStringList *list, bool searchFromBeginning);
+    bool searchStringList(QString searchString, QStringList *list, bool searchFromBeginning, bool htmlList);
+    QString htmlSanitiseString(QString string);
 
     // dlls
     void findDLLs();
