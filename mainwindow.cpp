@@ -2467,6 +2467,9 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                     else if (opcodeByte == 141) {
                         operand1 = registerName(reg, operandSize);
                         operand1isDestination = true;
+                        if (mod == 0) {
+                            maxDisplacements = 4;
+                        }
                     }
                     // if opcode is (C4, C5)
                     else if (opcodeByte == 196 || opcodeByte == 197) {
