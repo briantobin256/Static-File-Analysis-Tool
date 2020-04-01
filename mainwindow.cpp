@@ -27,6 +27,8 @@ MainWindow::MainWindow(QWidget *parent)
     file.close();
     ui->stackedWidget->setCurrentIndex(1);
 
+    buildChecklist();
+
     refreshWindow();
 }
 
@@ -320,11 +322,51 @@ void MainWindow::on_actionChecklistMain_triggered()
         this->setFixedWidth(985);
         checklistOpened = false;
     }
-    //ui->introduction->introBrowser->
+}
+
+void MainWindow::buildChecklist()
+{
+    QFile file("checklist/file.html");
+    if (file.open(QIODevice::ReadOnly)) {
+     QTextStream ts(&file);
+     ui->checklistFileBrowser->setHtml(ts.readAll());
+     file.close();
+    }
+    file.setFileName("checklist/packers.html");
+    if (file.open(QIODevice::ReadOnly)) {
+     QTextStream ts(&file);
+     ui->checklistPackersBrowser->setHtml(ts.readAll());
+     file.close();
+    }
+    file.setFileName("checklist/strings.html");
+    if (file.open(QIODevice::ReadOnly)) {
+     QTextStream ts(&file);
+     ui->checklistStringsBrowser->setHtml(ts.readAll());
+     file.close();
+    }
+    file.setFileName("checklist/dlls.html");
+    if (file.open(QIODevice::ReadOnly)) {
+     QTextStream ts(&file);
+     ui->checklistDLLsBrowser->setHtml(ts.readAll());
+     file.close();
+    }
+    file.setFileName("checklist/hex.html");
+    if (file.open(QIODevice::ReadOnly)) {
+     QTextStream ts(&file);
+     ui->checklistHexBrowser->setHtml(ts.readAll());
+     file.close();
+    }
+    file.setFileName("checklist/disassembly.html");
+    if (file.open(QIODevice::ReadOnly)) {
+     QTextStream ts(&file);
+     ui->checklistDisassemblyBrowser->setHtml(ts.readAll());
+     file.close();
+    }
 }
 
 void MainWindow::on_actionSeperate_Window_triggered()
 {
+    buildChecklist();
     //ui->stackedWidget->setCurrentIndex(8);
     refreshWindow();
 }

@@ -229,6 +229,7 @@ private:
     void showChecklist();
     void hideChecklist();
     void popChecklist();
+    void buildChecklist();
 
     // hashing
     QString generateHash(char *data, int size);
