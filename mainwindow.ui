@@ -490,7 +490,7 @@
      </palette>
     </property>
     <property name="currentIndex">
-     <number>6</number>
+     <number>7</number>
     </property>
     <widget class="QWidget" name="page_0_Main_Window"/>
     <widget class="QWidget" name="page_1_Find_Strings">
@@ -1475,7 +1475,7 @@ back</string>
       <x>985</x>
       <y>0</y>
       <width>515</width>
-      <height>770</height>
+      <height>755</height>
      </rect>
     </property>
     <property name="sizePolicy">
@@ -1487,13 +1487,13 @@ back</string>
     <property name="minimumSize">
      <size>
       <width>515</width>
-      <height>770</height>
+      <height>755</height>
      </size>
     </property>
     <property name="maximumSize">
      <size>
       <width>515</width>
-      <height>770</height>
+      <height>755</height>
      </size>
     </property>
     <property name="focusPolicy">
@@ -1506,7 +1506,7 @@ back</string>
      <enum>QTabWidget::Triangular</enum>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>0</number>
     </property>
     <property name="elideMode">
      <enum>Qt::ElideNone</enum>
@@ -1530,59 +1530,74 @@ back</string>
      <attribute name="title">
       <string>File</string>
      </attribute>
-     <widget class="QTextBrowser" name="checklistFileBrowser">
+     <widget class="QSplitter" name="fileSplitter">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
         <width>509</width>
-        <height>485</height>
+        <height>730</height>
        </rect>
+      </property>
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
       </property>
       <property name="minimumSize">
        <size>
         <width>509</width>
-        <height>485</height>
+        <height>730</height>
        </size>
       </property>
       <property name="maximumSize">
        <size>
         <width>509</width>
-        <height>485</height>
+        <height>1515</height>
        </size>
       </property>
-      <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
       </property>
-      <property name="html">
-       <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+      <widget class="QTextBrowser" name="checklistFileBrowser">
+       <property name="minimumSize">
+        <size>
+         <width>509</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>509</width>
+         <height>755</height>
+        </size>
+       </property>
+       <property name="frameShape">
+        <enum>QFrame::StyledPanel</enum>
+       </property>
+       <property name="html">
+        <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'MS Shell Dlg 2'; font-size:8pt; font-weight:400; font-style:normal;&quot;&gt;
 &lt;p style=&quot;-qt-paragraph-type:empty; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;&lt;br /&gt;&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-      </property>
-     </widget>
-     <widget class="QTextEdit" name="fileNotes">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>485</y>
-        <width>509</width>
-        <height>250</height>
-       </rect>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>509</width>
-        <height>250</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>509</width>
-        <height>250</height>
-       </size>
-      </property>
+       </property>
+      </widget>
+      <widget class="QTextEdit" name="fileNotes">
+       <property name="minimumSize">
+        <size>
+         <width>509</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>509</width>
+         <height>755</height>
+        </size>
+       </property>
+      </widget>
      </widget>
     </widget>
     <widget class="QWidget" name="Packers">
@@ -1601,49 +1616,52 @@ p, li { white-space: pre-wrap; }
      <attribute name="title">
       <string>Packers</string>
      </attribute>
-     <widget class="QTextBrowser" name="checklistPackersBrowser">
+     <widget class="QSplitter" name="packersSplitter">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
         <width>509</width>
-        <height>485</height>
+        <height>730</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
         <width>509</width>
-        <height>485</height>
+        <height>730</height>
        </size>
       </property>
-      <property name="maximumSize">
-       <size>
-        <width>509</width>
-        <height>485</height>
-       </size>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
       </property>
-     </widget>
-     <widget class="QTextEdit" name="packersNotes">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>485</y>
-        <width>509</width>
-        <height>250</height>
-       </rect>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>509</width>
-        <height>250</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>509</width>
-        <height>250</height>
-       </size>
-      </property>
+      <widget class="QTextBrowser" name="checklistPackersBrowser">
+       <property name="minimumSize">
+        <size>
+         <width>509</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>509</width>
+         <height>755</height>
+        </size>
+       </property>
+      </widget>
+      <widget class="QTextEdit" name="packersNotes">
+       <property name="minimumSize">
+        <size>
+         <width>509</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>509</width>
+         <height>755</height>
+        </size>
+       </property>
+      </widget>
      </widget>
     </widget>
     <widget class="QWidget" name="Strings">
@@ -1662,49 +1680,52 @@ p, li { white-space: pre-wrap; }
      <attribute name="title">
       <string>Strings</string>
      </attribute>
-     <widget class="QTextBrowser" name="checklistStringsBrowser">
+     <widget class="QSplitter" name="stringsSplitter">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
         <width>509</width>
-        <height>485</height>
+        <height>730</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
         <width>509</width>
-        <height>485</height>
+        <height>730</height>
        </size>
       </property>
-      <property name="maximumSize">
-       <size>
-        <width>509</width>
-        <height>485</height>
-       </size>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
       </property>
-     </widget>
-     <widget class="QTextEdit" name="stringsNotes">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>485</y>
-        <width>509</width>
-        <height>250</height>
-       </rect>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>509</width>
-        <height>250</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>509</width>
-        <height>250</height>
-       </size>
-      </property>
+      <widget class="QTextBrowser" name="checklistStringsBrowser">
+       <property name="minimumSize">
+        <size>
+         <width>509</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>509</width>
+         <height>755</height>
+        </size>
+       </property>
+      </widget>
+      <widget class="QTextEdit" name="stringsNotes">
+       <property name="minimumSize">
+        <size>
+         <width>509</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>509</width>
+         <height>755</height>
+        </size>
+       </property>
+      </widget>
      </widget>
     </widget>
     <widget class="QWidget" name="DLLs">
@@ -1723,49 +1744,52 @@ p, li { white-space: pre-wrap; }
      <attribute name="title">
       <string>DLL's</string>
      </attribute>
-     <widget class="QTextBrowser" name="checklistDLLsBrowser">
+     <widget class="QSplitter" name="DLLsSplitter">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
         <width>509</width>
-        <height>485</height>
+        <height>730</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
         <width>509</width>
-        <height>485</height>
+        <height>730</height>
        </size>
       </property>
-      <property name="maximumSize">
-       <size>
-        <width>509</width>
-        <height>485</height>
-       </size>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
       </property>
-     </widget>
-     <widget class="QTextEdit" name="DLLsNotes">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>485</y>
-        <width>509</width>
-        <height>250</height>
-       </rect>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>509</width>
-        <height>250</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>509</width>
-        <height>250</height>
-       </size>
-      </property>
+      <widget class="QTextBrowser" name="checklistDLLsBrowser">
+       <property name="minimumSize">
+        <size>
+         <width>509</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>509</width>
+         <height>755</height>
+        </size>
+       </property>
+      </widget>
+      <widget class="QTextEdit" name="DLLsNotes">
+       <property name="minimumSize">
+        <size>
+         <width>509</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>509</width>
+         <height>755</height>
+        </size>
+       </property>
+      </widget>
      </widget>
     </widget>
     <widget class="QWidget" name="Hex">
@@ -1784,49 +1808,52 @@ p, li { white-space: pre-wrap; }
      <attribute name="title">
       <string>Hex</string>
      </attribute>
-     <widget class="QTextBrowser" name="checklistHexBrowser">
+     <widget class="QSplitter" name="hexSplitter">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
         <width>509</width>
-        <height>485</height>
+        <height>730</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
         <width>509</width>
-        <height>485</height>
+        <height>730</height>
        </size>
       </property>
-      <property name="maximumSize">
-       <size>
-        <width>509</width>
-        <height>485</height>
-       </size>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
       </property>
-     </widget>
-     <widget class="QTextEdit" name="hexNotes">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>485</y>
-        <width>509</width>
-        <height>250</height>
-       </rect>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>509</width>
-        <height>250</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>509</width>
-        <height>250</height>
-       </size>
-      </property>
+      <widget class="QTextBrowser" name="checklistHexBrowser">
+       <property name="minimumSize">
+        <size>
+         <width>509</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>509</width>
+         <height>755</height>
+        </size>
+       </property>
+      </widget>
+      <widget class="QTextEdit" name="hexNotes">
+       <property name="minimumSize">
+        <size>
+         <width>509</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>509</width>
+         <height>755</height>
+        </size>
+       </property>
+      </widget>
      </widget>
     </widget>
     <widget class="QWidget" name="Disassembly">
@@ -1845,49 +1872,52 @@ p, li { white-space: pre-wrap; }
      <attribute name="title">
       <string>Disassembly</string>
      </attribute>
-     <widget class="QTextBrowser" name="checklistDisassemblyBrowser">
+     <widget class="QSplitter" name="disassemblySplitter">
       <property name="geometry">
        <rect>
         <x>0</x>
         <y>0</y>
         <width>509</width>
-        <height>485</height>
+        <height>730</height>
        </rect>
       </property>
       <property name="minimumSize">
        <size>
         <width>509</width>
-        <height>485</height>
+        <height>730</height>
        </size>
       </property>
-      <property name="maximumSize">
-       <size>
-        <width>509</width>
-        <height>485</height>
-       </size>
+      <property name="orientation">
+       <enum>Qt::Vertical</enum>
       </property>
-     </widget>
-     <widget class="QTextEdit" name="disassemblyNotes">
-      <property name="geometry">
-       <rect>
-        <x>0</x>
-        <y>485</y>
-        <width>509</width>
-        <height>250</height>
-       </rect>
-      </property>
-      <property name="minimumSize">
-       <size>
-        <width>509</width>
-        <height>250</height>
-       </size>
-      </property>
-      <property name="maximumSize">
-       <size>
-        <width>509</width>
-        <height>250</height>
-       </size>
-      </property>
+      <widget class="QTextBrowser" name="checklistDisassemblyBrowser">
+       <property name="minimumSize">
+        <size>
+         <width>509</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>509</width>
+         <height>755</height>
+        </size>
+       </property>
+      </widget>
+      <widget class="QTextEdit" name="disassemblyNotes">
+       <property name="minimumSize">
+        <size>
+         <width>509</width>
+         <height>0</height>
+        </size>
+       </property>
+       <property name="maximumSize">
+        <size>
+         <width>509</width>
+         <height>755</height>
+        </size>
+       </property>
+      </widget>
      </widget>
     </widget>
    </widget>

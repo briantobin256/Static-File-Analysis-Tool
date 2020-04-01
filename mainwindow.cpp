@@ -326,40 +326,66 @@ void MainWindow::on_actionChecklistMain_triggered()
 
 void MainWindow::buildChecklist()
 {
+    qDebug() << ui->disassemblySplitter->sizes();
+
+    QList<int> sizes;
     QFile file("checklist/file.html");
     if (file.open(QIODevice::ReadOnly)) {
      QTextStream ts(&file);
      ui->checklistFileBrowser->setHtml(ts.readAll());
+     sizes += 450;
+     sizes += 270;
+     ui->fileSplitter->setSizes(sizes);
      file.close();
     }
     file.setFileName("checklist/packers.html");
     if (file.open(QIODevice::ReadOnly)) {
      QTextStream ts(&file);
      ui->checklistPackersBrowser->setHtml(ts.readAll());
+     sizes.clear();
+     sizes += 450;
+     sizes += 270;
+     ui->packersSplitter->setSizes(sizes);
      file.close();
     }
     file.setFileName("checklist/strings.html");
     if (file.open(QIODevice::ReadOnly)) {
      QTextStream ts(&file);
      ui->checklistStringsBrowser->setHtml(ts.readAll());
+     sizes.clear();
+     sizes += 365;
+     sizes += 360;
+     ui->stringsSplitter->setSizes(sizes);
      file.close();
     }
     file.setFileName("checklist/dlls.html");
     if (file.open(QIODevice::ReadOnly)) {
      QTextStream ts(&file);
      ui->checklistDLLsBrowser->setHtml(ts.readAll());
+     sizes.clear();
+     sizes += 550;
+     sizes += 175;
+     ui->DLLsSplitter->setSizes(sizes);
      file.close();
     }
     file.setFileName("checklist/hex.html");
     if (file.open(QIODevice::ReadOnly)) {
      QTextStream ts(&file);
      ui->checklistHexBrowser->setHtml(ts.readAll());
+     sizes.clear();
+     sizes += 465;
+     sizes += 260;
+     ui->hexSplitter->setSizes(sizes);
      file.close();
     }
     file.setFileName("checklist/disassembly.html");
     if (file.open(QIODevice::ReadOnly)) {
      QTextStream ts(&file);
      ui->checklistDisassemblyBrowser->setHtml(ts.readAll());
+     sizes.clear();
+     sizes += 450;
+     sizes += 270;
+     ui->disassemblySplitter->setSizes(sizes);
      file.close();
     }
 }
