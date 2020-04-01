@@ -38,6 +38,8 @@ public:
     bool fileOpened;
     int fileSize;
     double entropy;
+    bool checklistOpened;
+
 
     QString basicWindowName;
     QString extendedWindowName;
@@ -45,6 +47,7 @@ public:
     QString directory;
     QString fileHash;
     QString backupLoc;
+
 
     // string things
     QMap<int, QString> stringLocationMap;
@@ -61,7 +64,6 @@ public:
     int maxDisplayStrings;
     int totalStringSize;
     int totalSavedStringSize;
-    //int stringsAdvancedSearchIndex;
     int searchStringIndex;
     int stringLength;
     bool sorting;
@@ -69,11 +71,13 @@ public:
     bool stringsSorted;
     bool firstStringsRefresh;
 
+
     // DLL things
     QString dllNames;
     QStringList dllFunctionNames;
     QString DLLTitle;
     QString FunctionTitle;
+
 
     //hex things
     int hexDisplayRows;
@@ -222,6 +226,9 @@ private:
     void resetChecks();
     void MainWindow::closeEvent();
     virtual void wheelEvent(QWheelEvent *event);
+    void showChecklist();
+    void hideChecklist();
+    void popChecklist();
 
     // hashing
     QString generateHash(char *data, int size);

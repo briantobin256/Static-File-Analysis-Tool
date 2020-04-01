@@ -18,11 +18,14 @@ MainWindow::MainWindow(QWidget *parent)
     fileHash = "";
     backupLoc = "";
 
+    checklistOpened = false;
+    on_actionChecklistMain_triggered();
+
     // tmp
-    QFile file("D:/Downloads/strings.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe   D:/Downloads/strings.exe
+    QFile file("C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_6L/Lab06-01.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe   D:/Downloads/strings.exe
     open(&file);
     file.close();
-    ui->stackedWidget->setCurrentIndex(7);
+    ui->stackedWidget->setCurrentIndex(1);
 
     refreshWindow();
 }
@@ -304,8 +307,20 @@ void MainWindow::on_actionHex_triggered()
 
 void MainWindow::on_actionChecklistMain_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(6);
-    refreshWindow();
+    if (!checklistOpened) {
+        this->setMaximumWidth(1500);
+        this->setFixedWidth(1500);
+        checklistOpened = true;
+    }
+    else {
+        // weird issue where making smaller once doesnt work until window is physically moved on screen
+        this->setMaximumWidth(984);
+        this->setFixedWidth(984);
+        this->setMaximumWidth(985);
+        this->setFixedWidth(985);
+        checklistOpened = false;
+    }
+    //ui->introduction->introBrowser->
 }
 
 void MainWindow::on_actionSeperate_Window_triggered()
@@ -410,9 +425,10 @@ bool MainWindow::searchStringList(QString searchString, QStringList *list, bool 
     previousSearchString = searchString;
 
     // for each string in list
+    int searchStartIndex = searchStringIndex + 1;
     bool found = false;
-    while (!found && searchStringIndex < count) {
-        QString currentItem = list->at(searchStringIndex);
+    while (!found && searchStartIndex != searchStringIndex) {
+        QString currentItem = list->at(searchStartIndex);
         searchString = htmlSanitiseString(searchString);
         int searchLength = searchString.length(), currentLength = currentItem.length();
 
@@ -452,8 +468,15 @@ bool MainWindow::searchStringList(QString searchString, QStringList *list, bool 
             }
             i++;
         }
-        searchStringIndex++;
+        if (searchStartIndex >= count - 1) {
+            searchStartIndex = 0;
+        }
+        else {
+            searchStartIndex++;
+        }
     }
+
+    searchStringIndex = searchStartIndex;
 
     if (found) {
         return true;
@@ -927,11 +950,11 @@ void MainWindow::refreshStrings()
         stringOffset = ui->stringsScrollBar->value() * maxDisplayStrings;
 
         if (ui->stringsScrollBar->value() == ui->stringsScrollBar->maximum()) {
-            if (stringCount % maxDisplayStrings > 0) {
-                displayStringCount = stringCount % maxDisplayStrings;
-            }
-            else {
+            if (stringCount == 0) {
                 displayStringCount = 0;
+            }
+            else if (stringCount % maxDisplayStrings > 0) {
+                displayStringCount = stringCount % maxDisplayStrings;
             }
         }
 
@@ -1074,7 +1097,8 @@ void MainWindow::copyHighlightedItemsText()
             }
         }
     }
-    text.remove(text.size() - 2, 2);
+    // \n counts as 1 char
+    text.remove(text.size() - 1, 1);
     QApplication::clipboard()->setText(text);
 }
 
@@ -2795,6 +2819,7 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
 
         QString location = QString::number(instructionStartByte + instrucionDisplayOffset, 16).toUpper();
         disassemblyLine += location;
+        QString spacing = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
 
         if (!error) {
             // get instruction mnemonic if not special
@@ -2818,13 +2843,13 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                 }
             }
 
-            disassemblyLine += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;";
+            disassemblyLine += spacing;
 
             if (rareInstruction) {
                 disassemblyLine += instruction;
             }
             else {
-                disassemblyLine += "<font color='blue'>";//993333
+                disassemblyLine += "<font color='blue'>";
                 disassemblyLine += instruction;
                 disassemblyLine += "</font>";
             }
@@ -2833,26 +2858,24 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                 if (operand2 != "") {
                     disassemblyLine += operand2;
                     if (operand1 != "") {
-                        disassemblyLine += ", ";
-                        disassemblyLine += operand1;
+                        disassemblyLine += ", " + operand1;
                     }
                 }
             }
             else if (operand1 != "") {
                 disassemblyLine += operand1;
                 if (operand2 != "") {
-                    disassemblyLine += ", ";
-                    disassemblyLine += operand2;
+                    disassemblyLine += ", " + operand2;
                 }
             }
+
             disassemblyLine += "<br>";
         }
         // aligning or extended opcode that is not handled
         else {
             if (aligning) {
                 aligning = false;
-                disassemblyLine = QString::number(errorStartLocation + 4198400, 16).toUpper();
-                disassemblyLine += "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;align 10h<br>";
+                disassemblyLine = QString::number(errorStartLocation + 4198400, 16).toUpper() + spacing + "align 10h<br>";
             }
             else {
                 disassemblyLine += "<font color='red'>ERROR!<br></font>";
