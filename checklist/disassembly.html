@@ -1,7 +1,20 @@
 <html>
 <body>
 <p style='font-size:20px;color: blue;'>Description:</p>
-<p style='font-size:16px;'>Disassembly is the hardest part of static file analysis. It takes the raw bytes and turn them into assembly instruction. It is not very easy to read and you shouldnt 
-really try to understand what every instruction is doing. The goal is to skim through the code and get an idea of what is happening without reading each instruction individually.</p>
+<p style='font-size:16px;'>Disassembly is the final and hardest part of static file analysis. It takes the raw bytes and turn them into assembly instructions. It is not very easy to read and you shouldnt 
+worry about trying to understand what every instruction is doing. The goal is to skim through the code and get an idea of what is happening without reading each instruction individually.</p>
+<br>
+<p style='font-size:20px;color: blue;'>Your Task:</p>
+<p style='font-size:16px;'>To analyse the assembly code and come up with a hypothesis for what you think this file does when executed. You should start by searching for any interesting strings 
+or DLL function names that you found. Then try following the code backwards to see how this section is called.</p>
+<br>
+<p style='font-size:20px;color: blue;'>Hints:</p>
+You can click on jumps and calls to jump to that location and search for locations 
+and sub locations to find where they are being called from. You can also jump back to the previous location or to the code entry point with the buttons beside the search bar.</p>
+<br>
+<p style='font-size:20px;color: blue;'>Note:</p>
+<p style='font-size:16px;'>This disassembler was written manually by scratch so it may not be as accurate as some industry standard disassemblers. However it should work for most basic instructions 
+and should print any instructions that are not specifically handled in red. These instructions use obscure extended opcodes and prefix modifiers that wont be needed when first learning about disassembly. 
+The size of these instruction should be handled correctly incase they do show up so that the next instruction will have the correct start location.</p>
 </body>
 </html>

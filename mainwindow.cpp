@@ -7,28 +7,26 @@ MainWindow::MainWindow(QWidget *parent)
     , ui(new Ui::MainWindow)
 {
     ui->setupUi(this);
-    ui->stackedWidget->setCurrentIndex(0);
+    ui->MainDisplayStack->setCurrentIndex(0);
 
     basicWindowName = "Static File Analysis Tool";
 
     fileOpened = false;
     resetChecks();
 
-    hashBuilt = false;
     fileHash = "";
     backupLoc = "";
 
-    checklistOpened = false;
-    on_actionChecklistMain_triggered();
 
     // tmp
+    checklistOpened = false;
+    on_actionChecklistMain_triggered();
     QFile file("C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_6L/Lab06-01.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe   D:/Downloads/strings.exe
     open(&file);
     file.close();
-    ui->stackedWidget->setCurrentIndex(1);
+    ui->MainDisplayStack->setCurrentIndex(6);
 
     buildChecklist();
-
     refreshWindow();
 }
 
@@ -73,7 +71,6 @@ void MainWindow::on_actionGenerate_Hash_triggered()
         label->setText("No file is selected.");
     }
 
-    hashBuilt = true;
     dialogBox->exec();
     refreshWindow();
 }
@@ -140,7 +137,6 @@ void MainWindow::on_actionCreate_Backup_triggered()
                     label->setText("An error has occured, the backup may not exist.");
                 }
             }
-            backupBuilt = true;
         }
         else {
             label->setText("No location selected.");
@@ -169,24 +165,22 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
     QLabel *label = new QLabel(dialogBox);
 
     if (fileOpened) {
-        getEntropy();
+        double entropy = getEntropy();
+        QString basicText = "", entropyVar = "";
         if (isPacked()) {
-            label->setText("The current file IS packed using UPX.");
+            basicText = "The current file IS packed using UPX.";
         }
         else {
-
-            QString basicText = "The current file is NOT packed using UPX!";
-            QString entropyVar;
-            if (entropy < 7) {
-                entropyVar = "The files entropy is \n" + QString::number(entropy) + "\nwhich would suggest that the file is NOT packed/compressed/encrypted.";
-            }
-            else {
-                entropyVar = "The files entropy is \n" + QString::number(entropy) + "\nwhich would suggest that the file IS packed/compressed/encrypted.";
-            }
-
-            entropyVar += "\nCheck the entropy graph for more in depth detail of the total file entropy.";
-            label->setText(basicText + entropyVar);
+            basicText = "The current file is NOT packed using UPX!";
         }
+        if (entropy < 6.5) {
+            entropyVar = "The files entropy is \n" + QString::number(entropy) + "\nwhich would suggest that the file is NOT packed/compressed/encrypted.";
+        }
+        else {
+            entropyVar = "The files entropy is \n" + QString::number(entropy) + "\nwhich would suggest that the file IS packed/compressed/encrypted.";
+        }
+        entropyVar += "\nCheck the entropy graph for more in depth detail of the total file entropy.";
+        label->setText(basicText + entropyVar);
     }
     else {
         label->setText("No file is selected.");
@@ -199,7 +193,7 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
 
 void MainWindow::on_actionEntropy_Graph_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(5);
+    ui->MainDisplayStack->setCurrentIndex(5);
     buildEntropyGraph();
     refreshWindow();
 }
@@ -222,7 +216,6 @@ void MainWindow::on_actionPack_triggered()
                 if (isPacked()) {
                     label->setText("The current file is now packed using UPX.");
                     packPacked = true;
-                    packUnpacked = false;
 
                     // open newly packed file to analyse
                     QFile file(directory + fileName);
@@ -259,7 +252,6 @@ void MainWindow::on_actionUnpack_triggered()
             if (unpack()) {
                 label->setText("The current file has been unpacked using UPX.");
                 packChecked = false;
-                packUnpacked = true;
                 packPacked = false;
 
                 // open newly packed file to analyse
@@ -285,25 +277,25 @@ void MainWindow::on_actionUnpack_triggered()
 
 void MainWindow::on_actionFind_Strings_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(1);
+    ui->MainDisplayStack->setCurrentIndex(1);
     refreshWindow();
 }
 
 void MainWindow::on_actionSaved_Strings_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(2);
+    ui->MainDisplayStack->setCurrentIndex(2);
     refreshWindow();
 }
 
 void MainWindow::on_actionDLL_s_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(3);
+    ui->MainDisplayStack->setCurrentIndex(3);
     refreshWindow();
 }
 
 void MainWindow::on_actionHex_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(4);
+    ui->MainDisplayStack->setCurrentIndex(4);
     refreshWindow();
 }
 
@@ -326,8 +318,6 @@ void MainWindow::on_actionChecklistMain_triggered()
 
 void MainWindow::buildChecklist()
 {
-    qDebug() << ui->disassemblySplitter->sizes();
-
     QList<int> sizes;
     QFile file("checklist/file.html");
     if (file.open(QIODevice::ReadOnly)) {
@@ -383,8 +373,8 @@ void MainWindow::buildChecklist()
      QTextStream ts(&file);
      ui->checklistDisassemblyBrowser->setHtml(ts.readAll());
      sizes.clear();
-     sizes += 450;
-     sizes += 270;
+     sizes += 465;
+     sizes += 260;
      ui->disassemblySplitter->setSizes(sizes);
      file.close();
     }
@@ -399,7 +389,7 @@ void MainWindow::on_actionSeperate_Window_triggered()
 
 void MainWindow::on_actionDisassembly_triggered()
 {
-    ui->stackedWidget->setCurrentIndex(7);
+    ui->MainDisplayStack->setCurrentIndex(6);
     refreshWindow();
 }
 
@@ -611,7 +601,7 @@ void MainWindow::outputStrings()
             int totalStringsLength = 0, stringsSize = 0;
             QStringList list;
             QString outputFileName = "";
-            if (ui->stackedWidget->currentIndex() == 1) {
+            if (ui->MainDisplayStack->currentIndex() == 1) {
                 list = strings;
                 outputFileName = "strings." + fileName + ".txt";
                 stringsSize = stringCount;
@@ -861,7 +851,7 @@ bool MainWindow::isPacked()
 bool MainWindow::pack()
 {
     QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(this, "Warning!", "Make sure to backup the file before packing!/nAre you sure you want to pack the current file?", QMessageBox::Yes|QMessageBox::No);
+    reply = QMessageBox::question(this, "Warning!", "Make sure to backup the file before packing!\nAre you sure you want to pack the current file?", QMessageBox::Yes|QMessageBox::No);
     if (reply == QMessageBox::Yes) {
         QString fullFileName = 34 + directory + fileName + 34;
         QString command = "upx -5 " + fullFileName;
@@ -874,7 +864,7 @@ bool MainWindow::pack()
 bool MainWindow::unpack()
 {
     QMessageBox::StandardButton reply;
-    reply = QMessageBox::question(this, "Warning!", "Make sure to backup the file before unpacking!/nAre you sure you want to unpack the current file?", QMessageBox::Yes|QMessageBox::No);
+    reply = QMessageBox::question(this, "Warning!", "Make sure to backup the file before unpacking!\nAre you sure you want to unpack the current file?", QMessageBox::Yes|QMessageBox::No);
     if (reply == QMessageBox::Yes) {
         QString fullFileName = 34 + directory + fileName + 34;
         QString command = "upx -d " + fullFileName;
@@ -1100,10 +1090,6 @@ void MainWindow::refreshSavedStrings()
         ui->savedStringList->clear();
         ui->savedStringList->addItems(savedStrings);
 
-        if (savedStrings.count() > 0) {
-            stringsSaved = true;
-        }
-
         // display things
         QString count = QString::number(ui->savedStringList->count());
         ui->savedStringCountValue->setText(count);
@@ -1117,7 +1103,7 @@ void MainWindow::showContextMenu(const QPoint &point)
     myMenu.addAction("Copy",  this, SLOT(copyHighlightedItemsText()));
 
     // if find strings page
-    if (ui->stackedWidget->currentIndex() == 1) {
+    if (ui->MainDisplayStack->currentIndex() == 1) {
         list = ui->stringList;
         myMenu.addAction("Check",  this, SLOT(checkHighlighted()));
         myMenu.addAction("Uncheck",  this, SLOT(uncheckHighlighted()));
@@ -1134,7 +1120,7 @@ void MainWindow::showContextMenu(const QPoint &point)
     myMenu.addAction("View Location in Hex", this, SLOT(stringToHexLocation()));
 
     // if find strings page
-    if (ui->stackedWidget->currentIndex() == 1) {
+    if (ui->MainDisplayStack->currentIndex() == 1) {
         myMenu.addAction("Output all strings to txt file", this, SLOT(outputStrings()));
     }
     else {
@@ -1151,7 +1137,7 @@ void MainWindow::copyHighlightedItemsText()
 {
     // copy all selected text
     QString text = "";
-    if (ui->stackedWidget->currentIndex() == 1) {
+    if (ui->MainDisplayStack->currentIndex() == 1) {
         for (int i = 0; i < maxDisplayStrings; i++) {
             if (ui->stringList->item(i)->isSelected()) {
                 text += ui->stringList->item(i)->text() + "\n";
@@ -1190,7 +1176,7 @@ void MainWindow::uncheckHighlighted()
 
 void MainWindow::highlightAll()
 {
-    if (ui->stackedWidget->currentIndex() == 1) {
+    if (ui->MainDisplayStack->currentIndex() == 1) {
         for (int i = 0; i < maxDisplayStrings; i++) {
             ui->stringList->item(i)->setSelected(true);
         }
@@ -1222,7 +1208,7 @@ void MainWindow::stringToHexLocation()
     int scrollBarValue = 0;
 
     // if from find strings
-    if (ui->stackedWidget->currentIndex() == 1) {
+    if (ui->MainDisplayStack->currentIndex() == 1) {
         while (!itemIndexFound && i < maxDisplayStrings) {
             if (ui->stringList->item(i)->isSelected()) {
                 itemIndexFound = true;
@@ -1249,7 +1235,7 @@ void MainWindow::stringToHexLocation()
         }
     }
     // if from saved strings
-    else if (ui->stackedWidget->currentIndex() == 2) {
+    else if (ui->MainDisplayStack->currentIndex() == 2) {
         while (!itemIndexFound && i < ui->savedStringList->count()) {
             if (ui->savedStringList->item(i)->isSelected()) {
                 itemIndexFound = true;
@@ -1276,7 +1262,7 @@ void MainWindow::stringToHexLocation()
         }
     }
 
-    ui->stackedWidget->setCurrentIndex(4);
+    ui->MainDisplayStack->setCurrentIndex(4);
     refreshWindow();
     ui->hexScrollBar->setValue(scrollBarValue);
 }
@@ -1454,14 +1440,14 @@ void MainWindow::findDLLs()
 
 void MainWindow::on_DLLTitleBrowser_anchorClicked(const QUrl &arg1)
 {
-    ui->stackedWidget->setCurrentIndex(4);
+    ui->MainDisplayStack->setCurrentIndex(4);
     ui->hexScrollBar->setValue(arg1.url().toInt() / hexDisplayCols);
     refreshWindow();
 }
 
 void MainWindow::on_DLLFunctionTitleBrowser_anchorClicked(const QUrl &arg1)
 {
-    ui->stackedWidget->setCurrentIndex(4);
+    ui->MainDisplayStack->setCurrentIndex(4);
     ui->hexScrollBar->setValue(arg1.url().toInt() / hexDisplayCols);
     refreshWindow();
 }
@@ -1512,93 +1498,12 @@ QString MainWindow::byteToHexString(int c)
     return hexText;
 }
 
-void MainWindow::refreshChecklist()
-{
-    if (fileOpened) {
-
-        if (!checklistBuilt) {
-            ui->checklistFileNameValue->setText(fileName);
-
-            // uncheck all steps
-            for (int i = 0; i < ui->checklistMainStepsList->count(); i++) {
-                ui->checklistMainStepsList->item(i)->setCheckState(Qt::Unchecked);
-            }
-
-            ui->checklistMainStepsList->item(0)->setCheckState(Qt::Checked);
-            checklistBuilt = true;
-        }
-
-        ui->checklistFileHashValue->setText(fileHash);
-        ui->checklistFileSizeValue->setText(QString::number(fileSize));
-
-        // progress bar stuff
-        int progress = 1;
-
-        if (hashBuilt) {
-            QString oldHash = fileHash;
-            fileHash = generateHash(rawData, fileSize);
-            ui->checklistFileHashValue->setText(fileHash);
-
-            if (oldHash != fileHash) {
-                dialogBox = new CustomDialog();
-                dialogBox->setWindowTitle("Warning!");
-                QLabel *label = new QLabel(dialogBox);
-                QString text = "Filehash has been changed from: " + oldHash + " to: " + fileHash;
-                label->setText(text);
-                dialogBox->exec();
-            }
-
-            ui->checklistMainStepsList->item(1)->setCheckState(Qt::Checked);
-            progress++;
-        }
-        if (backupBuilt) {
-            ui->checklistMainStepsList->item(2)->setCheckState(Qt::Checked);
-            progress++;
-        }
-        if (packChecked) {
-            ui->checklistMainStepsList->item(3)->setCheckState(Qt::Checked);
-            progress++;
-        }
-        if (packUnpacked) {
-            ui->checklistMainStepsList->item(4)->setCheckState(Qt::Checked);
-            progress++;
-        }
-        if (stringsBuilt) {
-            ui->checklistMainStepsList->item(5)->setCheckState(Qt::Checked);
-            progress++;
-        }
-        if (stringsSaved) {
-            ui->checklistMainStepsList->item(6)->setCheckState(Qt::Checked);
-            progress++;
-        }
-        if (dllsBuilt) {
-            ui->checklistMainStepsList->item(7)->setCheckState(Qt::Checked);
-            progress++;
-        }
-        if (hexBuilt) {
-            ui->checklistMainStepsList->item(8)->setCheckState(Qt::Checked);
-            progress++;
-        }
-        if (entropyChecked) {
-            ui->checklistFileEntropyValue->setText(QString::number(entropy));
-            //ui->checklistMainStepsList->item(8)->setCheckState(Qt::Checked);
-            //progress++;
-        }
-
-
-        // update progress bar
-        int steps = 9;
-        int percent = progress * 100 / steps;
-        ui->checklistProgressBar->setValue(percent);
-    }
-}
-
 void MainWindow::refreshWindow()
 {
     saveChanges();
 
     // refresh window based on current page
-    switch (ui->stackedWidget->currentIndex()) {
+    switch (ui->MainDisplayStack->currentIndex()) {
 
         case 0: extendedWindowName = "";
         break;
@@ -1621,15 +1526,11 @@ void MainWindow::refreshWindow()
         refreshHex();
         break;
 
-        case 5: extendedWindowName = " - Entropy";
+        case 5: extendedWindowName = " - Entropy Graph";
         buildEntropyGraph();
         break;
 
-        case 6: extendedWindowName = " - Checklist";
-        refreshChecklist();
-        break;
-
-        case 7: extendedWindowName = " - Disassembly";
+        case 6: extendedWindowName = " - Disassembly";
         refreshDisassembly();
         break;
     }
@@ -1642,21 +1543,15 @@ void MainWindow::resetChecks()
 {
     reseting = true;
 
-    backupBuilt = false;
     packChecked = false;
     packed = false;
     packPacked = false;
-    packUnpacked = false;
     dllsBuilt = false;
-    hexBuilt = false;
     dataChanged = false;
-    checklistBuilt = false;
-    entropyChecked = false;
 
     // strings
     stringsBuilt = false;
     stringsDisplayed = false;
-    stringsSaved = false;
     stringsSorted = false;
     firstStringsRefresh = true;
     strings.clear();
@@ -1696,7 +1591,6 @@ void MainWindow::resetChecks()
     cursorLocation = 0;
 
     // entropy
-    entropy = 0;
     entropyGraphBuilt = false;
 
     // disassembly
@@ -1776,16 +1670,13 @@ void MainWindow::saveChanges()
     }
 }
 
-void MainWindow::getEntropy()
+double MainWindow::getEntropy()
 {
+    double entropy = 0;
     if (fileOpened) {
-        if (!packChecked) {
-            if (entropy <= 0) {
-                entropy = chunkEntropy(0, fileSize);
-                entropyChecked = true;
-            }
-        }
+        entropy = chunkEntropy(0, fileSize);
     }
+    return entropy;
 }
 
 double MainWindow::chunkEntropy(int offset, int chunkSize)
@@ -1800,8 +1691,7 @@ double MainWindow::chunkEntropy(int offset, int chunkSize)
 
         // set all to 0
         for (int i = 0; i < 256; i++) {
-            unsigned char c = i;
-            freqMap[c] = 0;
+            freqMap[i] = 0;
         }
 
         // get char freq
@@ -1810,7 +1700,9 @@ double MainWindow::chunkEntropy(int offset, int chunkSize)
             unsigned char uc = static_cast<unsigned char>(c);
             freqMap[uc]++;
         }
+        //qDebug() << freqMap;
 
+        //if (chunkSize < )
         // get probabilty of each char and append to entropy
         for (int i = 0; i < 256; i++) {
             unsigned char c = i;
@@ -1853,8 +1745,9 @@ void MainWindow::buildEntropyGraph()
             // for all full chunks
             for (int i = 0; i < chunks; i++) {
                 *entropySet << chunkEntropy(i * chunkSize, chunkSize);
-                chunkRange << QString::number(i); //QString::number(i * chunkSize);// + " - " + QString::number((i * chunkSize) + chunkSize);
+                chunkRange << QString::number(i);
             }
+
             // last and incomplete chunk
             /*
             if (fileSize % chunkSize > 0) {
@@ -1864,7 +1757,6 @@ void MainWindow::buildEntropyGraph()
 
             QBarCategoryAxis *axisY = new QBarCategoryAxis();
             QValueAxis *axisX = new QValueAxis();
-            //QValueAxis *axisY = new QValueAxis();
             QHorizontalBarSeries *series = new QHorizontalBarSeries();
 
             // reverse data for graph output
@@ -1873,7 +1765,6 @@ void MainWindow::buildEntropyGraph()
             for (int i = 0; i < entropySet->count(); i++) {
                 *tmpSet << entropySet->at(entropySet->count() - 1 - i);
                 tmpList << chunkRange.at(chunkRange.count() - 1 - i);
-
             }
             entropySet = tmpSet;
             chunkRange = tmpList;
@@ -1884,7 +1775,7 @@ void MainWindow::buildEntropyGraph()
             QChart *chart = new QChart();
             chart->addSeries(series);
 
-            QString chunkBytes = " bytes";
+            QString chunkBytes = QString::number(chunkSize) + " bytes";
             if (chunkSize >= 1024) {
                 chunkBytes = QString::number(chunkSize / 1024) + " kibibytes";
                 if (chunkSize >= 1048576) {
@@ -1905,10 +1796,8 @@ void MainWindow::buildEntropyGraph()
                 chart->setTitle("Average file entropy across " + QString::number(chunks+1) + " chunk of " + chunkBytes);
             }
             else {
-                chart->setTitle("Average file entropy across " + QString::number(chunks) + " chunks of " + chunkBytes +" each.");
+                chart->setTitle("Average file entropy across " + QString::number(chunks) + " chunks of " + chunkBytes + " each.");
             }
-
-            //chart->addAxis(axisY, Qt::AlignLeft);
 
             chart->addAxis(axisX, Qt::AlignBottom);
             series->attachAxis(axisX);
@@ -1916,8 +1805,7 @@ void MainWindow::buildEntropyGraph()
             axisX->applyNiceNumbers();
 
             chart->legend()->setVisible(false);
-            //chart->legend()->setAlignment(Qt::AlignBottom);
-            //chart->setAnimationOptions(QChart::AllAnimations);
+            chart->setAnimationOptions(QChart::AllAnimations);
 
             QChartView *chartView = new QChartView(chart);
             ui->scrollArea->setWidget(chartView);
@@ -2003,7 +1891,12 @@ void MainWindow::getDisassembly()
     else {
         // if error during PE scan
         if (codeEndLoc == 0) {
-            disassembly += "File could not be disassembled. Not a 32 bit PE File?";
+            if (PE) {
+                disassembly += "File could not be disassembled. However, it is a PE file. Is the file packed?<br>";
+            }
+            else {
+                disassembly += "File could not be disassembled. Not a 32 bit PE File?<br>";
+            }
             maxDisplayInstructions = 1;
         }
     }
@@ -2791,14 +2684,14 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                         if (operand2 == "short " || (opcodeByte >= 128 && opcodeByte <= 143 && extended)) {
                             QString loc = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
                             operand2 += "<a href='" + loc + "'>";
-                            operand2 += "loc " + loc + "</a>";
+                            operand2 += "loc_" + loc + "</a>";
                             locMap[loc] = true;
                         }
                         // if a call to a location
                         else if (opcodeByte == 154 || opcodeByte == 232) {
                             QString sub = QString::number(immediateValue + (instructionSizeOffset + 1) + 4198400, 16).toUpper();
                             operand2 += "<a href='" + sub + "'>";
-                            operand2 += "sub " + sub + "</a>";
+                            operand2 += "sub_" + sub + "</a>";
                             subMap[sub] = true;
                         }
                         // if a segment pointer, try to get name
@@ -3744,7 +3637,6 @@ void MainWindow::on_hexByteDisplay_textChanged()
             editing = true;
         }
         else if (editing) {
-
             int cursorPosition = 0;
 
             if (newPosition % 3 == 1) {
@@ -3760,6 +3652,7 @@ void MainWindow::on_hexByteDisplay_textChanged()
 
             QString bytes = ui->hexByteDisplay->toPlainText();
             unsigned char c = bytes.at(cursorPosition).unicode();
+            bool shouldSave = false;
 
             // if lower case a - f, change to upper case
             if (c >= 97 && c <= 102) {
@@ -3771,6 +3664,7 @@ void MainWindow::on_hexByteDisplay_textChanged()
                 c.setPosition(newPosition);
                 ui->hexByteDisplay->setTextCursor(c);
                 refreshing = false;
+                shouldSave = true;
             }
             // if not between 0 - 9 or A - F
             else if ((c < 48 || c > 57) && (c < 65 || c > 70)) {
@@ -3781,6 +3675,10 @@ void MainWindow::on_hexByteDisplay_textChanged()
                 refreshing = false;
             }
             else {
+                shouldSave = true;
+            }
+
+            if (shouldSave) {
                 int byteLocation = 0, pageOffset = ui->hexScrollBar->value() * hexDisplayCols, currentPageByte = 0, page = ui->hexScrollBar->value();
 
                 if (cursorPosition == ui->hexByteDisplay->toPlainText().size() - 1) {
@@ -3836,8 +3734,10 @@ void MainWindow::on_hexByteDisplay_textChanged()
 
                 currentPageByte = cursorPosition / 3;
                 byteLocation =  currentPageByte + pageOffset;
-                changedDataMap[byteLocation] = true;
-                originalDataMap[byteLocation] = rawData[byteLocation];
+                if (!changedDataMap[byteLocation]) {
+                    changedDataMap[byteLocation] = true;
+                    originalDataMap[byteLocation] = rawData[byteLocation];
+                }
                 rawData[byteLocation] = byte;
                 dataChanged = true;
                 if (nextPage){

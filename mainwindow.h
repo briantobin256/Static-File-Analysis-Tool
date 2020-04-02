@@ -37,7 +37,6 @@ public:
     char *rawData;
     bool fileOpened;
     int fileSize;
-    double entropy;
     bool checklistOpened;
 
 
@@ -95,19 +94,12 @@ public:
 
 
     // initial builds
-    bool backupBuilt;
-    bool hashBuilt;
     bool packChecked;
     bool packed;
     bool packPacked;
-    bool packUnpacked;
     bool stringsBuilt;
     bool stringsDisplayed;
-    bool stringsSaved;
-    bool hexBuilt;
     bool dllsBuilt;
-    bool checklistBuilt;
-    bool entropyChecked;
     bool entropyGraphBuilt;
 
 
@@ -222,7 +214,6 @@ private:
 
     // general ui things
     void refreshWindow();
-    void refreshChecklist();
     void resetChecks();
     void MainWindow::closeEvent();
     virtual void wheelEvent(QWheelEvent *event);
@@ -245,7 +236,7 @@ private:
     bool isPacked();
     bool pack();
     bool unpack();
-    void getEntropy();
+    double getEntropy();
     void buildEntropyGraph();
     double chunkEntropy(int offset, int chunkSize);
 
