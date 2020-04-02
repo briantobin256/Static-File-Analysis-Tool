@@ -21,7 +21,7 @@ MainWindow::MainWindow(QWidget *parent)
     // tmp
     checklistOpened = false;
     on_actionChecklistMain_triggered();
-    QFile file("C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_6L/Lab06-01.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_1L/Lab01-01.exe   D:/Downloads/strings.exe
+    QFile file("C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_6L/Lab06-01.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_6L/Lab06-01.exe   D:/Downloads/strings.exe
     open(&file);
     file.close();
     ui->MainDisplayStack->setCurrentIndex(6);
@@ -1925,6 +1925,7 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
         int mod = 0, reg = 0, rm = 0, scale = 0, index = 0, base = 0, displacementIndex = 0, maxDisplacements = 0, immediateIndex = 0, maxImmediates = 0, operandSize = 8, extended = 0;
         QString operand1 = "", operand2 = "", operandPrefix = "", disassemblyLine = "", segment = "ds:";
         bool operand1isDestination = false, noOperands = false;
+        bool weird = false;
         QString imVal = "", secImVal = "";
 
         // for each byte in instruction
@@ -2327,11 +2328,15 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                                 seperator = true;
                             }
 
-                            // immediate can refer to a string (C6, C7)
+                            // immediate can refer to a string (68, 6A, (A0 - A3), (B0 - BF))
                             if (byte == 104 || byte == 106 || (byte >= 160 && byte <= 163) || (byte >= 176 && byte <= 191)) {
                                 canHaveString = true;
                             }
                         }
+                    }
+                    // if weird opcode
+                    if (byte == 98 || byte == 99 || byte == 141 || byte == 196 || byte == 197 || (byte >= 216 && byte <= 223) || byte == 255) {
+                        weird = true;
                     }
                 }
             }
@@ -2396,6 +2401,9 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                         }
                         operand1 = registerName(reg, operandSize);
                         operand1isDestination = true;
+                        if (mod == 0) {
+                            maxDisplacements = 4;
+                        }
                     }
                     // if opcode is (63)
                     else if (opcodeByte == 99) {
@@ -2428,9 +2436,6 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                     else if (opcodeByte == 141) {
                         operand1 = registerName(reg, operandSize);
                         operand1isDestination = true;
-                        if (mod == 0) {
-                            maxDisplacements = 4;
-                        }
                     }
                     // if opcode is (C4, C5)
                     else if (opcodeByte == 196 || opcodeByte == 197) {
@@ -2520,16 +2525,21 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
                 base += (byte / 2 % 2) * 10;
                 base += (byte % 2);
 
-                // get base register
-                if (mod != 101) {
-                    operand2 += "[" + registerName(base, 32);
-                }
-                else if (mod == 1 || mod == 10) {
-                    operand2 = "[ebp";
-                }
-
                 // get index register
-                operand2 += "+" + registerName(index, 32);
+                if (!weird) {
+                    // get base register
+                    if (mod != 101) {
+                        operand2 += "[" + registerName(base, 32);
+                    }
+                    else if (mod == 1 || mod == 10) {
+                        operand2 = "[ebp";
+                    }
+                    operand2 += "+" + registerName(index, 32);
+                }
+                else {
+                    operand2 += "[" + registerName(index, 32);
+                    maxDisplacements = 4;
+                }
 
                 // get index scale value
                 switch (scale) {

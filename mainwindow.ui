@@ -1792,7 +1792,10 @@ p, li { white-space: pre-wrap; }
   </action>
   <action name="actionUndo_All_Changes">
    <property name="text">
-    <string>Undo All Changes</string>
+    <string>Undo Any Unsaved Changes</string>
+   </property>
+   <property name="toolTip">
+    <string>Undo Any Unsaved Changes</string>
    </property>
   </action>
   <action name="actionEntropy_Graph">
