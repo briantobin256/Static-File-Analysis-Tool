@@ -21,10 +21,12 @@ MainWindow::MainWindow(QWidget *parent)
     // tmp
     checklistOpened = false;
     on_actionChecklistMain_triggered();
+    /*
     QFile file("C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_6L/Lab06-01.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_6L/Lab06-01.exe   D:/Downloads/strings.exe
     open(&file);
     file.close();
     ui->MainDisplayStack->setCurrentIndex(6);
+    */
 
     buildChecklist();
     refreshWindow();
@@ -40,7 +42,13 @@ MainWindow::~MainWindow()
 void MainWindow::on_actionOpen_triggered()
 {
     saveChanges();
-    QFile file(QFileDialog::getOpenFileName(this, "Select a file to analyse", "D:/Downloads")); // C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection  D:/Downloads
+    QFile file;
+    if (!fileOpened) {
+        file.setFileName(QFileDialog::getOpenFileName(this, "Select a file to analyse", "D:/Downloads"));
+    }
+    else {
+        file.setFileName(QFileDialog::getOpenFileName(this, "Select a file to analyse", directory));
+    }
     open(&file);
     file.close();
 }
@@ -372,6 +380,12 @@ void MainWindow::buildChecklist()
      sizes += 465;
      sizes += 260;
      ui->disassemblySplitter->setSizes(sizes);
+     file.close();
+    }
+    file.setFileName("checklist/introduction.html");
+    if (file.open(QIODevice::ReadOnly)) {
+     QTextStream ts(&file);
+     ui->introductionBrowser->setHtml(ts.readAll());
      file.close();
     }
 }
@@ -2890,9 +2904,9 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
     //
 
     // for all locations and sub locations
-    int instructionIterator = 0, locCount = 0, totalLocs = disassemblyList.count(), startjumpOffset = 0;
-    while (instructionIterator < totalLocs) {
-        QString instruction = disassemblyList[instructionIterator + (locCount * 2)];
+    int i = 0, locCount = 0, totalLocs = disassemblyList.count(), startjumpOffset = 0;
+    while (i < totalLocs) {
+        QString instruction = disassemblyList[i + (locCount * 2)];
         int split = instruction.indexOf('&');
         QStringRef instructionRef(&instruction, split - 6, split);
         QString loc = instructionRef.toString();
@@ -2903,23 +2917,24 @@ QStringList MainWindow::disassembleSection(int start, int end, int virtualAddres
         }
 
         if (locMap[loc]) {
-            disassemblyList.insert(instructionIterator + (locCount * 2), loc + "<br>");
-            disassemblyList.insert(instructionIterator + (locCount * 2) + 1, loc + "&nbsp;loc_" + loc + "<br>");
-            locOffsetMap[loc] = instructionIterator + (locCount * 2) + startjumpOffset;
+            disassemblyList.insert(i + (locCount * 2), loc + "<br>");
+            disassemblyList.insert(i + (locCount * 2) + 1, loc + "&nbsp;loc_" + loc + "<br>");
+            locOffsetMap[loc] = i + (locCount * 2) + startjumpOffset;
             locCount++;
         }
         else if (subMap[loc]) {
-            disassemblyList.insert(instructionIterator + (locCount * 2), loc + "<br>");
-            disassemblyList.insert(instructionIterator + (locCount * 2) + 1, loc + "&nbsp;sub_" + loc + "<br>");
-            locOffsetMap[loc] = instructionIterator + (locCount * 2) + startjumpOffset;
+            disassemblyList.insert(i + (locCount * 2), loc + "<br>");
+            disassemblyList.insert(i + (locCount * 2) + 1, loc + "&nbsp;sub_" + loc + "<br>");
+            locOffsetMap[loc] = i + (locCount * 2) + startjumpOffset;
             locCount++;
         }
-        instructionIterator++;
+        i++;
     }
 
-    // find start procedure
+    // find start procedure (needs to be after locations and sublocations are added because jumps after start may jump to locations behind the start)
     bool startFound = false;
-    int i = 0, size = disassemblyList.count();
+    int size = disassemblyList.count();
+    i = 0;
     codeStartProcedure = 0;
     while (!startFound && i < size) {
         QString instruction = disassemblyList[i];
