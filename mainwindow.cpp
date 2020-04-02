@@ -11,12 +11,12 @@ MainWindow::MainWindow(QWidget *parent)
 
     basicWindowName = "Static File Analysis Tool";
 
+    savingEdit = false;
     fileOpened = false;
     resetChecks();
 
     fileHash = "";
     backupLoc = "";
-
 
     // tmp
     checklistOpened = false;
@@ -215,8 +215,6 @@ void MainWindow::on_actionPack_triggered()
                 packChecked = false;
                 if (isPacked()) {
                     label->setText("The current file is now packed using UPX.");
-                    packPacked = true;
-
                     // open newly packed file to analyse
                     QFile file(directory + fileName);
                     open(&file);
@@ -252,8 +250,6 @@ void MainWindow::on_actionUnpack_triggered()
             if (unpack()) {
                 label->setText("The current file has been unpacked using UPX.");
                 packChecked = false;
-                packPacked = false;
-
                 // open newly packed file to analyse
                 QFile file(directory + fileName);
                 open(&file);
@@ -816,6 +812,7 @@ QString MainWindow::generateFileHash(QString fullName)
 
 bool MainWindow::isPacked()
 {
+    bool packed = false;
     if (!packChecked) {
 
         QString fullFileName = 34 + directory + fileName + 34;
@@ -1541,31 +1538,46 @@ void MainWindow::refreshWindow()
 
 void MainWindow::resetChecks()
 {
-    reseting = true;
+    if (!savingEdit) {
+        reseting = true;
 
+        dataChanged = false;
+
+        // checklist notepads
+        ui->fileNotes->clear();
+        ui->packersNotes->clear();
+        ui->stringsNotes->clear();
+        ui->DLLsNotes->clear();
+        ui->hexNotes->clear();
+        ui->disassemblyNotes->clear();
+
+        reseting = false;
+    }
     packChecked = false;
-    packed = false;
-    packPacked = false;
     dllsBuilt = false;
-    dataChanged = false;
 
     // strings
-    stringsBuilt = false;
-    stringsDisplayed = false;
-    stringsSorted = false;
-    firstStringsRefresh = true;
+    stringLocationMap.clear();
+    savedStringMap.clear();
+    savedStringLocationMap.clear();
+    swapStringMap.clear();
     strings.clear();
     savedStrings.clear();
     unsortedStrings.clear();
-    savedStringMap.clear();
-    stringLocationMap.clear();
-    swapStringMap.clear();
-    stringLength = 3;
-    ui->stringsScrollBar->setValue(0);
-    sorting = false;
+    stringCount = 0;
+    stringOffset = 0;
     maxDisplayStrings = 30;
     totalStringSize = 0;
     totalSavedStringSize = 0;
+    stringLength = 3;
+    sorting = false;
+    removedStrings = false;
+    stringsBuilt = false;
+    stringsSorted = false;
+    firstStringsRefresh = true;
+    ui->stringsScrollBar->setValue(0);
+    ui->stringList->clear();
+    ui->savedStringList->clear();
 
     // dlls
     dllNames.clear();
@@ -1602,8 +1614,6 @@ void MainWindow::resetChecks()
     locOffsetMap.clear();
     codeStartProcedure = 0;
     jumpStack.clear();
-
-    reseting = false;
 }
 
 void MainWindow::undoChanges()
@@ -1620,7 +1630,7 @@ void MainWindow::undoChanges()
 
 void MainWindow::saveChanges()
 {
-    if (dataChanged) {
+    if (dataChanged && !savingEdit) {
         QMessageBox::StandardButton reply;
         reply = QMessageBox::question(this, "Warning!", "Do you want to save the changes made in the hex editor?\nThis will reset all saved strings.", QMessageBox::Yes|QMessageBox::No);
         if (reply == QMessageBox::Yes) {
@@ -1650,7 +1660,9 @@ void MainWindow::saveChanges()
 
                 // open new file
                 QFile f(directory + fileName);
+                savingEdit = true;
                 open(&f);
+                savingEdit = false;
                 f.close();
             }
             else {

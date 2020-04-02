@@ -84,6 +84,7 @@ public:
     int previousPosition;
     int byteDisplaySize;
     int cursorLocation;
+    bool savingEdit;
     bool nextPage;
     bool secondTime;
     bool editing;
@@ -95,10 +96,7 @@ public:
 
     // initial builds
     bool packChecked;
-    bool packed;
-    bool packPacked;
     bool stringsBuilt;
-    bool stringsDisplayed;
     bool dllsBuilt;
     bool entropyGraphBuilt;
 
