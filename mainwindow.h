@@ -152,8 +152,6 @@ private slots:
 
     void on_stringsScrollBar_valueChanged();
 
-    void on_actionSeperate_Window_triggered();
-
     void on_stringSearchButton_clicked();
 
     void on_actionUndo_All_Changes_triggered();

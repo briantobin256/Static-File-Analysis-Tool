@@ -189,13 +189,6 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
     refreshWindow();
 }
 
-void MainWindow::on_actionEntropy_Graph_triggered()
-{
-    ui->MainDisplayStack->setCurrentIndex(5);
-    buildEntropyGraph();
-    refreshWindow();
-}
-
 void MainWindow::on_actionPack_triggered()
 {
     saveChanges();
@@ -293,6 +286,19 @@ void MainWindow::on_actionHex_triggered()
     refreshWindow();
 }
 
+void MainWindow::on_actionEntropy_Graph_triggered()
+{
+    ui->MainDisplayStack->setCurrentIndex(5);
+    buildEntropyGraph();
+    refreshWindow();
+}
+
+void MainWindow::on_actionDisassembly_triggered()
+{
+    ui->MainDisplayStack->setCurrentIndex(6);
+    refreshWindow();
+}
+
 void MainWindow::on_actionChecklistMain_triggered()
 {
     if (!checklistOpened) {
@@ -378,19 +384,6 @@ void MainWindow::buildChecklist()
      ui->introductionBrowser->setHtml(ts.readAll());
      file.close();
     }
-}
-
-void MainWindow::on_actionSeperate_Window_triggered()
-{
-    buildChecklist();
-    //ui->stackedWidget->setCurrentIndex(8);
-    refreshWindow();
-}
-
-void MainWindow::on_actionDisassembly_triggered()
-{
-    ui->MainDisplayStack->setCurrentIndex(6);
-    refreshWindow();
 }
 
 void MainWindow::on_stringsScrollBar_valueChanged()
@@ -687,35 +680,39 @@ void MainWindow::outputStrings()
 
 void MainWindow::wheelEvent(QWheelEvent *event)
 {
-    /*
-    // only while showing hex
-    if (ui->stackedWidget->currentIndex() == 4 && ui->hexScrollBar->maximum() > 0) {
+    QPoint numDegrees = event->angleDelta() / 8;
+    if (!numDegrees.isNull()) {
+        QPoint numSteps = numDegrees / 15;
+        int move = static_cast<int>(numSteps.y());
+        int currentValue = 0, max = 0;
+        QPointer<QScrollBar> scrollBar;
 
-        QPoint numDegrees = event->angleDelta() / 8;
-
-        if (!numDegrees.isNull()) {
-            QPoint numSteps = numDegrees / 15;
-            int move = static_cast<int>(numSteps.y());
-            qDebug() << "move" << move;
-            int currentValue = ui->hexScrollBar->value();
-            int min = ui->hexScrollBar->minimum();
-            int max = ui->hexScrollBar->maximum();
-
-            if (move == 1 && currentValue < max) {
-                ui->hexScrollBar ++;
-                qDebug() << "moved down";
-            }
-            else if (move == -1 && currentValue > min) {
-                ui->hexScrollBar --;
-                qDebug() << "moved up";
-            }
+        // if displaying strings
+        if (ui->MainDisplayStack->currentIndex() == 1) {
+            currentValue = ui->stringsScrollBar->value();
+            max = ui->stringsScrollBar->maximum();
+            scrollBar = ui->stringsScrollBar;
+        }
+        // if displaying hex
+        if (ui->MainDisplayStack->currentIndex() == 4) {
+            currentValue = ui->hexScrollBar->value();
+            max = ui->hexScrollBar->maximum();
+            scrollBar = ui->hexScrollBar;
+        }
+        // if displaying disassembly
+        if (ui->MainDisplayStack->currentIndex() == 6) {
+            currentValue = ui->disassemblyScrollBar->value();
+            max = ui->disassemblyScrollBar->maximum();
+            scrollBar = ui->disassemblyScrollBar;
         }
 
-        //event->accept();
-
-        //refreshHex();
+        // if scrollbar should move
+        if ((move > 0 && currentValue > 0) || (move < 0 && currentValue < max)) {
+            scrollBar->setValue(currentValue - move);
+        }
     }
-    */
+    event->accept();
+    refreshHex();
 }
 
 void MainWindow::closeEvent()

@@ -490,7 +490,7 @@
      </palette>
     </property>
     <property name="currentIndex">
-     <number>2</number>
+     <number>6</number>
     </property>
     <widget class="QWidget" name="page_0_Main_Window">
      <widget class="QTextBrowser" name="introductionBrowser">
@@ -1713,7 +1713,6 @@ p, li { white-space: pre-wrap; }
      <string>Checklist</string>
     </property>
     <addaction name="actionChecklistMain"/>
-    <addaction name="actionSeperate_Window"/>
    </widget>
    <widget class="QMenu" name="menuAdvanced">
     <property name="title">
