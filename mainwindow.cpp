@@ -18,16 +18,6 @@ MainWindow::MainWindow(QWidget *parent)
     fileHash = "";
     backupLoc = "";
 
-    // tmp
-    checklistOpened = false;
-    on_actionChecklistMain_triggered();
-    /*
-    QFile file("C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_6L/Lab06-01.exe"); //C:/Users/brian/Desktop/PMA/Practical Malware Analysis Labs/BinaryCollection/Chapter_6L/Lab06-01.exe   D:/Downloads/strings.exe
-    open(&file);
-    file.close();
-    ui->MainDisplayStack->setCurrentIndex(6);
-    */
-
     buildChecklist();
     refreshWindow();
 }
@@ -447,6 +437,10 @@ void MainWindow::on_stringList_itemDoubleClicked(QListWidgetItem *item)
 
 void MainWindow::on_stringSearchButton_clicked()
 {
+    // set searching icon (searching text in page value box)
+    ui->stringsPageNumberValue->setText("SEARCHING");
+    qApp->processEvents();
+    // if found
     if (searchStringList(ui->searchString->text(), &strings, ui->stringsSearchFromBeginningCheckBox->checkState(), false)) {
         int previousPage = ui->stringsScrollBar->value(), displayStrings = ui->stringList->count();
         if (searchStringIndex % displayStrings == 0) {
@@ -463,10 +457,15 @@ void MainWindow::on_stringSearchButton_clicked()
         }
         ui->stringList->item((searchStringIndex % displayStrings - 1 + displayStrings) % displayStrings)->setSelected(true);
     }
+    refreshWindow();
 }
 
 void MainWindow::on_savedStringSearchButton_clicked()
 {
+    // set searching icon (searching text in page value box)
+    ui->savedStringCountValue->setText("SEARCHING");
+    qApp->processEvents();
+    // if found
     if (searchStringList(ui->searchSavedString->text(), &savedStrings, ui->savedStringsSearchFromBeginningCheckBox->checkState(), false)) {
         int displayStrings = ui->savedStringList->count();
         for (int i = 0; i < displayStrings; i++) {
@@ -475,13 +474,19 @@ void MainWindow::on_savedStringSearchButton_clicked()
         ui->savedStringList->item(searchStringIndex - 1)->setSelected(true);
         ui->savedStringList->setCurrentRow(searchStringIndex - 1);
     }
+    refreshWindow();
 }
 
 void MainWindow::on_disassemblySearchButton_clicked()
 {
+    // set searching icon (red searching text in search box)
+    ui->disassemblyPageNumberValue->setText("SEARCHING");
+    qApp->processEvents();
+    // if found, set scroll bar value
     if (searchStringList(ui->disassemblySearchString->text(), &disassembly, ui->disassemblySearchFromBeginningCheckBox->checkState(), true)) {
         ui->disassemblyScrollBar->setValue(searchStringIndex - 1);
     }
+    refreshWindow();
 }
 
 bool MainWindow::searchStringList(QString searchString, QStringList *list, bool searchFromBeginning, bool htmlList)
