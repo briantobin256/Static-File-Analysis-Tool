@@ -38,6 +38,7 @@ public:
     bool fileOpened;
     int fileSize;
     bool checklistOpened;
+    bool packed;
 
 
     QString basicWindowName;

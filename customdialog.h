@@ -14,6 +14,7 @@ class CustomDialog : public QDialog
 public:
     explicit CustomDialog(QWidget *parent = nullptr);
     ~CustomDialog();
+    void setText(QString text);
 
 private slots:
     void on_pushButton_clicked();

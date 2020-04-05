@@ -59,14 +59,13 @@ void MainWindow::on_actionGenerate_Hash_triggered()
     saveChanges();
     dialogBox = new CustomDialog();
     dialogBox->setWindowTitle("Hash");
-    QLabel *label = new QLabel(dialogBox);
 
     if (fileOpened) {
         fileHash = generateHash(rawData, fileSize);
-        label->setText("The SHA-1 hash of the current data is:\n" + fileHash);
+        dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>The SHA-1 hash of the current data is:<p style='text-align:center;font-size:20px;color:blue;'>" + fileHash);
     }
     else {
-        label->setText("No file is selected.");
+        dialogBox->setText("<p style='text-align:center;font-size:25px;'><br><br>No file selected.");
     }
 
     dialogBox->exec();
@@ -78,11 +77,10 @@ void MainWindow::on_actionCreate_Backup_triggered()
     saveChanges();
     dialogBox = new CustomDialog();
     dialogBox->setWindowTitle("Backup");
-    QLabel *label = new QLabel(dialogBox);
 
     if (fileOpened) {
         QDir dir;
-        label->setText("Please select a location to store backups.");
+        dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>Please select a location to store backups.");
         dialogBox->exec();
         QFile file(QFileDialog::getExistingDirectory(this, "Select a location to store backups."));
         backupLoc = file.fileName();
@@ -108,10 +106,10 @@ void MainWindow::on_actionCreate_Backup_triggered()
 
             if (backupConflict) {
                 if (backupName == fileName) {
-                    label->setText("The current file is the backup file. Rename it to back it up again.");
+                    dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>The current file is the backup file. Rename it to back it up again.");
                 }
                 else {
-                    label->setText("A backup of this file already exists.");
+                    dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>A backup of this file already exists.");
                 }
             }
             else {
@@ -129,20 +127,20 @@ void MainWindow::on_actionCreate_Backup_triggered()
                 QString verificationHash = generateFileHash(fullName);
 
                 if (verificationHash == fileHash) {
-                    label->setText("Backup Succesful.\n" + fileName + "\nhas been saved as\n" + fileHash + ".bak");
+                    dialogBox->setText("<p style='text-align:center;font-size:25px;'>Backup Succesful.<br>" + fileName + "<br>has been backed up as<p style='text-align:center;font-size:18px;color:blue'>" + fileHash + ".bak");
                 }
                 else {
-                    label->setText("An error has occured, the backup may not exist.");
+                    dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>An error has occured, the backup may not exist.");
                 }
             }
         }
         else {
-            label->setText("No location selected.");
+            dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>No location selected.");
         }
         dialogBox->exec();
     }
     else {
-        label->setText("You must first select a file to analyse before anything can be backed up.");
+        dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>You must first select a file to analyse before anything can be backed up.");
         dialogBox->exec();
     }
 
@@ -160,28 +158,26 @@ void MainWindow::on_actionCheck_if_Packed_triggered()
     saveChanges();
     dialogBox = new CustomDialog();
     dialogBox->setWindowTitle("Check if File is Packed");
-    QLabel *label = new QLabel(dialogBox);
 
     if (fileOpened) {
         double entropy = getEntropy();
         QString basicText = "", entropyVar = "";
         if (isPacked()) {
-            basicText = "The current file IS packed using UPX.";
+            basicText = "<p style='text-align:center;font-size:20px;'>The current file IS packed using UPX.";
         }
         else {
-            basicText = "The current file is NOT packed using UPX!";
+            basicText = "<p style='text-align:center;font-size:20px;'>The current file is NOT packed using UPX!";
         }
         if (entropy < 6.5) {
-            entropyVar = "The files entropy is \n" + QString::number(entropy) + "\nwhich would suggest that the file is NOT packed/compressed/encrypted.";
+            entropyVar = "<p style='text-align:center;font-size:20px;'>The files entropy is<br>" + QString::number(entropy) + "<br>which would suggest that the file is NOT packed/compressed/encrypted.";
         }
         else {
-            entropyVar = "The files entropy is \n" + QString::number(entropy) + "\nwhich would suggest that the file IS packed/compressed/encrypted.";
+            entropyVar = "<p style='text-align:center;font-size:20px;'>The files entropy is<br>" + QString::number(entropy) + "<br>which would suggest that the file IS packed/compressed/encrypted.";
         }
-        entropyVar += "\nCheck the entropy graph for more in depth detail of the total file entropy.";
-        label->setText(basicText + entropyVar);
+        dialogBox->setText(basicText + entropyVar);
     }
     else {
-        label->setText("No file is selected.");
+        dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>No file is selected.");
     }
 
     dialogBox->exec();
@@ -194,34 +190,33 @@ void MainWindow::on_actionPack_triggered()
     saveChanges();
     dialogBox = new CustomDialog();
     dialogBox->setWindowTitle("Pack");
-    QLabel *label = new QLabel(dialogBox);
 
     if (fileOpened) {
         if (isPacked()) {
-            label->setText("The current file is already packed using UPX.");
+            dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>The current file is already packed using UPX.");
         }
         else {
             // pack the current file
             if (pack()) {
                 packChecked = false;
                 if (isPacked()) {
-                    label->setText("The current file is now packed using UPX.");
+                    dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>The current file is now packed using UPX.");
                     // open newly packed file to analyse
                     QFile file(directory + fileName);
                     open(&file);
                     file.close();
                 }
                 else {
-                    label->setText("The current file was not packed using UPX.");
+                    dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>The current file was not packed using UPX.");
                 }
             }
             else {
-                label->setText("The current file was not packed using UPX.");
+                dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>The current file was not packed using UPX.");
             }
         }
     }
     else {
-        label->setText("No file is selected.");
+        dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>No file is selected.");
     }
 
     dialogBox->exec();
@@ -233,13 +228,12 @@ void MainWindow::on_actionUnpack_triggered()
     saveChanges();
     dialogBox = new CustomDialog();
     dialogBox->setWindowTitle("Unpack");
-    QLabel *label = new QLabel(dialogBox);
 
     if (fileOpened) {
         if (isPacked()) {
             // unpack the current file
             if (unpack()) {
-                label->setText("The current file has been unpacked using UPX.");
+                dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>The current file has been unpacked using UPX.");
                 packChecked = false;
                 // open newly packed file to analyse
                 QFile file(directory + fileName);
@@ -247,15 +241,15 @@ void MainWindow::on_actionUnpack_triggered()
                 file.close();
             }
             else {
-                label->setText("The current file was not unpacked.");
+                dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>The current file was not unpacked.");
             }
         }
         else {
-            label->setText("The current file is not packed using UPX.");
+            dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>The current file is not packed using UPX.");
         }
     }
     else {
-        label->setText("No file is selected.");
+        dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>No file is selected.");
     }
 
     dialogBox->exec();
@@ -595,10 +589,9 @@ void MainWindow::outputStrings()
 {
     dialogBox = new CustomDialog();
     dialogBox->setWindowTitle("Output Strings");
-    QLabel *label = new QLabel(dialogBox);
 
     if (fileOpened) {
-        label->setText("Please select a location to store the strings text file.");
+        dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>Please select a location to store the strings text file.");
         dialogBox->exec();
         QFile file(QFileDialog::getExistingDirectory(this, "Select a location to store strings."));
         QString stringsLoc = file.fileName();
@@ -656,24 +649,24 @@ void MainWindow::outputStrings()
                     ds.writeRawData(stringBytes, totalStringsLength - 1);
                     stringsOutput.close();
 
-                    label->setText("Strings outputted successfully.");
+                    dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>Strings outputted successfully.");
                 }
                 else {
-                    label->setText("Not enough system memory.");
+                    dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>Not enough system memory.");
                 }
 
                 free(stringBytes);
             }
             else {
-                label->setText("Cannot write to disk.");
+                dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>Cannot write to disk.");
             }
         }
         else {
-            label->setText("No location selected.");
+            dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>No location selected.");
         }
     }
     else {
-        label->setText("You must first select a file to analyse before strings can be outputted to a text file.");
+        dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>You must first select a file to analyse before strings can be outputted to a text file.");
     }
     dialogBox->exec();
 }
@@ -788,8 +781,7 @@ void MainWindow::open(QFile *file)
                     // display not enough memory
                     dialogBox = new CustomDialog();
                     dialogBox->setWindowTitle("Error");
-                    QLabel *label = new QLabel(dialogBox);
-                    label->setText("The file you choose is too big.\nThis system does not currently have enough memory to open this file.");
+                    dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>The file you choose is too big.<br>This system does not currently have enough memory to open this file.");
                     dialogBox->exec();
                 }
             }
@@ -799,8 +791,7 @@ void MainWindow::open(QFile *file)
             // file too big
             dialogBox = new CustomDialog();
             dialogBox->setWindowTitle("Error");
-            QLabel *label = new QLabel(dialogBox);
-            label->setText("The file you choose is too big.\nMax file size of 2GB.");
+            dialogBox->setText("<br><p style='text-align:center;font-size:25px;'>The file you choose is too big.<br>Max file size of 2GB.");
             dialogBox->exec();
         }
     }
@@ -828,9 +819,7 @@ QString MainWindow::generateFileHash(QString fullName)
 
 bool MainWindow::isPacked()
 {
-    bool packed = false;
     if (!packChecked) {
-
         QString fullFileName = 34 + directory + fileName + 34;
         QString command = "upx -l " + fullFileName + " > upx.tmp";
         system(qPrintable(command));
@@ -1571,6 +1560,7 @@ void MainWindow::resetChecks()
     }
     packChecked = false;
     dllsBuilt = false;
+    packed = false;
 
     // strings
     stringLocationMap.clear();
@@ -1684,8 +1674,7 @@ void MainWindow::saveChanges()
             else {
                 dialogBox = new CustomDialog();
                 dialogBox->setWindowTitle("Error");
-                QLabel *label = new QLabel(dialogBox);
-                label->setText("An error has occured. No changes have been saved.");
+                dialogBox->setText("dialogBoxAn error has occured.<br>No changes have been saved.");
                 dialogBox->exec();
 
                 path.remove(tmpName);
