@@ -11,13 +11,13 @@ MainWindow::MainWindow(QWidget *parent)
 
     basicWindowName = "Static File Analysis Tool";
 
+    // based on application instance rather than current file
     savingEdit = false;
     fileOpened = false;
-    resetChecks();
-
     fileHash = "";
     backupLoc = "";
 
+    resetChecks();
     buildChecklist();
     refreshWindow();
 }
@@ -442,9 +442,12 @@ void MainWindow::on_stringSearchButton_clicked()
                 ui->stringList->item(i)->setSelected(false);
             }
         }
+        refreshWindow();
         ui->stringList->item((searchStringIndex % displayStrings - 1 + displayStrings) % displayStrings)->setSelected(true);
     }
-    refreshWindow();
+    else {
+        refreshWindow();
+    }
 }
 
 void MainWindow::on_savedStringSearchButton_clicked()
@@ -458,10 +461,13 @@ void MainWindow::on_savedStringSearchButton_clicked()
         for (int i = 0; i < displayStrings; i++) {
             ui->savedStringList->item(i)->setSelected(false);
         }
+        refreshWindow();
         ui->savedStringList->item(searchStringIndex - 1)->setSelected(true);
         ui->savedStringList->setCurrentRow(searchStringIndex - 1);
     }
-    refreshWindow();
+    else {
+        refreshWindow();
+    }
 }
 
 void MainWindow::on_disassemblySearchButton_clicked()
@@ -471,9 +477,12 @@ void MainWindow::on_disassemblySearchButton_clicked()
     qApp->processEvents();
     // if found, set scroll bar value
     if (searchStringList(ui->disassemblySearchString->text(), &disassembly, ui->disassemblySearchFromBeginningCheckBox->checkState(), true)) {
+        refreshWindow();
         ui->disassemblyScrollBar->setValue(searchStringIndex - 1);
     }
-    refreshWindow();
+    else {
+        refreshWindow();
+    }
 }
 
 bool MainWindow::searchStringList(QString searchString, QStringList *list, bool searchFromBeginning, bool htmlList)
@@ -1717,7 +1726,6 @@ double MainWindow::chunkEntropy(int offset, int chunkSize)
             unsigned char uc = static_cast<unsigned char>(c);
             freqMap[uc]++;
         }
-        //qDebug() << freqMap;
 
         //if (chunkSize < )
         // get probabilty of each char and append to entropy
@@ -3269,7 +3277,7 @@ void MainWindow::getPEinformation()
     rdataStartLoc = 0, rdataRVA = 0;
     idataStartLoc = 0, idataRVA = 0;
     IDTLoc = 0, IDTSize = 0;
-    IATLoc = 0, IATSize = 0;
+    IATLoc = 0;
     codeEntryPoint = 0, baseOfCode = 0;
     dataStartLoc = 0, dataVirtualAddress = 0;
 
@@ -3412,9 +3420,6 @@ void MainWindow::getPEinformation()
                     }
                     if (virtualSize > 0) {
                         IATLoc = virtualSize + sectionLoc - sectionRVA;
-                    }
-                    for (int i = 0; i < 4; i++) {
-                        IATSize += pow(16, i * 2) * static_cast<unsigned char>(rawData[peHeaderStartLoc + 220 + i]);
                     }
                 }
 

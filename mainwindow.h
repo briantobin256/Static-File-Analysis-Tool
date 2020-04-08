@@ -109,7 +109,7 @@ public:
     int rdataStartLoc, rdataRVA;
     int idataStartLoc, idataRVA;
     int IDTLoc, IDTSize;
-    int IATLoc, IATSize;
+    int IATLoc;
     int codeEntryPoint, baseOfCode;
     int dataStartLoc, dataVirtualAddress;
 
