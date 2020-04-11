@@ -1373,7 +1373,7 @@ void MainWindow::findDLLs()
             //
 
             QStringList functions;
-            bool functionsFinished = false;
+            bool functionsFinished = false, secondTry = false;
             int addressOffset = 0, dllsCompletedCount = 0;
 
             while (!functionsFinished) {
@@ -1411,6 +1411,16 @@ void MainWindow::findDLLs()
                     functionCount++;
                 }
                 addressOffset += 4;
+
+                // if functions finshed but none found
+                if (functionsFinished && dllFunctionNames.size() == dllsCompletedCount && !secondTry) {
+                    // try searching from data start location
+                    functionsFinished = false, secondTry = true;
+                    addressOffset = 0, dllsCompletedCount = 0;
+                    functionNamePointerLoc = dataStartLoc;
+                    dllFunctionNames.clear();
+                    functions.clear();
+                }
             }
 
             // set dll name and funtion title bars
