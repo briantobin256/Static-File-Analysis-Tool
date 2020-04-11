@@ -17,6 +17,9 @@ MainWindow::MainWindow(QWidget *parent)
     fileHash = "";
     backupLoc = "";
 
+    checklistOpened = true;
+    on_actionChecklistMain_triggered();
+
     resetChecks();
     buildChecklist();
     refreshWindow();
@@ -555,7 +558,7 @@ bool MainWindow::searchStringList(QString searchString, QStringList *list, bool 
 
 void MainWindow::sortStrings()
 {
-    saveDisplayedStrings();
+    refreshWindow();
     sorting = true;
     if (stringsSorted) {
         strings = unsortedStrings;
@@ -591,7 +594,8 @@ void MainWindow::sortStrings()
         }
     }
     savedStringMap = tmpSavedSwapMap;
-    refreshWindow();
+    refreshStrings();
+    refreshSavedStrings();
 }
 
 void MainWindow::outputStrings()
@@ -1090,6 +1094,7 @@ void MainWindow::refreshSavedStrings()
     if (stringsBuilt) {
         saveDisplayedStrings();
         savedStrings.clear();
+        savedStringLocationMap.clear();
         totalSavedStringSize = 0;
         for (int i = 0; i < stringCount; i++) {
             if (savedStringMap[i]) {
@@ -1208,6 +1213,7 @@ void MainWindow::removeSelected()
             savedStringMap[savedStringLocationMap[index.row()]] = false;
         }
         removedStrings = true;
+        refreshStrings();
         refreshSavedStrings();
     }
 }
