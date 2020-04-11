@@ -1596,7 +1596,6 @@ void MainWindow::resetChecks()
     stringsBuilt = false;
     stringsSorted = false;
     firstStringsRefresh = true;
-    ui->stringsScrollBar->setValue(0);
     ui->stringList->clear();
     ui->savedStringList->clear();
 
@@ -1614,7 +1613,6 @@ void MainWindow::resetChecks()
     hexLocationMap.clear();
     originalDataMap.clear();
     changedDataMap.clear();
-    ui->hexScrollBar->setValue(0);
     previousPosition = 0;
     byteDisplaySize = 0;
     editing = false;
@@ -1629,7 +1627,6 @@ void MainWindow::resetChecks()
     // disassembly
     disassemblyBuilt = false;
     disassembly.clear();
-    ui->disassemblyScrollBar->setValue(0);
     opTypeMap.clear();
     opcodeMap.clear();
     locOffsetMap.clear();
