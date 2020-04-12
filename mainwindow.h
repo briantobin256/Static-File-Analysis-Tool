@@ -212,8 +212,8 @@ private:
     // general ui things
     void refreshWindow();
     void resetChecks();
-    void MainWindow::closeEvent();
-    virtual void wheelEvent(QWheelEvent *event);
+    void closeEvent(QCloseEvent *event);
+    void wheelEvent(QWheelEvent *event);
     void showChecklist();
     void hideChecklist();
     void popChecklist();

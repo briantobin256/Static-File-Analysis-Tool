@@ -721,10 +721,10 @@ void MainWindow::wheelEvent(QWheelEvent *event)
     refreshHex();
 }
 
-void MainWindow::closeEvent()
+void MainWindow::closeEvent(QCloseEvent *event)
 {
     saveChanges();
-    QApplication::quit();
+    event->accept();
 }
 
 // BACKGROUND FUNCTIONS
